@@ -1,0 +1,30 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.cs.bcjis.report.service.ReportWrite000Service;
+
+
+@Service("reportWrite000Service")
+public class ReportWrite000ServiceImpl  implements ReportWrite000Service {
+    @Resource(name="reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+    
+    @Resource(name="reportWrite000DAO")
+    private ReportWrite000DAO reportWrite000DAO;
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetList(Map map) throws Exception {
+        return reportWrite000DAO.selectReport000SheetList(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetListNew(Map map) throws Exception {
+    	return reportWrite000DAO.selectReport000SheetListNew(map);
+    }
+}

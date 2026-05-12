@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="PledgeMatch">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="PledgeMatch.selectPledgeInfoIdList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeMatch.selectPledgeInfoIdList*/
+        SELECT A.FIS_YEAR || '_' || A.BGT_DGR AS T_ID
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.BGT_COMPO_FG
+             , A.ADD_TIMES
+             , NVL(A.PLEDGE_INFO_ID, '') AS PLEDGE_INFO_ID
+             , DECODE(A.ADD_TIMES, 0, '본예산', '추경') AS BGT_DGR_VIEW
+             , DECODE(A.ADD_TIMES, 0, '', A.ADD_TIMES || '차') AS ADD_TIMES_VIEW
+             , NVL((SELECT Z.PLEDGE_INFO_NM FROM TB_PLEDGEINFO Z WHERE Z.PLEDGE_INFO_ID = A.PLEDGE_INFO_ID AND ROWNUM = 1), '') AS PLEDGE_INFO_VIEW
+          FROM TB_BGTDGR A
+         WHERE 1 = 1
+         <isNotEmpty prepend="" property="fisYear">
+           AND A.FIS_YEAR = #fisYear#
+         </isNotEmpty>
+         ORDER BY A.FIS_YEAR DESC
+                , A.BGT_DGR DESC
+    </select>
+    
+    <update id="PledgeMatch.updatePledgeInfoId" parameterClass="Map" >
+        /*PledgeMatch.updatePledgeInfoId*/
+        UPDATE TB_BGTDGR
+           SET PLEDGE_INFO_ID = #pledgeInfoId#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+    </update>
+    
+</sqlMap>

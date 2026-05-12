@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogReport070OrderYmdModify">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogReport070OrderYmdModify.selectDialogReport070OList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogReport070OrderYmdModify.selectDialogReport070OList*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.ORDER_YMD_SEQ AS ORDER_YMD_SEQ
+             , A.ORDER_YMD AS ORDER_YMD
+          FROM TB_REPORT070_O A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.DEL_YN = 'N'
+         ORDER BY A.ORDER_YMD
+    </select>
+    
+    <insert id="DialogReport070OrderYmdModify.insertDialogReport070O" parameterClass="Map" >
+        /*DialogReport070OrderYmdModify.insertDialogReport070O*/
+        INSERT
+          INTO TB_REPORT070_O (
+               FIS_YEAR 
+             , BGT_DGR
+             , ORDER_YMD_SEQ
+             , ORDER_YMD
+             , DEL_YN 
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#fisYear#
+             , #bgtDgr#
+             , (SELECT NVL(MAX(ORDER_YMD_SEQ), 0) + 1 FROM TB_REPORT070_O Z WHERE Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr#)
+             , #orderYmd#
+             , 'N'
+             , #userId#
+             , SYSTIMESTAMP 
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <update id="DialogReport070OrderYmdModify.updateDialogReport070O" parameterClass="Map" >
+        /*DialogReport070OrderYmdModify.updateDialogReport070O*/
+        UPDATE TB_REPORT070_O
+           SET ORDER_YMD = #orderYmd#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </update>
+    
+    <update id="DialogReport070OrderYmdModify.deleteDialogReport070O" parameterClass="Map" >
+        /*DialogReport070OrderYmdModify.deleteDialogReport070O*/
+        UPDATE TB_REPORT070_O
+           SET DEL_YN = 'Y'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </update>
+    
+    <select id="DialogReport070OrderYmdModify.selectDialogReport070OKeyList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogReport070OrderYmdModify.selectDialogReport070OKeyList*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.ORDER_YMD_SEQ AS ORDER_YMD_SEQ
+          FROM TB_REPORT070_O A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+    </select>
+</sqlMap>

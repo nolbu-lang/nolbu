@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ReportWrite0C0">
+    
+    <select id="ReportWrite0C0.selectReport0C0List" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite0C0.selectReport0C0List*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , T.DGRCOMPO_NM AS DGRCOMPO_NM
+             , T.DGR_LEVEL AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , T.REPORT_CD AS REPORT_CD
+             , T.REPORT_DETL_CD AS REPORT_DETL_CD
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , T.COMPO_LEVEL AS COMPO_LEVEL
+             , T.BIZ_NM
+             , T.BIZ_SMRY_TITLE
+             , T.BIZ_SMRY_CONT
+             , T.PROM_CORP_TITLE
+             , T.PROM_CORP_CONT
+             , T.DEMAND_TITLE
+             , T.DEMAND_CONT
+             , T.EXPLAIN_CONT
+             , T.EXAM_CONT
+             , T.TOT_FRSC_CONT
+             , T.PRE_INV_FRSC_CONT
+             , T.PRE_DEF_FRSC_CONT
+             , T.PRE_FRSC_CONT
+             , T.DMN_FRSC_CONT
+             , T.FRSC_CONT
+             , T.INVEST_PLAN0
+             , T.INVEST_PLAN1
+             , T.INVEST_PLAN2
+             , T.INVEST_PLAN6
+             , T.INVEST_PLAN_CONT
+             , T.REPORT_FG
+             , T.SRCH_VAL
+             , CAST(((T.TOT_FRSC_AMT1 + T.TOT_FRSC_AMT2 + T.TOT_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.TOT_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT1
+             , CAST((T.TOT_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT2
+             , CAST((T.TOT_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT6
+             , CAST(((T.PRE_INV_FRSC_AMT1 + T.PRE_INV_FRSC_AMT2 + T.PRE_INV_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT0
+             , CAST((T.PRE_INV_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT1
+             , CAST((T.PRE_INV_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT2
+             , CAST((T.PRE_INV_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT6
+             , CAST(((T.FRSC_AMT1 + T.FRSC_AMT2 + T.FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((T.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((T.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST(((T.DMN_FRSC_AMT1 + T.DMN_FRSC_AMT2 + T.DMN_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((T.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((T.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST(((T.PRE_FRSC_AMT1 + T.PRE_FRSC_AMT2 + T.PRE_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT0
+             , CAST((T.PRE_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT1
+             , CAST((T.PRE_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT2
+             , CAST((T.PRE_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT6
+             , CAST(((T.PRE_DEF_FRSC_AMT1 + T.PRE_DEF_FRSC_AMT2 + T.PRE_DEF_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT0
+             , CAST((T.PRE_DEF_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT1
+             , CAST((T.PRE_DEF_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT2
+             , CAST((T.PRE_DEF_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT6
+             , (SELECT Z.ADD_TIMES FROM TB_BGTDGR Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND ROWNUM = 1) AS ADD_TIMES
+             , TRIM((SELECT GROUP_CONCAT(NVL(REPLACE(Z.FG_TITLE, CHR(10) , ' '), '') SEPARATOR '<![CDATA[<BR>]]>' ) AS DETL_NM
+                  FROM TB_REPORT0C0_D Z
+                 WHERE Z.REPORT_CD = T.REPORT_CD
+                   AND Z.REPORT_DETL_CD = T.REPORT_DETL_CD
+                   AND Z.FIS_YEAR = T.FIS_YEAR
+                   AND Z.BGT_DGR = T.BGT_DGR
+                   AND Z.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID
+                 ORDER BY Z.SN
+               )) AS DETL_NM
+          FROM (
+                SELECT A.FIS_YEAR || '_' || A.BGT_DGR || '_' || A.TE_BGT_COMPO_ID AS DGRCOMPO_ID
+                     , A.FIS_YEAR || '_' || A.BGT_DGR || '_' || '00000000000' AS UP_DGRCOMPO_ID
+                     , A.COMP_GROUND AS DGRCOMPO_NM
+                     , A.COMPO_LEVEL - 1 AS DGR_LEVEL
+                     , A.FIS_YEAR
+                     , A.BGT_DGR
+                     , A.TE_BGT_COMPO_ID
+                     , A.TE_BGT_COMPO_SEQ
+                     , A.COMPO_LEVEL
+                     , E.REPORT_CD
+                     , E.REPORT_DETL_CD
+                     , E.BIZ_NM
+                     , E.BIZ_SMRY_TITLE
+                     , E.BIZ_SMRY_CONT
+                     , E.PROM_CORP_TITLE
+                     , E.PROM_CORP_CONT
+                     , E.DEMAND_TITLE
+                     , E.DEMAND_CONT
+                     , E.EXPLAIN_CONT
+                     , E.EXAM_CONT
+                     , E.TOT_FRSC_CONT
+                     , E.PRE_INV_FRSC_CONT
+                     , E.PRE_DEF_FRSC_CONT
+                     , E.PRE_FRSC_CONT
+                     , E.DMN_FRSC_CONT
+                     , E.FRSC_CONT
+                     , E.INVEST_PLAN0
+                     , E.INVEST_PLAN1
+                     , E.INVEST_PLAN2
+                     , E.INVEST_PLAN6
+                     , E.INVEST_PLAN_CONT
+                     , E.REPORT_FG
+                     , E.SRCH_VAL
+                     , NVL((SELECT Z.TOT_FRSC_AMT1 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT1
+                     , NVL((SELECT Z.TOT_FRSC_AMT2 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT2
+                     , NVL((SELECT Z.TOT_FRSC_AMT3 + Z.TOT_FRSC_AMT4 + Z.TOT_FRSC_AMT5 + Z.TOT_FRSC_AMT6 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT6
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT1 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT1
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT2 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT2
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT3 + Z.PRE_INV_FRSC_AMT4 + Z.PRE_INV_FRSC_AMT5 + Z.PRE_INV_FRSC_AMT6 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2             
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT6
+                  FROM TB_DGRCOMPO A
+                     , TB_DGRDEPT B
+                     , TB_DGRBIZ C
+                     , TB_YEARFISFG D
+                     , TB_REPORT0C0 E
+                 WHERE 1 = 1
+                 <isEqual prepend="" property="userDeptYn" compareValue="Y">
+                   AND EXISTS (SELECT 1
+                                 FROM TB_USERDEPT Z
+                                WHERE Z.USER_ID = #userId#
+                                  AND Z.DEPT_CD = B.DEPT_CD
+                                  AND Z.USE_YN = 'Y'
+                                  AND ROWNUM = 1
+                              )
+                 </isEqual>
+                   AND D.FIS_YEAR = C.FIS_YEAR
+                   AND D.FIS_FG_CD = C.FIS_FG_CD
+                   AND C.FIS_YEAR = A.FIS_YEAR
+                   AND C.BGT_DGR = A.BGT_DGR
+                   AND C.DBIZ_CD = A.DBIZ_CD
+                   AND B.FIS_YEAR = A.FIS_YEAR
+                   AND B.BGT_DGR = A.BGT_DGR
+                   AND B.DEPT_CD = A.DEPT_CD
+                   AND A.FIS_YEAR = E.FIS_YEAR
+                   AND A.BGT_DGR = E.BGT_DGR
+                   AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                   AND E.REPORT_CD = #reportCd#
+                   AND E.REPORT_DETL_CD = #reportDetlCd#
+                   AND E.FIS_YEAR = #fisYear#
+                   AND E.BGT_DGR = #bgtDgr#
+                 <isNotEmpty prepend="" property="fisFgMstCd">
+                   AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="fisFgCd">
+                   AND D.FIS_FG_CD = #fisFgCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="srchVal">
+                   AND E.SRCH_VAL LIKE '%' || #srchVal# || '%'
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="officeCd">
+                   AND B.OFFICE_CD = #officeCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="deptRankFr">
+                   AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="deptRankTo">
+                   AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                 </isNotEmpty>
+                 <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+                   AND EXISTS (SELECT 1
+                                 FROM TB_DGRCOMPOFRSC Z
+                                WHERE 1 = 1
+                                  AND Z.FIS_YEAR = A.FIS_YEAR
+                                  AND Z.BGT_DGR = A.BGT_DGR
+                                  AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                  AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0                                                      
+                                <isNotEmpty prepend="" property="frscFgCdFr">
+                                  AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                                </isNotEmpty>                                                      
+                                <isNotEmpty prepend="" property="frscFgCdTo">
+                                  AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                                </isNotEmpty>
+                              )
+                 </isEqual>
+               ) T
+    </select>
+    
+    <select id="ReportWrite0C0.selectReport0C0HwpList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite0C0.selectReport0C0HwpList*/
+        SELECT T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , T.REPORT_CD AS REPORT_CD
+             , T.REPORT_DETL_CD AS REPORT_DETL_CD
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , T.BIZ_NM
+             , T.BIZ_SMRY_TITLE
+             , T.BIZ_SMRY_CONT
+             , T.PROM_CORP_TITLE
+             , T.PROM_CORP_CONT
+             , T.DEMAND_TITLE
+             , T.DEMAND_CONT
+             , T.EXPLAIN_CONT
+             , T.EXAM_CONT
+             , T.TOT_FRSC_CONT
+             , T.PRE_INV_FRSC_CONT
+             , T.PRE_DEF_FRSC_CONT
+             , T.PRE_FRSC_CONT
+             , T.DMN_FRSC_CONT
+             , T.FRSC_CONT
+             , CAST((((T.TOT_FRSC_AMT1 + T.TOT_FRSC_AMT2 + T.TOT_FRSC_AMT6) 
+               - (T.PRE_INV_FRSC_AMT1 + T.PRE_INV_FRSC_AMT2 + T.PRE_INV_FRSC_AMT6)
+               - DECODE(T.BGT_DGR, 1, (T.PRE_FRSC_AMT1 + T.PRE_FRSC_AMT2 + T.PRE_FRSC_AMT6), (T.PRE_DEF_FRSC_AMT1 + T.PRE_DEF_FRSC_AMT2 + T.PRE_DEF_FRSC_AMT6))
+               - (T.FRSC_AMT1 + T.FRSC_AMT2 + T.FRSC_AMT6))
+               /DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS INVEST_PLAN0
+             , CAST(((T.TOT_FRSC_AMT1 - T.PRE_INV_FRSC_AMT1 - DECODE(T.BGT_DGR, 1, T.PRE_FRSC_AMT1, T.PRE_DEF_FRSC_AMT1) - T.FRSC_AMT1)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS INVEST_PLAN1
+             , CAST(((T.TOT_FRSC_AMT2 - T.PRE_INV_FRSC_AMT2 - DECODE(T.BGT_DGR, 1, T.PRE_FRSC_AMT2, T.PRE_DEF_FRSC_AMT2) - T.FRSC_AMT2)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS INVEST_PLAN2
+             , CAST(((T.TOT_FRSC_AMT6 - T.PRE_INV_FRSC_AMT6 - DECODE(T.BGT_DGR, 1, T.PRE_FRSC_AMT6, T.PRE_DEF_FRSC_AMT6) - T.FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS INVEST_PLAN6
+             , T.INVEST_PLAN_CONT
+             , T.REPORT_FG
+             , T.SRCH_VAL
+             , CAST(((T.TOT_FRSC_AMT1 + T.TOT_FRSC_AMT2 + T.TOT_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.TOT_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT1
+             , CAST((T.TOT_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT2
+             , CAST((T.TOT_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT6
+             , CAST(((T.PRE_INV_FRSC_AMT1 + T.PRE_INV_FRSC_AMT2 + T.PRE_INV_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT0
+             , CAST((T.PRE_INV_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT1
+             , CAST((T.PRE_INV_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT2
+             , CAST((T.PRE_INV_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_INV_FRSC_AMT6
+             , CAST(((T.FRSC_AMT1 + T.FRSC_AMT2 + T.FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((T.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((T.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST(((T.DMN_FRSC_AMT1 + T.DMN_FRSC_AMT2 + T.DMN_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((T.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((T.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST(((T.PRE_FRSC_AMT1 + T.PRE_FRSC_AMT2 + T.PRE_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT0
+             , CAST((T.PRE_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT1
+             , CAST((T.PRE_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT2
+             , CAST((T.PRE_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT6
+             , CAST(((T.PRE_DEF_FRSC_AMT1 + T.PRE_DEF_FRSC_AMT2 + T.PRE_DEF_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT0
+             , CAST((T.PRE_DEF_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT1
+             , CAST((T.PRE_DEF_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT2
+             , CAST((T.PRE_DEF_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT6
+             , (SELECT Z.ADD_TIMES FROM TB_BGTDGR Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND ROWNUM = 1) AS ADD_TIMES
+             , TRIM((SELECT GROUP_CONCAT(NVL(Z.FG_TITLE, '') || '^^' || NVL(Z.PRE_CONT, '') || '^^' || NVL(Z.DEMAND_CONT, '') || '^^' || NVL(Z.EXAM_CONT, '') || '^^' || NVL(Z.REMARK, '')
+                            SEPARATOR '||' ) AS DETL_NM
+                  FROM TB_REPORT0C0_D Z
+                 WHERE Z.REPORT_CD = T.REPORT_CD
+                   AND Z.REPORT_DETL_CD = T.REPORT_DETL_CD
+                   AND Z.FIS_YEAR = T.FIS_YEAR
+                   AND Z.BGT_DGR = T.BGT_DGR
+                   AND Z.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID
+                 ORDER BY Z.SN
+               )) AS DETL_NM
+          FROM (
+                SELECT A.FIS_YEAR
+                     , A.BGT_DGR
+                     , A.TE_BGT_COMPO_ID
+                     , A.TE_BGT_COMPO_SEQ
+                     , E.REPORT_CD
+                     , E.REPORT_DETL_CD
+                     , E.BIZ_NM
+                     , E.BIZ_SMRY_TITLE
+                     , E.BIZ_SMRY_CONT
+                     , E.PROM_CORP_TITLE
+                     , E.PROM_CORP_CONT
+                     , E.DEMAND_TITLE
+                     , E.DEMAND_CONT
+                     , E.EXPLAIN_CONT
+                     , E.EXAM_CONT
+                     , E.TOT_FRSC_CONT
+                     , E.PRE_INV_FRSC_CONT
+                     , E.PRE_DEF_FRSC_CONT
+                     , E.PRE_FRSC_CONT
+                     , E.DMN_FRSC_CONT
+                     , E.FRSC_CONT
+                     , E.INVEST_PLAN0
+                     , E.INVEST_PLAN1
+                     , E.INVEST_PLAN2
+                     , E.INVEST_PLAN6
+                     , E.INVEST_PLAN_CONT
+                     , E.REPORT_FG
+                     , E.SRCH_VAL
+                     , NVL((SELECT Z.TOT_FRSC_AMT1 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT1
+                     , NVL((SELECT Z.TOT_FRSC_AMT2 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT2
+                     , NVL((SELECT Z.TOT_FRSC_AMT3 + Z.TOT_FRSC_AMT4 + Z.TOT_FRSC_AMT5 + Z.TOT_FRSC_AMT6 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS TOT_FRSC_AMT6
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT1 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT1
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT2 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT2
+                     , NVL((SELECT Z.PRE_INV_FRSC_AMT3 + Z.PRE_INV_FRSC_AMT4 + Z.PRE_INV_FRSC_AMT5 + Z.PRE_INV_FRSC_AMT6 FROM TB_REPORT020 Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ROWNUM = 1), 0) AS PRE_INV_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2             
+                     , (SELECT NVL(SUM(BB.ADJ_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.DMN_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.PRE_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_FRSC_AMT6
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('160', '180', '190') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT1
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('110', '120', '130') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT2
+                     , (SELECT NVL(SUM(BB.PRE_DEF_FRSC_AMT), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.STAND_FRSC_CD IN ('140', '150', '170', '200', '210') AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS PRE_DEF_FRSC_AMT6
+                  FROM TB_DGRCOMPO A
+                     , TB_DGRDEPT B
+                     , TB_DGRBIZ C
+                     , TB_YEARFISFG D
+                     , TB_REPORT0C0 E
+                 WHERE 1 = 1
+                 <isEqual prepend="" property="userDeptYn" compareValue="Y">
+                   AND EXISTS (SELECT 1
+                                 FROM TB_USERDEPT Z
+                                WHERE Z.USER_ID = #userId#
+                                  AND Z.DEPT_CD = B.DEPT_CD
+                                  AND Z.USE_YN = 'Y'
+                                  AND ROWNUM = 1
+                              )
+                 </isEqual>
+                   AND D.FIS_YEAR = C.FIS_YEAR
+                   AND D.FIS_FG_CD = C.FIS_FG_CD
+                   AND C.FIS_YEAR = A.FIS_YEAR
+                   AND C.BGT_DGR = A.BGT_DGR
+                   AND C.DBIZ_CD = A.DBIZ_CD
+                   AND B.FIS_YEAR = A.FIS_YEAR
+                   AND B.BGT_DGR = A.BGT_DGR
+                   AND B.DEPT_CD = A.DEPT_CD
+                   AND A.FIS_YEAR = E.FIS_YEAR
+                   AND A.BGT_DGR = E.BGT_DGR
+                   AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                   AND E.REPORT_CD = #reportCd#
+                   AND E.REPORT_DETL_CD = #reportDetlCd#
+                   AND E.FIS_YEAR = #fisYear#
+                   AND E.BGT_DGR = #bgtDgr#
+                 <isNotEmpty prepend="" property="fisFgMstCd">
+                   AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="fisFgCd">
+                   AND D.FIS_FG_CD = #fisFgCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="srchVal">
+                   AND E.SRCH_VAL LIKE '%' || #srchVal# || '%'
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="officeCd">
+                   AND B.OFFICE_CD = #officeCd#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="deptRankFr">
+                   AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                 </isNotEmpty>
+                 <isNotEmpty prepend="" property="deptRankTo">
+                   AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                 </isNotEmpty>
+                 <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+                   AND EXISTS (SELECT 1
+                                 FROM TB_DGRCOMPOFRSC Z
+                                WHERE 1 = 1
+                                  AND Z.FIS_YEAR = A.FIS_YEAR
+                                  AND Z.BGT_DGR = A.BGT_DGR
+                                  AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                  AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0                                                      
+                                <isNotEmpty prepend="" property="frscFgCdFr">
+                                  AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                                </isNotEmpty>                                                      
+                                <isNotEmpty prepend="" property="frscFgCdTo">
+                                  AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                                </isNotEmpty>
+                              )
+                 </isEqual>
+               ) T
+    </select>
+    
+    <update id="ReportWrite0C0.updateReport0C0" parameterClass="Map" >
+        /*ReportWrite0C0.updateReport0C0*/
+        UPDATE TB_REPORT0C0
+           SET BIZ_NM = #bizNm#
+             , BIZ_SMRY_TITLE = #bizSmryTitle#
+             , BIZ_SMRY_CONT = #bizSmryCont#
+             , PROM_CORP_TITLE = #promCorpTitle#
+             , PROM_CORP_CONT = #promCorpCont#
+             , DEMAND_TITLE = #demandTitle#
+             , DEMAND_CONT = #demandCont#
+             , EXPLAIN_CONT = #explainCont#
+             , EXAM_CONT = #examCont#
+             , TOT_FRSC_CONT = #totFrscCont#
+             , PRE_INV_FRSC_CONT = #preInvFrscCont#
+             , PRE_DEF_FRSC_CONT = #preDefFrscCont#
+             , PRE_FRSC_CONT = #preFrscCont#
+             , DMN_FRSC_CONT = #dmnFrscCont#
+             , FRSC_CONT = #frscCont#
+             , INVEST_PLAN0 = #investPlan0#
+             , INVEST_PLAN1 = #investPlan1#
+             , INVEST_PLAN2 = #investPlan2#
+             , INVEST_PLAN6 = #investPlan6#
+             , INVEST_PLAN_CONT = #investPlanCont#
+             , REPORT_FG = #reportFg#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <insert id="ReportWrite0C0.insertReport0C0" parameterClass="Map" >
+        /*ReportWrite0C0.insertReport0C0*/
+        INSERT
+          INTO TB_REPORT0C0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , BIZ_NM
+             , BIZ_SMRY_TITLE
+             , BIZ_SMRY_CONT
+             , PROM_CORP_TITLE
+             , PROM_CORP_CONT
+             , DEMAND_TITLE
+             , DEMAND_CONT
+             , EXPLAIN_CONT
+             , EXAM_CONT
+             , TOT_FRSC_CONT
+             , PRE_INV_FRSC_CONT
+             , PRE_DEF_FRSC_CONT
+             , PRE_FRSC_CONT
+             , DMN_FRSC_CONT
+             , FRSC_CONT
+             , INVEST_PLAN0
+             , INVEST_PLAN1
+             , INVEST_PLAN2
+             , INVEST_PLAN6
+             , INVEST_PLAN_CONT
+             , REPORT_FG
+             , SRCH_VAL
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #reportCd#
+             , #reportDetlCd#
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , A.COMP_GROUND
+             , NVL(#bizSmryTitle#, '사업개요')
+             , ''
+             , NVL(#promCorpTitle#, '추진상황')
+             , ''
+             , NVL(#demandTitle#, '예산요구 및 조정(안)')
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , ''
+             , '020'
+             , ''
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+             , TB_REPORT B
+         WHERE 1 = 1
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (SELECT 1
+                         FROM TB_USERDEPT Z
+                        WHERE Z.USER_ID = #userId#
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.USE_YN = 'Y'
+                          AND ROWNUM = 1
+                      )
+         </isEqual>
+           AND B.FIS_YEAR = A.FIS_YEAR
+           AND B.BGT_DGR = A.BGT_DGR
+           AND B.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+           AND B.REPORT_CD IN ('020', '0A0')
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.COMPO_LEVEL = 1
+           AND NOT EXISTS (SELECT 1 
+                             FROM TB_REPORT0C0 Z 
+                            WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                              AND Z.REPORT_CD = #reportCd#
+                              AND Z.REPORT_DETL_CD = #reportDetlCd#
+                          )
+    </insert>
+    
+    <insert id="ReportWrite0C0.insertReport" parameterClass="Map" >
+        /*ReportWrite0C0.insertReport*/
+        INSERT
+          INTO TB_REPORT(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #reportCd#
+             , #reportDetlCd#
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+             , TB_REPORT B
+         WHERE 1 = 1
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (SELECT 1
+                         FROM TB_USERDEPT Z
+                        WHERE Z.USER_ID = #userId#
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.USE_YN = 'Y'
+                          AND ROWNUM = 1
+                      )
+         </isEqual>
+           AND B.FIS_YEAR = A.FIS_YEAR
+           AND B.BGT_DGR = A.BGT_DGR
+           AND B.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+           AND B.REPORT_CD IN ('020', '0A0')
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.COMPO_LEVEL = 1
+           AND NOT EXISTS (SELECT 1 
+                             FROM TB_REPORT Z 
+                            WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                              AND Z.REPORT_CD = #reportCd#
+                              AND Z.REPORT_DETL_CD = #reportDetlCd#
+                          )
+    </insert>
+    
+</sqlMap>

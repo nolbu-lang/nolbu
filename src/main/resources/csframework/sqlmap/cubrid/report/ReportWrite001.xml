@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ReportWrite001">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="ReportWrite001.selectReport001SheetList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite001.selectReport001SheetList*/
+        SELECT ROWNUM AS ROW_NUM
+             , CASE WHEN T.DGR_LEVEL = 0 THEN 'tot'
+                    WHEN T.DGR_LEVEL = 1 THEN 'office0'
+                    ELSE 'dept'
+               END AS PRE_STYLE_NM
+             , T.*
+          FROM (
+                SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.SHEET_CD AS SHEET_CD
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.DEPT_CNT AS DEPT_CNT
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , A.COL0 AS COL0
+                     , A.COL1 AS COL1
+                     , CAST((NVL(A.COL2, 0)/1000) AS NUMERIC(19,0)) AS COL2
+                     , CAST(((NVL(A.COL5, 0) + NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0) + NVL(A.COL13, 0) + NVL(A.COL14, 0) + NVL(A.COL15, 0) + NVL(A.COL16, 0) + NVL(A.COL17, 0) + NVL(A.COL18, 0) + NVL(A.COL19, 0))/1000) AS NUMERIC(19,0)) AS COL3
+                     , CAST(((NVL(A.COL5, 0) + NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0) + NVL(A.COL13, 0) + NVL(A.COL14, 0) + NVL(A.COL15, 0))/1000) AS NUMERIC(19,0)) AS COL4
+                     , CAST((NVL(A.COL5, 0)/1000) AS NUMERIC(19,0)) AS COL5
+                     , CAST(((NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0))/1000) AS NUMERIC(19,0)) AS COL6
+                     , CAST((NVL(A.COL7, 0)/1000) AS NUMERIC(19,0)) AS COL7
+                     , CAST(((NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0))/1000) AS NUMERIC(19,0)) AS COL8
+                     , CAST((NVL(A.COL9, 0)/1000) AS NUMERIC(19,0)) AS COL9
+                     , CAST((NVL(A.COL10, 0)/1000) AS NUMERIC(19,0)) AS COL10
+                     , CAST((NVL(A.COL11, 0)/1000) AS NUMERIC(19,0)) AS COL11
+                     , CAST((NVL(A.COL12, 0)/1000) AS NUMERIC(19,0)) AS COL12
+                     , CAST((NVL(A.COL13, 0)/1000) AS NUMERIC(19,0)) AS COL13
+                     , CAST((NVL(A.COL14, 0)/1000) AS NUMERIC(19,0)) AS COL14
+                     , CAST((NVL(A.COL15, 0)/1000) AS NUMERIC(19,0)) AS COL15
+                     , CAST((NVL(A.COL16, 0)/1000) AS NUMERIC(19,0)) AS COL16
+                     , CAST((NVL(A.COL17, 0)/1000) AS NUMERIC(19,0)) AS COL17
+                     , CAST((NVL(A.COL18, 0)/1000) AS NUMERIC(19,0)) AS COL18
+                     , CAST((NVL(A.COL19, 0)/1000) AS NUMERIC(19,0)) AS COL19
+                  FROM (
+                        SELECT DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '0000' || '_' || '0000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || '0000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || B.DEPT_CD) AS DGRCOMPO_ID
+                             , DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || '000' || '_' || '0000' || '_' || '0000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '0000' || '_' || '0000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || '0000000') AS UP_DGRCOMPO_ID
+                             , B.FIS_YEAR AS FIS_YEAR
+                             , B.BGT_DGR AS BGT_DGR
+                             , B.SHEET_CD AS SHEET_CD
+                             , DECODE(H.CT, 1, '0000', B.OFFICE_CD) AS OFFICE_CD
+                             , DECODE(H.CT, 1, '0000000', 2, '0000000', B.DEPT_CD) AS DEPT_CD
+                             , H.CT - 1 AS DGR_LEVEL
+                             , COUNT(B.DEPT_CD) AS DEPT_CNT
+                             , DECODE(H.CT, 1, '합         계', 2, B.OFFICE_NM, '') AS COL0
+                             , DECODE(H.CT, 3, B.DEPT_NM, '') AS COL1
+                             , SUM(S.COL2) AS COL2, SUM(S.COL3) AS COL3, SUM(S.COL4) AS COL4, SUM(S.COL5) AS COL5, SUM(S.COL6) AS COL6, SUM(S.COL7) AS COL7, SUM(S.COL8) AS COL8, SUM(S.COL9) AS COL9, SUM(S.COL10) AS COL10
+                             , SUM(S.COL11) AS COL11, SUM(S.COL12) AS COL12, SUM(S.COL13) AS COL13, SUM(S.COL14) AS COL14, SUM(S.COL15) AS COL15, SUM(S.COL16) AS COL16, SUM(S.COL17) AS COL17, SUM(S.COL18) AS COL18, SUM(S.COL19) AS COL19
+                          FROM (SELECT BB.FIS_YEAR AS FIS_YEAR
+                                     , BB.BGT_DGR AS BGT_DGR
+                                     , BB.OFFICE_CD AS OFFICE_CD
+                                     , BB.DEPT_CD AS DEPT_CD
+                                     , DECODE(H.CT, 1, 'T10', 2, 'T20', 'T30') AS SHEET_CD
+                                     , MAX(BB.OFFICE_NM) AS OFFICE_NM
+                                     , MAX(BB.DEPT_NM) AS DEPT_NM
+                                  FROM TB_DGRDEPT BB
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                                 WHERE 1 = 1
+                                   AND BB.DEPT_FG != '40'
+                                   AND BB.FIS_YEAR = #fisYear#
+                                   AND BB.BGT_DGR = #bgtDgr#
+                                 <isNotEmpty prepend="" property="officeCd">
+                                   AND BB.OFFICE_CD = #officeCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankFr">
+                                   AND BB.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankTo">
+                                   AND BB.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                 </isNotEmpty>
+                                 GROUP BY BB.FIS_YEAR
+                                        , BB.BGT_DGR
+                                        , BB.OFFICE_CD
+                                        , BB.DEPT_CD
+                                        , DECODE(H.CT, 1, 'T10', 2, 'T20', 'T30')
+                               ) B
+                             , (
+                                SELECT SS.FIS_YEAR AS FIS_YEAR
+                                     , SS.BGT_DGR AS BGT_DGR
+                                     , SS.DEPT_CD AS DEPT_CD
+                                     , SS.SHEET_CD AS SHEET_CD
+                                     , SUM(SS.COL2) AS COL2, SUM(SS.COL3) AS COL3, SUM(SS.COL4) AS COL4, SUM(SS.COL5) AS COL5, SUM(SS.COL6) AS COL6, SUM(SS.COL7) AS COL7, SUM(SS.COL8) AS COL8, SUM(SS.COL9) AS COL9, SUM(SS.COL10) AS COL10
+                                     , SUM(SS.COL11) AS COL11, SUM(SS.COL12) AS COL12, SUM(SS.COL13) AS COL13, SUM(SS.COL14) AS COL14, SUM(SS.COL15) AS COL15, SUM(SS.COL16) AS COL16, SUM(SS.COL17) AS COL17, SUM(SS.COL18) AS COL18, SUM(SS.COL19) AS COL19
+                                  FROM (
+                                        SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , A.DEPT_CD AS DEPT_CD
+                                             , E.SHEET_CD AS SHEET_CD
+                                             , 0 AS COL2
+                                             , 0 AS COL3
+                                             , 0 AS COL4
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '1', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL5
+                                             , 0 AS COL6
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '2', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL7
+                                             , 0 AS COL8
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '3', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL9
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '4', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL10
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '5', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL11
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '6', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL12
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '7', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL13
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '8', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL14
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '9', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL15
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'A', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL16
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'B', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL17
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'C', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL18
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'D', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL19
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_SHEET E
+                                             , TB_DGRCOMPOFRSC F
+                                             , TB_YEARFRSC G
+                                         WHERE 1 = 1
+                                           AND G.FIS_YEAR = F.FIS_YEAR
+                                           AND G.FRSC_FG_CD = F.FRSC_FG_CD
+                                           AND G.STAND_FRSC_CD IN ('160', '180')
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND F.FIS_YEAR = A.FIS_YEAR
+                                           AND F.BGT_DGR = A.BGT_DGR
+                                           AND F.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND A.COMPO_LEVEL = '1'
+                                           AND E.SHEET_CD IN ('T10', 'T20', 'T30')
+                                           AND A.FIS_YEAR = #fisYear#
+                                           AND A.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                       ) SS
+                                 GROUP BY SS.FIS_YEAR
+                                        , SS.BGT_DGR
+                                        , SS.DEPT_CD 
+                                        , SS.SHEET_CD
+                               ) S
+                             , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                         WHERE 1 = 1
+                           AND B.FIS_YEAR = S.FIS_YEAR(+)
+                           AND B.BGT_DGR = S.BGT_DGR(+)
+                           AND B.DEPT_CD = S.DEPT_CD(+)
+                           AND B.SHEET_CD = S.SHEET_CD(+)
+                           AND DECODE(H.CT, 1, 'Y', 2, 'Y', CASE WHEN (SELECT COUNT(DISTINCT Z.DEPT_CD) FROM TB_DGRDEPT Z WHERE Z.OFFICE_CD = B.OFFICE_CD) > 1 THEN 'Y' ELSE 'N' END) = 'Y'
+                         GROUP BY DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '0000' || '_' || '0000000'
+                                             , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || '0000000'
+                                             , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || B.DEPT_CD)
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.SHEET_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+
+    </select>
+    
+    <select id="ReportWrite001.selectReportTotSheetList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite001.selectReportTotSheetList*/
+        SELECT ROWNUM AS ROW_NUM
+             , CASE WHEN T.DGR_LEVEL = 0 THEN 'tot'
+                    WHEN T.DGR_LEVEL = 1 THEN 'office0'
+                    ELSE 'dept'
+               END AS PRE_STYLE_NM
+             , T.*
+          FROM (
+                SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.SHEET_CD AS SHEET_CD
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.DEPT_CNT AS DEPT_CNT
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , A.COL0 AS COL0
+                     , A.COL1 AS COL1
+                     , CAST((NVL(A.COL2, 0)/1000) AS NUMERIC(19,0)) AS COL2
+                     , CAST(((NVL(A.COL5, 0) + NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0) + NVL(A.COL13, 0) + NVL(A.COL14, 0) + NVL(A.COL15, 0) + NVL(A.COL16, 0) + NVL(A.COL17, 0) + NVL(A.COL18, 0) + NVL(A.COL19, 0))/1000) AS NUMERIC(19,0)) AS COL3
+                     , CAST(((NVL(A.COL5, 0) + NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0) + NVL(A.COL13, 0) + NVL(A.COL14, 0) + NVL(A.COL15, 0))/1000) AS NUMERIC(19,0)) AS COL4
+                     , CAST((NVL(A.COL5, 0)/1000) AS NUMERIC(19,0)) AS COL5
+                     , CAST(((NVL(A.COL7, 0) + NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0) + NVL(A.COL12, 0))/1000) AS NUMERIC(19,0)) AS COL6
+                     , CAST((NVL(A.COL7, 0)/1000) AS NUMERIC(19,0)) AS COL7
+                     , CAST(((NVL(A.COL9, 0) + NVL(A.COL10, 0) + NVL(A.COL11, 0))/1000) AS NUMERIC(19,0)) AS COL8
+                     , CAST((NVL(A.COL9, 0)/1000) AS NUMERIC(19,0)) AS COL9
+                     , CAST((NVL(A.COL10, 0)/1000) AS NUMERIC(19,0)) AS COL10
+                     , CAST((NVL(A.COL11, 0)/1000) AS NUMERIC(19,0)) AS COL11
+                     , CAST((NVL(A.COL12, 0)/1000) AS NUMERIC(19,0)) AS COL12
+                     , CAST((NVL(A.COL13, 0)/1000) AS NUMERIC(19,0)) AS COL13
+                     , CAST((NVL(A.COL14, 0)/1000) AS NUMERIC(19,0)) AS COL14
+                     , CAST((NVL(A.COL15, 0)/1000) AS NUMERIC(19,0)) AS COL15
+                     , CAST((NVL(A.COL16, 0)/1000) AS NUMERIC(19,0)) AS COL16
+                     , CAST((NVL(A.COL17, 0)/1000) AS NUMERIC(19,0)) AS COL17
+                     , CAST((NVL(A.COL18, 0)/1000) AS NUMERIC(19,0)) AS COL18
+                     , CAST((NVL(A.COL19, 0)/1000) AS NUMERIC(19,0)) AS COL19
+                  FROM (
+                        SELECT DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '0000' || '_' || '0000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || '0000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || B.DEPT_CD) AS DGRCOMPO_ID
+                             , DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || '000' || '_' || '0000' || '_' || '0000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '0000' || '_' || '0000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.OFFICE_CD || '_' || '0000000') AS UP_DGRCOMPO_ID
+                             , B.FIS_YEAR AS FIS_YEAR
+                             , B.BGT_DGR AS BGT_DGR
+                             , B.SHEET_CD AS SHEET_CD
+                             , DECODE(H.CT, 1, '0000', B.OFFICE_CD) AS OFFICE_CD
+                             , DECODE(H.CT, 1, '0000000', 2, '0000000', B.DEPT_CD) AS DEPT_CD
+                             , H.CT - 1 AS DGR_LEVEL
+                             , COUNT(B.DEPT_CD) AS DEPT_CNT
+                             , DECODE(H.CT, 1, '합         계', 2, B.OFFICE_NM, '') AS COL0
+                             , DECODE(H.CT, 3, B.DEPT_NM, '') AS COL1
+                             , SUM(S.COL2) AS COL2, SUM(S.COL3) AS COL3, SUM(S.COL4) AS COL4, SUM(S.COL5) AS COL5, SUM(S.COL6) AS COL6, SUM(S.COL7) AS COL7, SUM(S.COL8) AS COL8, SUM(S.COL9) AS COL9, SUM(S.COL10) AS COL10
+                             , SUM(S.COL11) AS COL11, SUM(S.COL12) AS COL12, SUM(S.COL13) AS COL13, SUM(S.COL14) AS COL14, SUM(S.COL15) AS COL15, SUM(S.COL16) AS COL16, SUM(S.COL17) AS COL17, SUM(S.COL18) AS COL18, SUM(S.COL19) AS COL19
+                          FROM (SELECT BB.FIS_YEAR AS FIS_YEAR
+                                     , BB.BGT_DGR AS BGT_DGR
+                                     , BB.OFFICE_CD AS OFFICE_CD
+                                     , BB.DEPT_CD AS DEPT_CD
+                                     , 'T00' AS SHEET_CD
+                                     , MAX(BB.OFFICE_NM) AS OFFICE_NM
+                                     , MAX(BB.DEPT_NM) AS DEPT_NM
+                                  FROM TB_DGRDEPT BB
+                                 WHERE 1 = 1
+                                   AND BB.DEPT_FG != '40'
+                                   AND BB.FIS_YEAR = #fisYear#
+                                   AND BB.BGT_DGR = #bgtDgr#
+                                 <isNotEmpty prepend="" property="officeCd">
+                                   AND BB.OFFICE_CD = #officeCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankFr">
+                                   AND BB.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankTo">
+                                   AND BB.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                 </isNotEmpty>
+                                 GROUP BY BB.FIS_YEAR
+                                        , BB.BGT_DGR
+                                        , BB.OFFICE_CD
+                                        , BB.DEPT_CD
+                               ) B
+                             , (
+                                SELECT SS.FIS_YEAR AS FIS_YEAR
+                                     , SS.BGT_DGR AS BGT_DGR
+                                     , SS.DEPT_CD AS DEPT_CD
+                                     , SS.SHEET_CD AS SHEET_CD
+                                     , SUM(SS.COL2) AS COL2, SUM(SS.COL3) AS COL3, SUM(SS.COL4) AS COL4, SUM(SS.COL5) AS COL5, SUM(SS.COL6) AS COL6, SUM(SS.COL7) AS COL7, SUM(SS.COL8) AS COL8, SUM(SS.COL9) AS COL9, SUM(SS.COL10) AS COL10
+                                     , SUM(SS.COL11) AS COL11, SUM(SS.COL12) AS COL12, SUM(SS.COL13) AS COL13, SUM(SS.COL14) AS COL14, SUM(SS.COL15) AS COL15, SUM(SS.COL16) AS COL16, SUM(SS.COL17) AS COL17, SUM(SS.COL18) AS COL18, SUM(SS.COL19) AS COL19
+                                  FROM (
+                                        SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , A.DEPT_CD AS DEPT_CD
+                                             , 'T00' AS SHEET_CD
+                                             , 0 AS COL2
+                                             , 0 AS COL3
+                                             , 0 AS COL4
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '1', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL5
+                                             , 0 AS COL6
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '2', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL7
+                                             , 0 AS COL8
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '3', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL9
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '4', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL10
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '5', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL11
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '6', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL12
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '7', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL13
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '8', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL14
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), '9', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL15
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'A', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL16
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'B', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL17
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'C', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL18
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'D', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL19
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_SHEET E
+                                             , TB_DGRCOMPOFRSC F
+                                             , TB_YEARFRSC G
+                                         WHERE 1 = 1
+                                           AND G.FIS_YEAR = F.FIS_YEAR
+                                           AND G.FRSC_FG_CD = F.FRSC_FG_CD
+                                           AND G.STAND_FRSC_CD IN ('160', '180')
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND F.FIS_YEAR = A.FIS_YEAR
+                                           AND F.BGT_DGR = A.BGT_DGR
+                                           AND F.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND A.COMPO_LEVEL = '1'
+                                           AND E.SHEET_CD IN ('T10', 'T20', 'T30')
+                                           AND A.FIS_YEAR = #fisYear#
+                                           AND A.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                       ) SS
+                                 GROUP BY SS.FIS_YEAR
+                                        , SS.BGT_DGR
+                                        , SS.DEPT_CD 
+                                        , SS.SHEET_CD
+                               ) S
+                             , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                         WHERE 1 = 1
+                           AND B.FIS_YEAR = S.FIS_YEAR(+)
+                           AND B.BGT_DGR = S.BGT_DGR(+)
+                           AND B.DEPT_CD = S.DEPT_CD(+)
+                           AND B.SHEET_CD = S.SHEET_CD(+)
+                           AND DECODE(H.CT, 1, 'Y', 2, 'Y', CASE WHEN (SELECT COUNT(DISTINCT Z.DEPT_CD) FROM TB_DGRDEPT Z WHERE Z.OFFICE_CD = B.OFFICE_CD) > 1 THEN 'Y' ELSE 'N' END) = 'Y'
+                         GROUP BY DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || '0000' || '_' || '0000000'
+                                             , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.OFFICE_CD || '_' || '0000000'
+                                             , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.OFFICE_CD || '_' || B.DEPT_CD)
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.SHEET_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+
+    </select>
+    
+    <select id="ReportWrite001.selectReportTotSheetList2" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite001.selectReportTotSheetList2*/
+        SELECT ROWNUM AS ROW_NUM
+             , CASE WHEN T.DGR_LEVEL = 0 THEN 'tot'
+                    WHEN T.DGR_LEVEL = 1 THEN 'deptFg'
+                    ELSE 'office'
+               END AS PRE_STYLE_NM
+             , CASE WHEN T.DGR_LEVEL = 0 THEN '합         계'
+                    WHEN T.DGR_LEVEL = 1 AND OFFICE_CNT > 1 THEN T.DEPT_FG_NM
+                    ELSE DECODE(T.DEPT_FG, '21', T.DEPT_NM, T.OFFICE_NM)
+               END AS COL0
+             , T.*
+          FROM (
+                SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.SHEET_CD AS SHEET_CD
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DEPT_FG AS DEPT_FG
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.OFFICE_CNT AS OFFICE_CNT
+                     , DECODE(A.DEPT_FG, '00', 0, '20', 10, '10', 20, '11', 30, '21', 40, 90) AS DEPT_FG_RANK
+                     , NVL((SELECT Z.DEPT_FG_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_FG = A.DEPT_FG AND ROWNUM = 1), '') AS DEPT_FG_NM
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), '') AS OFFICE_NM
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS DEPT_NM
+                     , A.COL1 AS COL1
+                     , CAST((NVL(A.COL2, 0)/1000) AS NUMERIC(19,0)) AS COL2
+                     , CAST((NVL(A.COL3, 0)/1000) AS NUMERIC(19,0)) AS COL3
+                     , CAST((NVL(A.COL4, 0)/1000) AS NUMERIC(19,0)) AS COL4
+                     , CAST((NVL(A.COL5, 0)/1000) AS NUMERIC(19,0)) AS COL5
+                     , CAST((NVL(A.COL6, 0)/1000) AS NUMERIC(19,0)) AS COL6
+                     , CAST((NVL(A.COL7, 0)/1000) AS NUMERIC(19,0)) AS COL7
+                     , CAST((NVL(A.COL8, 0)/1000) AS NUMERIC(19,0)) AS COL8
+                     , CAST((NVL(A.COL9, 0)/1000) AS NUMERIC(19,0)) AS COL9
+                     , CAST((NVL(A.COL10, 0)/1000) AS NUMERIC(19,0)) AS COL10
+                     , CAST((NVL(A.COL11, 0)/1000) AS NUMERIC(19,0)) AS COL11
+                     , CAST((NVL(A.COL12, 0)/1000) AS NUMERIC(19,0)) AS COL12
+                     , CAST((NVL(A.COL13, 0)/1000) AS NUMERIC(19,0)) AS COL13
+                     , CAST((NVL(A.COL14, 0)/1000) AS NUMERIC(19,0)) AS COL14
+                  FROM (
+                        SELECT DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '00' || '_' || '00000000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.DEPT_FG || '_' || '00000000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || B.DEPT_FG || '_' || DECODE(B.DEPT_FG, '21', B.OFFICE_CD || B.DEPT_CD, B.OFFICE_CD || '0000000')) AS DGRCOMPO_ID
+                             , DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || '000' || '_' || '00' || '_' || '00000000000'
+                                          , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || '00' || '_' || '00000000000'
+                                          , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.SHEET_CD || '_' || DECODE(B.CNT_YN, 'N', '00', B.DEPT_FG) || '_' || '00000000000') AS UP_DGRCOMPO_ID
+                             , B.FIS_YEAR AS FIS_YEAR
+                             , B.BGT_DGR AS BGT_DGR
+                             , B.SHEET_CD AS SHEET_CD
+                             , DECODE(H.CT, 1, '00', B.DEPT_FG) AS DEPT_FG
+                             , DECODE(H.CT, 1, '0000', 2, '0000', B.OFFICE_CD) AS OFFICE_CD
+                             , DECODE(H.CT, 1, '0000000', 2, '0000000', DECODE(B.DEPT_FG, '21', B.DEPT_CD, '0000000')) AS DEPT_CD
+                             , H.CT - 1 AS DGR_LEVEL
+                             , COUNT(B.OFFICE_CD) AS OFFICE_CNT
+                             , '' AS COL1
+                             , SUM(S.COL2) AS COL2, SUM(S.COL3) AS COL3, SUM(S.COL4) AS COL4, SUM(S.COL5) AS COL5, SUM(S.COL6) AS COL6, SUM(S.COL7) AS COL7, SUM(S.COL8) AS COL8, SUM(S.COL9) AS COL9, SUM(S.COL10) AS COL10
+                             , SUM(S.COL11) AS COL11, SUM(S.COL12) AS COL12, SUM(S.COL13) AS COL13, SUM(S.COL14) AS COL14
+                          FROM (SELECT BB.FIS_YEAR AS FIS_YEAR
+                                     , BB.BGT_DGR AS BGT_DGR
+                                     , BB.DEPT_FG AS DEPT_FG
+                                     , BB.OFFICE_CD AS OFFICE_CD
+                                     , BB.DEPT_CD AS DEPT_CD
+                                     , 'T40' AS SHEET_CD
+                                     , CASE WHEN BB.DEPT_FG = '21' AND (SELECT COUNT(DISTINCT Z.DEPT_CD) FROM TB_DGRDEPT Z WHERE Z.DEPT_FG = BB.DEPT_FG) > 1 THEN 'Y' 
+                                            ELSE CASE WHEN (SELECT COUNT(DISTINCT Z.OFFICE_CD) FROM TB_DGRDEPT Z WHERE Z.DEPT_FG = BB.DEPT_FG) > 1 THEN 'Y' 
+                                                      ELSE 'N'
+                                                 END
+                                       END AS CNT_YN
+                                  FROM TB_DGRDEPT BB
+                                 WHERE 1 = 1
+                                   AND BB.DEPT_FG != '40'
+                                   AND BB.FIS_YEAR = #fisYear#
+                                   AND BB.BGT_DGR = #bgtDgr#
+                                 <isNotEmpty prepend="" property="officeCd">
+                                   AND BB.OFFICE_CD = #officeCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankFr">
+                                   AND BB.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankTo">
+                                   AND BB.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                 </isNotEmpty>
+                                 GROUP BY BB.FIS_YEAR
+                                        , BB.BGT_DGR
+                                        , BB.DEPT_FG
+                                        , BB.OFFICE_CD
+                                        , BB.DEPT_CD
+                               ) B
+                             , (
+                                SELECT SS.FIS_YEAR AS FIS_YEAR
+                                     , SS.BGT_DGR AS BGT_DGR
+                                     , SS.DEPT_FG AS DEPT_FG
+                                     , SS.DEPT_CD AS DEPT_CD
+                                     , SS.OFFICE_CD AS OFFICE_CD
+                                     , SS.SHEET_CD AS SHEET_CD
+                                     , SUM(SS.COL2) AS COL2, SUM(SS.COL3) AS COL3, SUM(SS.COL4) AS COL4, SUM(SS.COL5) AS COL5, SUM(SS.COL6) AS COL6, SUM(SS.COL7) AS COL7, SUM(SS.COL8) AS COL8, SUM(SS.COL9) AS COL9, SUM(SS.COL10) AS COL10
+                                     , SUM(SS.COL11) AS COL11, SUM(SS.COL12) AS COL12, SUM(SS.COL13) AS COL13, SUM(SS.COL14) AS COL14
+                                  FROM (
+                                        SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , B.DEPT_FG AS DEPT_FG
+                                             , B.OFFICE_CD AS OFFICE_CD
+                                             , B.DEPT_CD AS DEPT_CD
+                                             , 'T40' AS SHEET_CD
+                                             , 0 AS COL2
+                                             , 0 AS COL3
+                                             , CASE WHEN E.SHEET_CD = 'T10' AND SUBSTR(E.SHEET_DETL_CD, 3) = '1' THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL4
+                                             , CASE WHEN E.SHEET_CD = 'T10' AND SUBSTR(E.SHEET_DETL_CD, 3) IN ('2', '3', '4', '5', '6') THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL5
+                                             , CASE WHEN E.SHEET_CD = 'T10' AND SUBSTR(E.SHEET_DETL_CD, 3) = '7' THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL6
+                                             , CASE WHEN E.SHEET_CD = 'T10' AND SUBSTR(E.SHEET_DETL_CD, 3) = '8' THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL7
+                                             , CASE WHEN E.SHEET_CD = 'T10' AND SUBSTR(E.SHEET_DETL_CD, 3) = '9' THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL8
+                                             , CASE WHEN E.SHEET_CD IN ('T20', 'T30') AND SUBSTR(E.SHEET_DETL_CD, 3) IN ('1', '2', '3', '4', '5', '6', '7', '8', '9') THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL9
+                                             , 0 AS COL10
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'A', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL11
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'B', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL12
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'C', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL13
+                                             , DECODE(SUBSTR(E.SHEET_DETL_CD, 3), 'D', NVL(F.ADJ_DEF_FRSC_AMT, 0), 0) AS COL14
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_SHEET E
+                                             , TB_DGRCOMPOFRSC F
+                                             , TB_YEARFRSC G
+                                         WHERE 1 = 1
+                                           AND G.FIS_YEAR = F.FIS_YEAR
+                                           AND G.FRSC_FG_CD = F.FRSC_FG_CD
+                                           AND G.STAND_FRSC_CD IN ('160', '180')
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND F.FIS_YEAR = A.FIS_YEAR
+                                           AND F.BGT_DGR = A.BGT_DGR
+                                           AND F.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND A.COMPO_LEVEL = '1'
+                                           AND E.SHEET_CD IN ('T10', 'T20', 'T30')
+                                           AND A.FIS_YEAR = #fisYear#
+                                           AND A.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                       UNION ALL
+                                        SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , B.DEPT_FG AS DEPT_FG
+                                             , B.OFFICE_CD AS OFFICE_CD
+                                             , B.DEPT_CD AS DEPT_CD
+                                             , 'T40' AS SHEET_CD
+                                             , 0 AS COL2
+                                             , 0 AS COL3
+                                             , 0 AS COL4
+                                             , 0 AS COL5
+                                             , 0 AS COL6
+                                             , 0 AS COL7
+                                             , 0 AS COL8
+                                             , 0 AS COL9
+                                             , CASE WHEN A.SHEET_YN = 'N' AND A.REPORT_YN_090 = 'Y' AND A.REPORT_YN_030 = 'N' AND G.STAND_FRSC_CD IN ('160', '180') THEN NVL(F.ADJ_DEF_FRSC_AMT, 0) ELSE 0 END AS COL10
+                                             , 0 AS COL11
+                                             , 0 AS COL12
+                                             , 0 AS COL13
+                                             , 0 AS COL14
+                                          FROM (SELECT A.FIS_YEAR AS FIS_YEAR
+                                                     , A.BGT_DGR AS BGT_DGR
+                                                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                                                     , A.DEPT_CD AS DEPT_CD
+                                                     , A.DBIZ_CD AS DBIZ_CD
+                                                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                                                     , CASE WHEN SUM(DECODE(B.SHEET_CD, NULL, 0, '', 0, 1)) > 0 THEN 'Y' ELSE 'N' END AS SHEET_YN
+                                                     , CASE WHEN SUM(DECODE(C.REPORT_CD, '030', 1, 0)) > 0 THEN 'Y' ELSE 'N' END AS REPORT_YN_030
+                                                     , CASE WHEN SUM(DECODE(C.REPORT_CD, '090', 1, 0)) > 0 THEN 'Y' ELSE 'N' END AS REPORT_YN_090
+                                                  FROM TB_DGRCOMPO A
+                                                     , TB_SHEET B
+                                                     , TB_REPORT C
+                                                 WHERE 1 = 1
+                                                   AND A.FIS_YEAR = B.FIS_YEAR(+)
+                                                   AND A.BGT_DGR = B.BGT_DGR(+)
+                                                   AND A.TE_BGT_COMPO_ID = B.TE_BGT_COMPO_ID(+)
+                                                   AND A.FIS_YEAR = C.FIS_YEAR(+)
+                                                   AND A.BGT_DGR = C.BGT_DGR(+)
+                                                   AND A.TE_BGT_COMPO_ID = C.TE_BGT_COMPO_ID(+)
+                                                   AND A.COMPO_LEVEL = '1'
+                                                   AND A.FIS_YEAR = #fisYear#
+                                                   AND A.BGT_DGR = #bgtDgr#
+                                                 GROUP BY A.FIS_YEAR
+                                                     , A.BGT_DGR
+                                                     , A.TE_BGT_COMPO_ID
+                                                     , A.DEPT_CD
+                                                     , A.DBIZ_CD
+                                                     , A.TE_MNG_MOK_CD
+                                               ) A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_DGRCOMPOFRSC F
+                                             , TB_YEARFRSC G
+                                         WHERE 1 = 1
+                                           AND G.FIS_YEAR = F.FIS_YEAR
+                                           AND G.FRSC_FG_CD = F.FRSC_FG_CD
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND F.FIS_YEAR = A.FIS_YEAR
+                                           AND F.BGT_DGR = A.BGT_DGR
+                                           AND F.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                       ) SS
+                                 GROUP BY SS.FIS_YEAR
+                                        , SS.BGT_DGR
+                                        , SS.DEPT_FG
+                                        , SS.OFFICE_CD 
+                                        , SS.DEPT_CD
+                                        , SS.SHEET_CD
+                               ) S
+                             , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                         WHERE 1 = 1
+                           AND B.FIS_YEAR = S.FIS_YEAR(+)
+                           AND B.BGT_DGR = S.BGT_DGR(+)
+                           AND B.DEPT_FG = S.DEPT_FG(+)
+                           AND B.OFFICE_CD = S.OFFICE_CD(+)
+                           AND B.DEPT_CD = S.DEPT_CD(+)
+                           AND B.SHEET_CD = S.SHEET_CD(+)
+                           AND DECODE(H.CT, 1, 'Y', 2, B.CNT_YN, 'Y') = 'Y'
+                         GROUP BY DECODE(H.CT, 1, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || '00' || '_' || '00000000000'
+                                             , 2, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.DEPT_FG || '_' || '00000000000'
+                                             , 3, B.FIS_YEAR || '_' || TO_CHAR(B.BGT_DGR, '000') || '_' || B.DEPT_FG || '_' || DECODE(B.DEPT_FG, '21', B.OFFICE_CD || B.DEPT_CD, B.OFFICE_CD || '0000000'))
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.SHEET_CD, '000')
+                , NVL(T.DEPT_FG_RANK, 0)
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+
+    </select>
+    
+</sqlMap>

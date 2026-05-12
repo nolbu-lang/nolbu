@@ -1,0 +1,4 @@
+﻿target/
+target.zip
+src/main/resources/csframework/bcjisProps/globals.properties
+*.war

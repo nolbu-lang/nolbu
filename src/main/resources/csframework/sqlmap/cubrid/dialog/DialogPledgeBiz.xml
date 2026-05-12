@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogPledgeBiz">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+     <insert id="DialogPledgeBiz.insertPledgeBiz" parameterClass="Map" >
+        /*DialogPledgeBiz.insertPledgeBiz*/
+        INSERT 
+          INTO TB_PLEDGEBIZ(
+               PLEDGE_BIZ_ID
+             , UP_PLEDGE_BIZ_ID
+             , PLEDGE_BIZ_FG
+             , PLEDGE_BIZ_NM
+             , PLEDGE_BIZ_LEVEL
+             , PLEDGE_BIZ_SEQ
+             , PLEDGE_INFO_ID
+             , DEL_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+          VALUES (#pledgeBizId#
+               , NVL(#upPledgeBizId#, '00000000000')
+               , #pledgeBizFg#
+               , #pledgeBizNm#
+               , #pledgeBizLevel#
+               , NVL((SELECT MAX(Z.PLEDGE_BIZ_SEQ) FROM TB_PLEDGEBIZ Z WHERE UP_PLEDGE_BIZ_ID = NVL(#upPledgeBizId#, '00000000000') ), 0) + 10
+               , #pledgeInfoId#
+               , NVL(#delYn#, 'N')
+               , #userId#
+               , SYSTIMESTAMP
+               , #userId#
+               , SYSTIMESTAMP)
+
+    </insert>
+    
+    <update id="DialogPledgeBiz.updatePledgeBiz" parameterClass="Map" >
+        /*DialogPledgeBiz.updatePledgeBiz*/
+        UPDATE TB_PLEDGEBIZ
+           SET PLEDGE_BIZ_FG = #pledgeBizFg#
+             , PLEDGE_BIZ_NM = #pledgeBizNm#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND PLEDGE_BIZ_ID = #pledgeBizId#
+
+    </update>
+    
+</sqlMap>

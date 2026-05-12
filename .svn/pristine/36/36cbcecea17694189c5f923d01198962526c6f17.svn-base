@@ -1,0 +1,4 @@
+.ui-button-text {
+    font-size: 12px;
+    padding: 1px 1px 1px 1px;
+}

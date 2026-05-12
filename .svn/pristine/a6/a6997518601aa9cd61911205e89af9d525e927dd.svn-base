@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgroffice020Sort">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogDgroffice020Sort.selectDgroffice020List" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgroffice020Sort.selectDgroffice020List*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.OFFICE_CD AS OFFICE_CD
+             , A.OFFICE_RANK020 AS OFFICE_RANK020
+             , (SELECT Z.OFFICE_NM 
+                  FROM TB_DGRDEPT Z 
+                 WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                   AND Z.BGT_DGR = A.BGT_DGR 
+                   AND Z.OFFICE_CD = A.OFFICE_CD 
+                   AND ROWNUM = 1
+               ) AS OFFICE_NM
+          FROM TB_DGROFFICE020 A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+         ORDER BY A.OFFICE_RANK020
+    </select>
+    
+    <update id="DialogDgroffice020Sort.updateOfficeRank020" parameterClass="Map" >
+        /*DialogDgroffice020Sort.updateOfficeRank020*/
+        UPDATE TB_DGROFFICE020 A
+           SET OFFICE_RANK020 = #officeRank020#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.OFFICE_CD = #officeCd#
+    </update>
+</sqlMap>

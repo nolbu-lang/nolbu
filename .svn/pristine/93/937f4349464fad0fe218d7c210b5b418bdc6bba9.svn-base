@@ -1,0 +1,1183 @@
+package com.cs.bcjis.report.util;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.apache.poi.hssf.usermodel.HeaderFooter;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Footer;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetView;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSheetViewType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.report.service.impl.ReportCommDAO;
+
+@Component("report060SaveFile")
+public class Report060SaveFile {
+
+    @Autowired
+    @Qualifier("config")
+    private Properties config;
+
+    @Resource(name = "reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void buildExcelDocument(Map model, String KeyStr, String storePath) throws Exception {
+
+        String fileNm = String.valueOf(model.get("fileNm"));
+        if (BcjisCommUtil.isNullString(fileNm) == true) {
+            fileNm = config.getProperty("Globals.SystemName");
+        }
+
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        data(model, wb, (List<Object>) model.get("dataList"));
+
+        if (wb.getNumberOfSheets() < 1) {
+            wb.createSheet("Sheet1");
+        }
+
+        String storePathString = ReportSaveUtil.getStorePathString(config, storePath, KeyStr);
+        model.put("fileName", fileNm + ".xlsx");
+        model.put("realFileName", ReportSaveUtil.writeExcelFile(wb, storePathString));
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void buildSheetDocument(Map model, String KeyStr, String storePath) throws Exception {
+
+        String fileNm = String.valueOf(model.get("fileNm"));
+        if (BcjisCommUtil.isNullString(fileNm) == true) {
+            fileNm = config.getProperty("Globals.SystemName");
+        }
+
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        writeCover(model, wb);
+
+        data(model, wb, (List<Object>) model.get("dataList"));
+
+        if (wb.getNumberOfSheets() < 1) {
+            wb.createSheet("Sheet1");
+        }
+
+        String storePathString = ReportSaveUtil.getStorePathString(config, storePath, KeyStr);
+        model.put("fileName", fileNm + ".xlsx");
+        model.put("realFileName", ReportSaveUtil.writeExcelFile(wb, storePathString));
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public int writeCover(Map model, XSSFWorkbook wb) throws Exception {
+
+        int rowNum = 0;
+        XSSFSheet sheet = null;
+
+        Map param = new HashMap();
+        param.put("reportCd", model.get("reportCd"));
+        param.put("reportDetlCd", "003");
+        param.put("fisYear", model.get("fisYear"));
+        param.put("bgtDgr", model.get("bgtDgr"));
+
+        Map reportInfo = reportCommDAO.selectReportInfo(param);
+
+        String reportNm = String.valueOf(reportInfo.get("reportNm"));
+        if (BcjisCommUtil.isNullString(reportNm) == true) {
+            reportNm = "";
+        }
+
+        String sheetName = String.valueOf(reportInfo.get("sheetNm"));
+        if (BcjisCommUtil.isNullString(sheetName) == true) {
+            sheetName = "new sheet";
+        }
+
+        sheet = wb.createSheet(sheetName);
+
+        Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+
+        Row row = null;
+        Cell cell = null;
+
+        float rowHeight = 35.25f;
+
+        // 1
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        cell = row.createCell(9);
+        cell.setCellStyle(styles.get("now"));
+        cell.setCellFormula("NOW()");
+
+        // 2
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 3
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 4
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 5
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        rowHeight = 27.75f;
+
+        // 6
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 7
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 8
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(12f);
+
+        // 9
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(60f);
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get("title0"));
+        cell.setCellValue(reportNm);
+
+        // 10
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(36f);
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get("title1"));
+        cell.setCellValue("(���ͱٹ����, ����ȸ, ��ũ��)");
+
+        rowHeight = 26.25f;
+
+        // 11
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 12
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 13
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 14
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 15
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 16
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 17
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 18
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 19
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 20
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 21
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        // 22
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        ReportSaveUtil.reportMerge(reportCommDAO, param, sheet);
+
+        reportCommDAO.setReportColWidth(param, sheet);
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+
+        sheet.setFitToPage(true);
+
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+
+        wb.setPrintArea(wb.getSheetIndex(sheet), 0, 9, 0, rowNum - 1);
+
+        return rowNum;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void data(Map model, XSSFWorkbook wb, List<Object> categories) throws Exception {
+        int rowNum = 0;
+        XSSFSheet sheet = null;
+        ReportFormulaUtil reportFormulaUtil = null;
+
+        JSONObject category = null;
+        int dgrLevel = 0;
+
+        String reportDetlCd = "";
+        Map reportInfo = null;
+        boolean bgtCompoFlag = false;
+
+        Map<String, CellStyle> styles = null;
+        while (!categories.isEmpty()) {
+            category = (JSONObject) categories.remove(0);
+
+            try {
+                dgrLevel = Integer.parseInt(String.valueOf(category.get("dgrLevel")));
+            } catch (NumberFormatException nfe) {
+                throw nfe;
+            }
+
+            reportDetlCd = ReportSaveUtil.getStringValue(category.get("reportDetlCd"));
+            if (dgrLevel == 0) {
+                if (sheet != null) {
+                    ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 9);
+                    reportFormulaUtil.writeCellFormula();
+
+                    sheet = null;
+                }
+
+                rowNum = 0;
+
+                model.put("reportDetlCd", reportDetlCd);
+                reportInfo = reportCommDAO.selectReportInfo(model);
+
+                bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
+                styles = reportCommDAO.getReportStyleMap(model, wb);
+
+                sheet = wb.createSheet(ReportSaveUtil.getStringValue(reportInfo.get("sheetNm")));
+                reportFormulaUtil = new ReportFormulaUtil(sheet);
+
+                if("066".equals(reportDetlCd) == true){
+                    rowNum = writeHeader066(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 10);
+                }else{
+                    rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 9);
+                }
+
+            }
+
+            if("066".equals(reportDetlCd) == true){
+                rowNum = writeData066(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil);
+            }else{
+                rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil);
+            }
+            
+        }
+
+        if (sheet != null) {
+
+            if("066".equals(reportDetlCd) == true){
+                ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 10);
+            }else{
+                ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 9);
+            }
+            
+            reportFormulaUtil.writeCellFormula();
+
+            sheet = null;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeHeader(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title, int unitPos) throws Exception {
+        Row row = null;
+        Cell cell = null;
+
+        List list = null;
+        Map map = null;
+
+        int repeatingStartRow = 0;
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(12f);
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(46.5f);
+
+        Cell titleCell = row.createCell(0);
+        titleCell.setCellValue(title);
+        titleCell.setCellStyle(styles.get("title"));
+
+        rowNum = writeReportCont(model, sheet, rowNum, styles);
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(20.25f);
+
+        cell = row.createCell(unitPos);
+        cell.setCellStyle(styles.get("unit"));
+        cell.setCellValue("(단위:천원)");
+
+        repeatingStartRow = rowNum;
+
+        int preRowSeq = -1;
+        int rowSeq = -1;
+        int cellSeq = -1;
+        String headerCont = "";
+
+        list = reportCommDAO.selectReportHeaderList(model);
+        while (!list.isEmpty()) {
+            map = (Map) list.remove(0);
+
+            rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+            cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+            headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+            if (rowSeq < 0) {
+                throw new Exception("보고서 Header 정보 오류입니다.");
+            }
+
+            if (preRowSeq == -1 || preRowSeq != rowSeq) {
+                row = sheet.createRow(rowNum);
+                rowNum++;
+                row.setHeightInPoints(24f);
+            }
+
+            preRowSeq = rowSeq;
+
+            cell = row.createCell(cellSeq);
+            cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+            if (BcjisCommUtil.isNullString(headerCont) == false) {
+                cell.setCellValue(headerCont);
+            }
+
+        }
+
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + (rowNum - 1) + ":$C$" + (rowNum) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$D$" + (rowNum - 1) + ":$E$" + (rowNum - 1) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$F$" + (rowNum - 1) + ":$G$" + (rowNum - 1) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$H$" + (rowNum - 1) + ":$I$" + (rowNum - 1) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$J$" + (rowNum - 1) + ":$J$" + (rowNum) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$K$" + (rowNum - 1) + ":$Q$" + (rowNum - 1) + ""));
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$R$" + (rowNum - 1) + ":$R$" + (rowNum) + ""));
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+        printSetup.setLandscape(true);
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+
+        sheet.setHorizontallyCenter(true);
+
+        sheet.createFreezePane(3, rowNum + 1);
+        sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + (rowNum)));
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+
+        ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+
+        return rowNum;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeReportCont(Map param, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles) throws Exception {
+        float rowHeight = 21f;
+        Row row = null;
+        Cell cell = null;
+
+        List list = reportCommDAO.selectReportContList(param);
+        Map map = null;
+        for (int i = 0; i < list.size(); i++) {
+            map = (Map) list.get(i);
+
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get("cont"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(map.get("cont")));
+
+            if (i == 0 && "066".equals(param.get("reportDetlCd")) == true) {
+                cell = row.createCell(10);
+                cell.setCellStyle(styles.get("today"));
+                cell.setCellFormula("TODAY()");
+            }
+        }
+
+        return rowNum;
+    }
+
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) throws Exception {
+        float rowHeight = 25.5f;
+        Row row = null;
+        Cell cell = null;
+
+        int dgrLevel = 0;
+        try {
+            dgrLevel = Integer.parseInt(String.valueOf(category.get("dgrLevel")));
+        } catch (NumberFormatException nfe) {
+            throw nfe;
+        }
+
+        String dgrcompoId = ReportSaveUtil.getStringValue(category.get("dgrcompoId"));
+        String upDgrcompoId = ReportSaveUtil.getStringValue(category.get("upDgrcompoId"));
+
+        boolean formulaFlag = true;
+
+        String preStyleNm = "";
+        if (dgrLevel == 0) {
+            preStyleNm = "tot";
+        } else if (dgrLevel == 1) {
+            preStyleNm = "office";
+            rowHeight = 30f;
+        } else if (dgrLevel == 2) {
+            preStyleNm = "dept";
+            rowHeight = 30f;
+        } else if (dgrLevel == 3) {
+            preStyleNm = "dbiz";
+            rowHeight = 30f;
+        } else if (dgrLevel == 4) {
+            preStyleNm = "data0";
+            formulaFlag = false;
+        } else {
+            preStyleNm = "data1";
+            formulaFlag = false;
+        }
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        if (dgrLevel == 0) {
+            row.setHeightInPoints(30.75f);
+        } else {
+            row.setHeightInPoints(rowHeight);
+        }
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+        if (dgrLevel < 4) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+        }
+
+        cell = row.createCell(1);
+        cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+        if (dgrLevel >= 4) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+        }
+
+        cell = row.createCell(2);
+        cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+
+        cell = row.createCell(3);
+        cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("demandCompFormular")));
+
+        cell = row.createCell(4);
+        cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("demandBgtAmt")));
+        }
+
+        cell = row.createCell(5);
+        cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("compFormular")));
+
+        cell = row.createCell(6);
+        cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("bgtAmt")));
+        }
+
+        if (bgtCompoFlag == false) {
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("preFormular")));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            if (formulaFlag == false) {
+                cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preAmt")));
+            }
+        } else {
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("preCompFormular")));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            if (formulaFlag == false) {
+                cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preBgtAmt")));
+            }
+        }
+
+        cell = row.createCell(10);
+        cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+        cell.setCellFormula("L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum + "+" + "P" + rowNum + "+" + "Q" + rowNum);
+
+        cell = row.createCell(11);
+        cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt1")));
+        }
+
+        cell = row.createCell(12);
+        cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt2")));
+        }
+
+        cell = row.createCell(13);
+        cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt3")));
+        }
+
+        cell = row.createCell(14);
+        cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt4")));
+        }
+
+        cell = row.createCell(15);
+        cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt5")));
+        }
+
+        cell = row.createCell(16);
+        cell.setCellStyle(styles.get(preStyleNm + "Col16"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt6")));
+        }
+
+        cell = row.createCell(17);
+        cell.setCellStyle(styles.get(preStyleNm + "Col17"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("srchVal")));
+
+        String examCont = ReportSaveUtil.getStringValue(category.get("examCont"));
+        String[] examContArrayTemp = examCont.split("\n");
+        String[] examContArray = null;
+
+        cell = row.createCell(9);
+        cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+        String reflectFgNm = "";
+
+        if (dgrLevel > 1) {
+            reflectFgNm = ReportSaveUtil.getStringValue(category.get("reflectFgNm"));
+
+            if (BcjisCommUtil.isNullString(reflectFgNm) == true && examContArrayTemp != null && examContArrayTemp.length > 0) {
+                cell.setCellValue(examContArrayTemp[0]);
+                examContArray = Arrays.copyOfRange(examContArrayTemp, 1, examContArrayTemp.length);
+            } else {
+                cell.setCellValue(reflectFgNm);
+                examContArray = Arrays.copyOfRange(examContArrayTemp, 0, examContArrayTemp.length);
+            }
+        } else {
+            examContArray = Arrays.copyOfRange(examContArrayTemp, 0, examContArrayTemp.length);
+        }
+
+        if (dgrLevel < 4) {
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$C$" + rowNum));
+        } else {
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$C$" + rowNum));
+        }
+
+        if (dgrLevel < 5) {
+            addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);
+        }
+
+        if (formulaFlag == true) {
+            addDataFormulaCell(reportFormulaUtil, dgrcompoId, rowNum);
+        }
+
+        String demandCont = ReportSaveUtil.getStringValue(category.get("demandCont"));
+
+        if (BcjisCommUtil.isNullString(demandCont) == true && BcjisCommUtil.isNullString(examCont) == true) {
+            return rowNum;
+        }
+
+        String[] demandContArray = demandCont.split("\n");
+
+        int maxLength = demandContArray.length > examContArray.length ? demandContArray.length : examContArray.length;
+        if (maxLength < 1) {
+            return rowNum;
+        }
+
+        if (dgrLevel <= 4) {
+            preStyleNm = "dataCont0";
+        } else {
+            preStyleNm = "dataCont1";
+        }
+
+        for (int i = 0; i < maxLength; i++) {
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            if (dgrLevel == 0) {
+                row.setHeightInPoints(30.75f);
+            } else {
+                row.setHeightInPoints(rowHeight);
+            }
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            if (i < demandContArray.length) {
+                cell.setCellValue(demandContArray[i]);
+            }
+
+            cell = row.createCell(2);
+            cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+
+            cell = row.createCell(3);
+            cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+            if (i < examContArray.length) {
+                cell.setCellValue(examContArray[i]);
+            }
+
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+
+            cell = row.createCell(11);
+            cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+
+            cell = row.createCell(12);
+            cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+
+            cell = row.createCell(13);
+            cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+
+            cell = row.createCell(14);
+            cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+
+            cell = row.createCell(15);
+            cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+
+            cell = row.createCell(16);
+            cell.setCellStyle(styles.get(preStyleNm + "Col16"));
+
+            cell = row.createCell(17);
+            cell.setCellStyle(styles.get(preStyleNm + "Col17"));
+
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$C$" + rowNum));
+        }
+
+        return rowNum;
+    }
+
+    public void addDataFormulaValue(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        reportFormulaUtil.addFormulaValue(keyStr + "_E", "E" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_G", "G" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_I", "I" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_L", "L" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_M", "M" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_N", "N" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_O", "O" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_P", "P" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_Q", "Q" + rowNum);
+    }
+
+    public void addDataFormulaCell(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        reportFormulaUtil.addFormulaCell(keyStr + "_E", rowNum - 1, 4);
+        reportFormulaUtil.addFormulaCell(keyStr + "_G", rowNum - 1, 6);
+        reportFormulaUtil.addFormulaCell(keyStr + "_I", rowNum - 1, 8);
+        reportFormulaUtil.addFormulaCell(keyStr + "_L", rowNum - 1, 11);
+        reportFormulaUtil.addFormulaCell(keyStr + "_M", rowNum - 1, 12);
+        reportFormulaUtil.addFormulaCell(keyStr + "_N", rowNum - 1, 13);
+        reportFormulaUtil.addFormulaCell(keyStr + "_O", rowNum - 1, 14);
+        reportFormulaUtil.addFormulaCell(keyStr + "_P", rowNum - 1, 15);
+        reportFormulaUtil.addFormulaCell(keyStr + "_Q", rowNum - 1, 16);
+    }
+    
+    
+    /*066*/
+    @SuppressWarnings("rawtypes")
+    public int writeHeader066(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title, int unitPos) throws Exception {
+        Row row = null;
+        Cell cell = null;
+
+        List list = null;
+        Map map = null;
+
+        int repeatingStartRow = 0;
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(56.25f);
+
+        Cell titleCell = row.createCell(0);
+        titleCell.setCellValue(title);
+        titleCell.setCellStyle(styles.get("title"));
+
+        rowNum = writeReportCont066(model, sheet, rowNum, styles);
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(15f);
+
+        cell = row.createCell(unitPos);
+        cell.setCellStyle(styles.get("unit"));
+        cell.setCellValue("(단위:천원)");
+
+        repeatingStartRow = rowNum;
+
+        int preRowSeq = -1;
+        int rowSeq = -1;
+        int cellSeq = -1;
+        String headerCont = "";
+
+        list = reportCommDAO.selectReportHeaderList(model);
+        while (!list.isEmpty()) {
+            map = (Map) list.remove(0);
+
+            rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+            cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+            headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+            if (rowSeq < 0) {
+                throw new Exception("보고서 Header 정보 오류입니다.");
+            }
+
+            if (preRowSeq == -1 || preRowSeq != rowSeq) {
+                row = sheet.createRow(rowNum);
+                rowNum++;
+                row.setHeightInPoints(24.75f);
+            }
+
+            preRowSeq = rowSeq;
+
+            cell = row.createCell(cellSeq);
+            cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+            if (BcjisCommUtil.isNullString(headerCont) == false) {
+                cell.setCellValue(headerCont);
+            }
+
+        }
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+        printSetup.setLandscape(true);
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+        sheet.createFreezePane(3, 5);
+
+        sheet.setHorizontallyCenter(true);
+
+        sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + rowNum));
+        sheet.createFreezePane(3, 6);
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+
+        Footer footer = sheet.getFooter();
+
+        footer.setCenter("" + HeaderFooter.page());
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+        ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+
+        return rowNum;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeReportCont066(Map param, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles) throws Exception {
+        float rowHeight = 38.25f;
+        Row row = null;
+        Cell cell = null;
+
+        List list = reportCommDAO.selectReportContList(param);
+        Map map = null;
+        for (int i = 0; i < list.size(); i++) {
+            map = (Map) list.get(i);
+
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get("cont"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get("cont"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(map.get("cont")));
+
+            if (i == 0) {
+                cell = row.createCell(10);
+                cell.setCellStyle(styles.get("today"));
+                cell.setCellFormula("TODAY()");
+            }
+        }
+
+        return rowNum;
+    }
+
+    public int writeData066(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) throws Exception {
+        float rowHeight = 27f;
+        Row row = null;
+        Cell cell = null;
+
+        int dgrLevel = 0;
+        try {
+            dgrLevel = Integer.parseInt(String.valueOf(category.get("dgrLevel")));
+        } catch (NumberFormatException nfe) {
+            throw nfe;
+        }
+
+        String dgrcompoId = ReportSaveUtil.getStringValue(category.get("dgrcompoId"));
+        String upDgrcompoId = ReportSaveUtil.getStringValue(category.get("upDgrcompoId"));
+
+        boolean formulaFlag = true;
+
+        String preStyleNm = "";
+        if (dgrLevel == 0) {
+            preStyleNm = "tot";
+        } else if (dgrLevel == 1) {
+            preStyleNm = "office";
+            rowHeight = 30f;
+        } else if (dgrLevel == 2) {
+            preStyleNm = "dept";
+            rowHeight = 30f;
+        } else if (dgrLevel == 3) {
+            preStyleNm = "dbiz";
+            rowHeight = 30f;
+        } else if (dgrLevel == 4) {
+            preStyleNm = "data0";
+            formulaFlag = false;
+        } else {
+            preStyleNm = "data1";
+            formulaFlag = false;
+        }
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+        if (dgrLevel < 4) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+        }
+
+        cell = row.createCell(1);
+        cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+        if (dgrLevel >= 4) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+        }
+
+        cell = row.createCell(2);
+        cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+
+        cell = row.createCell(3);
+        cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("demandCompFormular")));
+
+        cell = row.createCell(4);
+        cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("demandBgtAmt")));
+        }
+
+        cell = row.createCell(5);
+        cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("compFormular")));
+
+        cell = row.createCell(6);
+        cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("bgtAmt")));
+        }
+
+        if (bgtCompoFlag == false) {
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("preFormular")));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            if (formulaFlag == false) {
+                cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preAmt")));
+            }
+        } else {
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("preCompFormular")));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            if (formulaFlag == false) {
+                cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preBgtAmt")));
+            }
+        }
+
+        cell = row.createCell(9);
+        cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+        cell.setCellFormula("G" + (rowNum) + "-" + "I" + (rowNum));
+
+        cell = row.createCell(10);
+        cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+        if (dgrLevel > 1) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("reflectFgNm")));
+        }
+
+        cell = row.createCell(11);
+        cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+        cell.setCellFormula("M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum + "+" + "P" + rowNum + "+" + "Q" + rowNum + "+" + "R" + rowNum);
+
+        cell = row.createCell(12);
+        cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt1")));
+        }
+
+        cell = row.createCell(13);
+        cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt2")));
+        }
+
+        cell = row.createCell(14);
+        cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt3")));
+        }
+
+        cell = row.createCell(15);
+        cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt4")));
+        }
+
+        cell = row.createCell(16);
+        cell.setCellStyle(styles.get(preStyleNm + "Col16"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt5")));
+        }
+
+        cell = row.createCell(17);
+        cell.setCellStyle(styles.get(preStyleNm + "Col17"));
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt6")));
+        }
+
+        cell = row.createCell(18);
+        cell.setCellStyle(styles.get(preStyleNm + "Col18"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("srchVal")));
+
+        if (dgrLevel < 4) {
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$C$" + rowNum));
+        } else {
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$C$" + rowNum));
+        }
+
+        if (dgrLevel < 5) {
+            addDataFormulaValue066(reportFormulaUtil, upDgrcompoId, rowNum);
+        }
+
+        if (formulaFlag == true) {
+            addDataFormulaCell066(reportFormulaUtil, dgrcompoId, rowNum);
+        }
+
+        String demandCont = ReportSaveUtil.getStringValue(category.get("demandCont"));
+        String examCont = ReportSaveUtil.getStringValue(category.get("examCont"));
+
+        if (BcjisCommUtil.isNullString(demandCont) == true && BcjisCommUtil.isNullString(examCont) == true) {
+            return rowNum;
+        }
+
+        String[] demandContArray = demandCont.split("\n");
+        String[] examContArray = examCont.split("\n");
+
+        int maxLength = demandContArray.length > examContArray.length ? demandContArray.length : examContArray.length;
+        if (maxLength < 1) {
+            return rowNum;
+        }
+
+        if (dgrLevel <= 4) {
+            preStyleNm = "dataCont0";
+        } else {
+            preStyleNm = "dataCont1";
+        }
+
+        for (int i = 0; i < maxLength; i++) {
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            if (i < demandContArray.length) {
+                cell.setCellValue(demandContArray[i]);
+            }
+
+            cell = row.createCell(2);
+            cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+
+            cell = row.createCell(3);
+            cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+            if (i < examContArray.length) {
+                cell.setCellValue(examContArray[i]);
+            }
+
+            cell = row.createCell(11);
+            cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+            
+            cell = row.createCell(12);
+            cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+            
+            cell = row.createCell(13);
+            cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+            
+            cell = row.createCell(14);
+            cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+            
+            cell = row.createCell(15);
+            cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+            
+            cell = row.createCell(16);
+            cell.setCellStyle(styles.get(preStyleNm + "Col16"));
+            
+            cell = row.createCell(17);
+            cell.setCellStyle(styles.get(preStyleNm + "Col17"));
+            
+            cell = row.createCell(18);
+            cell.setCellStyle(styles.get(preStyleNm + "Col18"));
+
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$C$" + rowNum));
+        }
+
+        return rowNum;
+    }
+
+    public void addDataFormulaValue066(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        reportFormulaUtil.addFormulaValue(keyStr + "_E", "E" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_G", "G" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_I", "I" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_M", "M" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_N", "N" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_O", "O" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_P", "P" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_Q", "Q" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_R", "R" + rowNum);
+    }
+
+    public void addDataFormulaCell066(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        reportFormulaUtil.addFormulaCell(keyStr + "_E", rowNum - 1, 4);
+        reportFormulaUtil.addFormulaCell(keyStr + "_G", rowNum - 1, 6);
+        reportFormulaUtil.addFormulaCell(keyStr + "_I", rowNum - 1, 8);
+        reportFormulaUtil.addFormulaCell(keyStr + "_M", rowNum - 1, 12);
+        reportFormulaUtil.addFormulaCell(keyStr + "_N", rowNum - 1, 13);
+        reportFormulaUtil.addFormulaCell(keyStr + "_O", rowNum - 1, 14);
+        reportFormulaUtil.addFormulaCell(keyStr + "_P", rowNum - 1, 15);
+        reportFormulaUtil.addFormulaCell(keyStr + "_Q", rowNum - 1, 16);
+        reportFormulaUtil.addFormulaCell(keyStr + "_R", rowNum - 1, 17);
+    }
+}

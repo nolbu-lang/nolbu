@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportComm.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite000.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite001.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite002.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite010.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite020.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite030.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite040.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite050.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite055.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite060.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite070.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite080.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite090.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0A0.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0B0.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0C0.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0D0.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0F0.xml"/>
+</sqlMapConfig>

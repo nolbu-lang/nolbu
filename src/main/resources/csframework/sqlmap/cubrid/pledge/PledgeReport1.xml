@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="PledgeReport1">
+    
+    <select id="PledgeReport1.selectPledgeInfoExcelList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeReport1.selectPledgeInfoExcelList*/
+        SELECT T.PLEDGE_INFO_ID || '_' || T.PLEDGE_BIZ_ID AS PLEDGE_ID
+             , T.PLEDGE_BIZ_FG || '. ' || T.PLEDGE_BIZ_NM AS PLEDGE_INFO
+             , A.PLEDGE_INFO_ID AS PLEDGE_INFO_ID
+             , A.PLEDGE_INFO_NM AS PLEDGE_INFO_NM 
+             , A.PLEDGE_BEGIN_YMD AS PLEDGE_BEGIN_YMD
+             , A.PLEDGE_END_YMD AS PLEDGE_END_YMD
+             , T.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+             , T.UP_PLEDGE_BIZ_ID AS UP_PLEDGE_BIZ_ID
+             , T.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+             , T.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+             , T.PLEDGE_BIZ_LEVEL AS PLEDGE_BIZ_LEVEL
+             , T.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+             , T.PLEDGE_BIZ_LEVEL AS PLEDGE_BIZ_LEVEL
+          FROM (SELECT A.PLEDGE_BIZ_ID
+                     , A.UP_PLEDGE_BIZ_ID
+                     , A.PLEDGE_BIZ_FG
+                     , A.PLEDGE_BIZ_NM
+                     , A.PLEDGE_BIZ_LEVEL
+                     , A.PLEDGE_BIZ_SEQ
+                     , A.PLEDGE_INFO_ID
+                  FROM TB_PLEDGEBIZ A
+                     , (SELECT BB.PLEDGE_BIZ_ID
+                          FROM TB_PLEDGEBIZ BB
+                         WHERE 1 = 1
+                           AND BB.PLEDGE_INFO_ID = #pledgeInfoId#
+                           AND BB.DEL_YN = 'N'
+                       ) B
+                 WHERE 1 = 1
+                   AND A.PLEDGE_BIZ_ID = B.PLEDGE_BIZ_ID
+                 START WITH A.UP_PLEDGE_BIZ_ID = '00000000000'
+                CONNECT BY PRIOR A.PLEDGE_BIZ_ID = A.UP_PLEDGE_BIZ_ID
+                 ORDER SIBLINGS BY A.PLEDGE_BIZ_SEQ
+               ) T
+             , TB_PLEDGEINFO A
+         WHERE 1 = 1
+           AND T.PLEDGE_INFO_ID = A.PLEDGE_INFO_ID
+    </select>
+    
+</sqlMap>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoSort">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogDgrcompoSort.selectDgrcompoSortDgrcompoList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoSort.selectDgrcompoSortDgrcompoList*/
+        SELECT B.COMP_GROUND AS COMP_GROUND
+             , B.FIS_YEAR AS FIS_YEAR
+             , B.BGT_DGR AS BGT_DGR
+             , B.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , B.SORT_SEQ AS SORT_SEQ
+             , B.DEMAND_BGT_AMT
+             , B.BGT_AMT
+          FROM TB_DGRCOMPO A
+             , TB_DGRCOMPO B
+         WHERE 1 = 1
+           AND B.FIS_YEAR = A.FIS_YEAR
+           AND B.BGT_DGR = A.BGT_DGR
+           AND B.UP_TE_BGT_COMPO_ID = A.UP_TE_BGT_COMPO_ID
+           AND B.DEPT_CD = A.DEPT_CD
+           AND B.DBIZ_CD = A.DBIZ_CD
+           AND B.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+         ORDER BY B.SORT_SEQ
+    </select>
+    
+    <select id="DialogDgrcompoSort.selectDgrcompoSortDgrcompoListNew" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoSort.selectDgrcompoSortDgrcompoListNew*/
+        SELECT A.COMP_GROUND AS COMP_GROUND
+             , A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , A.SORT_SEQ AS SORT_SEQ
+             , A.DEMAND_BGT_AMT
+             , A.BGT_AMT
+          FROM TB_DGRCOMPO A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.DEPT_CD = #deptCd#
+           AND A.DBIZ_CD = #dbizCd#
+         ORDER BY A.SORT_SEQ
+    </select>
+    
+    <update id="DialogDgrcompoSort.updateDgrcompoSort" parameterClass="Map" >
+        /*DialogDgrcompoSort.updateDgrcompoSort*/
+        UPDATE TB_DGRCOMPO A
+           SET SORT_SEQ = #sortSeq#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+
+	<insert id="DialogDgrcompoSort.insertCngHistory" parameterClass="Map" >
+		/*DialogDgrcompoSort.insertCngHistory*/
+		INSERT INTO TB_CNG_HISTORY
+				  ( CNG_HISTORY_ID
+				  , CNG_TYPE
+				  , TITLE
+				  , INDI_BNS
+				  , NOTE
+				  , REGI_ID
+				  , REGI_DATE
+				  , MODI_ID
+				  , MODI_DATE)
+			VALUES( #cngHistoryId#
+				  , #cngType#
+				  , #title#
+				  , #dgrcompoNm#
+				  , ''
+				  , #userId#
+				  , SYSTIMESTAMP
+				  , #userId#
+				  , SYSTIMESTAMP)
+	</insert>
+
+	<insert id="DialogDgrcompoSort.insertDgrCompoOri" parameterClass="Map" >
+		/*DialogDgrcompoSort.insertDgrCompoOri*/
+		INSERT INTO TB_DGRCOMPO_ORI
+				  ( FIS_YEAR
+				  , BGT_DGR
+				  , TE_BGT_COMPO_ID
+				  , CNG_HISTORY_ID
+				  , DEPT_CD
+				  , DBIZ_CD
+				  , TE_MNG_MOK_CD
+				  , TE_MNG_MOK_NM
+				  , TE_BGT_COMPO_SEQ
+				  , DEMAND_COMPO_SORT_SEQ
+				  , DEMAND_COMPO_LEVEL
+				  , DEMAND_COMP_GROUND
+				  , DEMAND_COMP_FORMULAR
+				  , DEMAND_BGT_AMT
+				  , DEMAND_DIFF_AMT
+				  , DEMAND_COMPO_LEVEL_AMT
+				  , DEMAND_FORM_DSP_YN
+				  , COMPO_SORT_SEQ
+				  , COMPO_LEVEL
+				  , COMP_GROUND
+				  , COMP_FORMULAR
+				  , BGT_AMT
+				  , PRE_FORMULAR
+				  , PRE_AMT
+				  , DIFF_AMT
+				  , COMPO_LEVEL_AMT
+				  , FORM_DSP_YN
+				  , UP_TE_BGT_COMPO_SEQ
+				  , UP_TE_BGT_COMPO_ID
+				  , SORT_SEQ
+				  , PRE_COMP_FORMULAR
+				  , PRE_BGT_AMT
+				  , CNG_TYPE
+				  , GRP_ID
+				  , GRP_LVL
+				  , REPORT_MSTR
+				  , REPORT_CD
+				  , REPORT_DETL_CD
+				  , INDI_ATTR
+				  , ADVNC_PROC
+				  , REGI_ID
+				  , REGI_DATE
+				  , MODI_ID
+				  , MODI_DATE)
+			 SELECT TD1.FIS_YEAR
+				  , TD1.BGT_DGR
+				  , TD1.TE_BGT_COMPO_ID
+				  , '' AS CNG_HISTORY_ID
+				  , TD1.DEPT_CD
+				  , TD1.DBIZ_CD
+				  , TD1.TE_MNG_MOK_CD
+				  , TD1.TE_MNG_MOK_NM
+				  , TD1.TE_BGT_COMPO_SEQ
+				  , TD1.DEMAND_COMPO_SORT_SEQ
+				  , TD1.DEMAND_COMPO_LEVEL
+				  , TD1.DEMAND_COMP_GROUND
+				  , TD1.DEMAND_COMP_FORMULAR
+				  , TD2.DEMAND_BGT_AMT
+				  , TD2.DEMAND_DIFF_AMT
+				  , TD2.DEMAND_COMPO_LEVEL_AMT
+				  , TD1.DEMAND_FORM_DSP_YN
+				  , TD1.COMPO_SORT_SEQ
+				  , TD1.COMPO_LEVEL
+				  , TD1.COMP_GROUND
+				  , TD1.COMP_FORMULAR
+				  , TD2.BGT_AMT
+				  , TD1.PRE_FORMULAR
+				  , TD2.PRE_AMT
+				  , TD2.DIFF_AMT
+				  , TD2.COMPO_LEVEL_AMT
+				  , TD1.FORM_DSP_YN
+				  , TD1.UP_TE_BGT_COMPO_SEQ
+				  , TD1.UP_TE_BGT_COMPO_ID
+				  , TD1.SORT_SEQ
+				  , TD1.PRE_COMP_FORMULAR
+				  , TD2.PRE_BGT_AMT
+				  , TD1.CNG_TYPE
+				  , TD1.GRP_ID
+				  , TD1.GRP_LVL
+				  , TD1.REPORT_MSTR
+				  , TD1.REPORT_CD
+				  , TD1.REPORT_DETL_CD
+				  , TD1.INDI_ATTR
+				  , TD1.ADVNC_PROC
+				  , #userId#
+				  , SYSTIMESTAMP
+				  , #userId#
+				  , SYSTIMESTAMP
+			   FROM TB_DGRCOMPO TD1
+				  , (SELECT SUM(DEMAND_BGT_AMT) AS DEMAND_BGT_AMT
+						  , SUM(DEMAND_DIFF_AMT) AS DEMAND_DIFF_AMT
+						  , SUM(DEMAND_COMPO_LEVEL_AMT) AS DEMAND_COMPO_LEVEL_AMT
+						  , SUM(BGT_AMT) AS BGT_AMT
+						  , SUM(PRE_AMT) AS PRE_AMT
+						  , SUM(DIFF_AMT) AS DIFF_AMT
+						  , SUM(COMPO_LEVEL_AMT) AS COMPO_LEVEL_AMT
+						  , SUM(PRE_BGT_AMT) AS PRE_BGT_AMT
+					   FROM TB_DGRCOMPO
+					  WHERE BGT_DGR IN ('3')
+						AND FIS_YEAR IN ('2019')
+						AND TE_BGT_COMPO_ID IN ('L0000000054', 'L0000000057')) TD2
+			  WHERE TD1.BGT_DGR = '3'
+				AND TD1.FIS_YEAR = '2019'
+				AND TD1.TE_BGT_COMPO_ID = 'L0000000057'
+	</insert>
+</sqlMap>

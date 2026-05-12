@@ -1,0 +1,21 @@
+package com.cs.bcjis.report.service;
+
+import java.util.List;
+import java.util.Map;
+
+import net.sf.json.JSONObject;
+
+public interface ReportWrite0F0Service {
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0List(Map map) throws Exception;
+
+    @SuppressWarnings("rawtypes")
+    public int selectReport0F0ListCnt(Map map) throws Exception;
+    
+    public void saveReport0F0(JSONObject jsonParam) throws Exception;
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0ExcelList(Map map) throws Exception;
+    
+}

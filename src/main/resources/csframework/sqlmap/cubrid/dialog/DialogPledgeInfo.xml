@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogPledgeInfo">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+       
+    <select id="DialogPledgeInfo.selectDialogManageUser" parameterClass="Map" resultClass="egovMap" >
+        /*DialogPledgeInfo.selectDialogManageUser*/
+          SELECT A.LOGIN_ID
+          FROM TB_USER A
+          WHERE 1 = 1
+          AND A.LOGIN_ID = #loginId#
+          AND A.USE_YN = 'Y'
+    </select>
+    
+     <insert id="DialogPledgeInfo.insertPledgeInfo" parameterClass="Map" >
+        /*DialogPledgeInfo.insertPledgeInfo*/
+        INSERT 
+          INTO TB_PLEDGEINFO(
+               PLEDGE_INFO_ID
+             , PLEDGE_INFO_NM
+             , PLEDGE_BEGIN_YMD
+             , PLEDGE_END_YMD
+             , DEL_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+          VALUES (#pledgeInfoId#
+               , #pledgeInfoNm#
+               , #pledgeBeginYmd#
+               , #pledgeEndYmd#
+               , NVL(#delYn#, 'N')
+               , #userId#
+               , SYSTIMESTAMP
+               , #userId#
+               , SYSTIMESTAMP)
+
+    </insert>
+    
+    <update id="DialogPledgeInfo.updatePledgeInfo" parameterClass="Map" >
+        /*DialogPledgeInfo.updatePledgeInfo*/
+        UPDATE TB_PLEDGEINFO
+           SET PLEDGE_INFO_NM = #pledgeInfoNm#
+             , PLEDGE_BEGIN_YMD = #pledgeBeginYmd#
+             , PLEDGE_END_YMD = #pledgeEndYmd#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND PLEDGE_INFO_ID = #pledgeInfoId#
+
+    </update>
+</sqlMap>

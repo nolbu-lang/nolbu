@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ManageTeMngVeri">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+    <select id="ManageTeMngVeri.selectManageTeMngVeriList" parameterClass="Map" resultClass="egovMap">
+        /*ManageTeMngVeri.selectManageTeMngVeriList*/
+        SELECT T.FIS_YEAR
+             , T.BGT_DGR
+             , T.TE_MNG_MOK_CD
+             , SUBSTR(T.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(T.TE_MNG_MOK_CD, 4) || ' ' || T.TE_MNG_MOK_NM AS TE_MNG_MOK_NM
+             , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ',')
+                 FROM TB_DGRTEMNGMOKVERI Z1
+                    , TB_COMMCDDETL Z2
+                WHERE Z2.CL_CD = Z1.VERI_CL_CD
+                  AND Z2.DETL_CD = Z1.VERI_DETL_CD
+                  AND Z1.FIS_YEAR = T.FIS_YEAR
+                  AND Z1.BGT_DGR = T.BGT_DGR
+                  AND Z1.TE_MNG_MOK_CD = T.TE_MNG_MOK_CD
+                  AND Z1.VERI_FG = '010'
+               ), '') AS VERI010 
+             , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ',')
+                 FROM TB_DGRTEMNGMOKVERI Z1
+                    , TB_COMMCDDETL Z2
+                WHERE Z2.CL_CD = Z1.VERI_CL_CD
+                  AND Z2.DETL_CD = Z1.VERI_DETL_CD
+                  AND Z1.FIS_YEAR = T.FIS_YEAR
+                  AND Z1.BGT_DGR = T.BGT_DGR
+                  AND Z1.TE_MNG_MOK_CD = T.TE_MNG_MOK_CD
+                  AND Z1.VERI_FG = '020'
+               ), '') AS VERI020
+             , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ',')
+                 FROM TB_DGRTEMNGMOKVERI Z1
+                    , TB_COMMCDDETL Z2
+                WHERE Z2.CL_CD = Z1.VERI_CL_CD
+                  AND Z2.DETL_CD = Z1.VERI_DETL_CD
+                  AND Z1.FIS_YEAR = T.FIS_YEAR
+                  AND Z1.BGT_DGR = T.BGT_DGR
+                  AND Z1.TE_MNG_MOK_CD = T.TE_MNG_MOK_CD
+                  AND Z1.VERI_FG = '030'
+               ), '') AS VERI030
+             , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ',')
+                 FROM TB_DGRTEMNGMOKVERI Z1
+                    , TB_COMMCDDETL Z2
+                WHERE Z2.CL_CD = Z1.VERI_CL_CD
+                  AND Z2.DETL_CD = Z1.VERI_DETL_CD
+                  AND Z1.FIS_YEAR = T.FIS_YEAR
+                  AND Z1.BGT_DGR = T.BGT_DGR
+                  AND Z1.TE_MNG_MOK_CD = T.TE_MNG_MOK_CD
+                  AND Z1.VERI_FG = '040'
+               ), '') AS VERI040
+          FROM TB_DGRTEMNGMOK T
+         WHERE 1 = 1
+           AND T.FIS_YEAR = #fisYear#
+           AND T.BGT_DGR = #bgtDgr#
+         <isNotEmpty prepend="" property="teMngMokNm">
+           AND T.TE_MNG_MOK_NM LIKE '%' || #teMngMokNm# || '%'
+         </isNotEmpty>
+         ORDER BY T.TE_MNG_MOK_CD
+    </select>
+</sqlMap>

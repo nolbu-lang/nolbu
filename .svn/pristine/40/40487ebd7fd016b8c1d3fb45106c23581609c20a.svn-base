@@ -1,0 +1,159 @@
+/* 나눔고딕 서체 - License by : Naver Corp. */
+@font-face {
+    font-family: 'Nanum Gothic';
+    font-weight: 300;
+    font-style: normal;
+    src: url('./font/NanumGothic-Regular.eot');
+    src: url('./font/NanumGothic-Regular.eot?#iefix') format('embedded-opentype'),
+         url('./font/NanumGothic-Regular.woff2') format('woff2'),
+         url('./font/NanumGothic-Regular.woff') format('woff'),
+         url('./font/NanumGothic-Regular.ttf') format('truetype'),
+         url('./font/NanumGothic-Regular.svg#NanumGothicRegular') format('svg');
+}
+@font-face {
+    font-family: 'Nanum Gothic';
+    font-weight: 500;
+    font-style: normal;
+    src: url('./font/NanumGothic-Bold.eot');
+    src: url('./font/NanumGothic-Bold.eot?#iefix') format('embedded-opentype'),
+         url('./font/NanumGothic-Bold.woff2') format('woff2'),
+         url('./font/NanumGothic-Bold.woff') format('woff'),
+         url('./font/NanumGothic-Bold.ttf') format('truetype'),
+         url('./font/NanumGothic-Bold.svg#NanumGothicBold') format('svg');
+}
+@font-face {
+    font-family: 'Nanum Gothic';
+    font-weight: 700;
+    font-style: normal;
+    src: url('./font/NanumGothic-ExtraBold.eot');
+    src: url('./font/NanumGothic-ExtraBold.eot?#iefix') format('embedded-opentype'),
+         url('./font/NanumGothic-ExtraBold.woff2') format('woff2'),
+         url('./font/NanumGothic-ExtraBold.woff') format('woff'),
+         url('./font/NanumGothic-ExtraBold.ttf') format('truetype'),
+         url('./font/NanumGothic-ExtraBold.svg#NanumGothicExtraBold') format('svg');
+}
+
+html, body, .ui-widget, .ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button, .btnClass, .btnDisabledClass, option{font-family: 'Nanum Gothic'; font-weight:300;}
+select, option{line-height:normal; }
+option{height:auto; font-family:'Nanum Gothic' !important; font-size:12px;}
+.ui-jqgrid tr.jqgrow td{font-weight:300;}
+a:-webkit-any-link{text-decoration:none;}
+.blind{width: 1px; height: 1px; overflow: hidden; position: absolute; top: -9999em; left: -9999em; display: block; text-indent: -9999em; font-size: 0px; line-height: 0;}
+
+/*로그인화면*/
+.login_wrap{position:fixed; width:100%; height:100%; background:url(/images/design/img_login_e5e5e5.jpg) no-repeat center top #e5e5e5;}
+.login_wrap .login_box{width:800px; margin:150px auto 0 auto; border-radius:5px; overflow:hidden; background:#fff;}
+.login_wrap .login_box .login_form{padding:30px 40px 30px 300px; background:url(/images/design/img_login_title.png) no-repeat 63px 34px; background-size:165px 95px;}
+.login_wrap .login_box .login_form:after{display:block; content:''; clear:both;}
+.login_wrap .login_form .left{float:left; width: calc(100% - 135px);}
+	.login_wrap .login_form .left p{border: 2px solid #417ed1; padding: 10px 20px 10px 46px; display:block; width:255px; width: calc(100% - 70px); margin:0; border-radius: 4px;}
+	.login_wrap .login_form .left .p_id{background:url(/images/design/ico_login_id.png) no-repeat 15px center; margin-bottom:10px;}
+	.login_wrap .login_form .left .p_pw{background:url(/images/design/ico_login_pw.png) no-repeat 17.5px center;}
+	.login_wrap .login_form .left input{background:none; border:none; font-size:14px; padding:4px 0; width:100%; font-family: 'Nanum Gothic'; font-weight: 300;}
+.login_wrap .login_form .right{float:right;}
+	.login_wrap .login_form .right a{padding:45px 40px; background-color:#417ed1; color:#fff; display:block; font-size: 16px; font-weight: 700; text-decoration:none; border-radius: 4px;}
+
+/*헤더*/
+.always_top:after{display:block; content:''; clear:both;}
+.always_top .left{float:left; margin:0; padding-left:10px;}
+.always_top .right{float:right; margin:0; padding-top:14px;}
+.always_top .right #mainNorthInfoTd{display: inline-block; border: 1px solid #aaa; padding: 3px 2px 4px 25px; border-radius: 4px; background:url(/images/design/ico_header_member.png) no-repeat 9px center;}
+.always_top .right #mainNorthLogoutBtn{display: inline-block; border: 1px solid #417ed1; padding: 3px 9px 4px 25px; border-radius: 4px; background:url(/images/design/ico_header_logout.png) no-repeat 9px center #417ed1; color: #fff; text-decoration:none;}
+
+/*레이아웃공통*/
+.ui-layout-pane{border:1px solid #f3f9ff; height:100%;}
+.ui-layout-resizer{background: #f3f9ff;}
+.ui-layout-toggler{background-color: #417ed1; border: 0;}
+.ui-layout-toggler-hover , /* need when NOT resizable */
+.ui-layout-resizer-hover .ui-layout-toggler-hover { /* need specificity when IS resizable */
+	background-color: #f26c4f;
+}
+#mainBody{height:90% !important;}
+#mainBody .ui-corner-all, .ui-dialog .ui-corner-all{overflow:hidden;}
+/*#mainTabs01{overflow-y:auto;} 어중간하게 잘리는 바닥어떡하지*/
+div#mainCenter{height:auto !important;}/*바닥잘림방지 임시*/
+
+/*테이블공통*/
+.ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr{background: none; color:#fff;}
+.nondiv table tbody tr{border-left: none; border-top: none;}
+.nondiv table tbody tr:last-child, .nondiv table tbody tr:last-child td{border-bottom:none !important;}
+.ui-jqgrid tr.ui-row-ltr td:last-child{border-right:none;}
+.ui-jqgrid tr.ui-row-ltr:last-child td{border-bottom:none;}
+
+.ui-jqgrid tr.jqgrow td{padding:3px 10px;}
+	.ui-jqgrid table.jqgridSubTable tr td,
+	.nondiv table.jqgridSubTable tbody tr:last-child,
+	.nondiv table.jqgridSubTable tbody tr:last-child td{border: 1px solid #aaa !important;}
+
+.ui-jqgrid tr.jqgrow td a span.ui-icon-pencil{margin-left:-6px;}
+.ui-jqgrid tr.jqgrow td a img{padding-right:6px;}
+table .ui-state-hover,
+table .ui-widget-content .ui-state-hover,
+table .ui-widget-header .ui-state-hover,
+table .ui-state-focus,
+table .ui-widget-content .ui-state-focus,
+table .ui-widget-header .ui-state-focus {
+	border-left:none; border-right:1px solid #aaa; border-top:none;
+}
+
+/*버튼공통*/
+.ui-widget-content a.btnClass{background: #417ed1; text-shadow: none; box-shadow: none; color: #fff; border: 1px solid #417ed1; padding: 4px 8px 4px 8px; border-radius: 5px;}
+.ui-widget-content a.btnClass#deltDgrcompoDatasBtn{background: #f26c4f; border: 1px solid #f26c4f;}
+.btnDisabledClass{padding: 4px 8px 4px 8px; border-radius: 5px; background: #fff;}
+.ui-dialog .ui-dialog-buttonpane button{background: #417ed1; color: #fff; border:none;}
+.ui-draggable .ui-dialog-titlebar button.ui-dialog-titlebar-close{border-top:none; border-left:none;}/*팝업창닫기버튼*/
+
+/*좌측메뉴*/
+#wrap > .ui-layout-pane-west{background: #f3f9ff;}
+#wrap > .ui-layout-pane-west span.cell-wrapper{font-size:13px; font-weight:700;}
+#wrap > .ui-layout-pane-west .ui-jqgrid{border:1px solid #d3d3d3; border-radius:4px; overflow:hidden;}
+#wrap > .ui-layout-pane-west .ui-jqgrid tr.ui-row-ltr td{border-right-width:0px;}
+.ui-jqgrid-labels{background: #417ed1 !important; background-image: none;}
+#wrap > .ui-layout-pane-west .ui-th-ltr{padding: 7px 3px 6px 0px; background:url(/images/design/img_left_titlebg.png) no-repeat center center #fff; border:none;}
+.ui-state-highlight, .ui-widget-content .ui-state-highlight, .ui-widget-header .ui-state-highlight{background-image: linear-gradient(135deg,#75c6e8,#867bdc); color: #fff; border: 1px solid #867bdc; border-right: none !important; border-top:none; border-left: none;}
+#wrap > .ui-layout-pane-west .ui-state-highlight .ui-icon{background-image: url(/images/design/ui-icons_2e83ff_256x240_white.png);}
+
+/*우측탭*/
+#mainTabs01{margin: 0; padding: 0;}
+.tab_wrap{background-image: linear-gradient(135deg,#75c6e8,#867bdc); border-radius:4px 4px 0 0;}
+.tab_wrap button{display:block; cursor:pointer; width:23px; height:24px; background:none; border:none; border-radius:4px; position: absolute; top: 6px;}
+.tab_wrap button.prev{background:url(/images/design/ico_tabslide_prev.png) no-repeat center center; left:6px;}
+	.tab_wrap button.prev.disabled{background:url(/images/design/ico_tabslide_prev_disable.png) no-repeat center center;}
+.tab_wrap button.next{background:url(/images/design/ico_tabslide_next.png) no-repeat center center; right:6px;}
+	.tab_wrap button.next.disabled{background:url(/images/design/ico_tabslide_next_disable.png) no-repeat center center;}
+.tab_slide_box{margin:0 35px 0 35px;}
+.ui-tabs .ui-tabs-nav{border: none; padding:5px 0px 0px 0px; min-width:calc(100% - 10px);}
+.ui-tabs .ui-tabs-nav li{border: none; margin: 1px 5px 0 0; padding: 0;}
+
+.condition table tbody td input{background: #fff; border: 1px solid #aaa;}
+
+#logBody .ui-widget-header{background-color:#555; margin-bottom:4px; border-radius:4px; padding:5px 10px;}
+	#logBody .ui-widget-header.ui-tabs-nav{padding: 5px 0 0 10px; border-radius: 4px 4px 0 0;}
+.ui-widget-header.ui-dialog-titlebar,
+#DIALOG_DGR_CNG_HISTORY_LIST_DIV .ui-jqgrid-titlebar{color:#222;}
+#DIALOG_DGR_CNG_HISTORY_LIST_DIV .ui-jqgrid-bdiv input[type=button]{padding: 3px 8px; border: none; background: #417ed1; border-radius: 4px; color: #fff; cursor: pointer;}
+
+/*우측컨텐츠*/
+#mainBody .ui-jqgrid .ui-jqgrid-htable th div{padding:5px 0;}
+#mainCenter .ui-widget-header{border-radius:4px; background:#555; margin-bottom:4px;}
+#mainCenter .ui-th-ltr, #mainCenter .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr{height:40px; line-height: 20px;}
+.ui-widget-header{background: none; color: #fff; border: none; padding: 5px 10px; border-radius: 4px 4px 0 0;}
+.ui-state-hover, .ui-widget-content .ui-state-hover, .ui-widget-header .ui-state-hover, .ui-state-focus, .ui-widget-content .ui-state-focus, .ui-widget-header .ui-state-focus{border-right: 1px solid #dadada; border-left:none; border-top:none;}
+#mainCenter div.btn select{padding: 3px 8px 4px 8px; border-radius: 4px; border: 1px solid #aaa;}
+#mainCenter .ui-state-highlight, #mainCenter .ui-widget-content .ui-state-highlight, #mainCenter .ui-widget-header .ui-state-highlight{background:#f3f9ff; color:#222; border: 1px solid #f3f9ff; border-right: 1px solid #aaa; border-bottom: 1px solid #aaa; border-top:none; border-right-color:#aaa !important;}
+
+#mainCenter #subMainWest, #mainCenter #subMainCenter{overflow-y:auto !important;}
+#mainCenter #subMainWest .ui-jqgrid, #mainCenter #subMainCenter .ui-jqgrid{width:100% !important;}
+
+/*온리 커스텀*/
+.btn_classify{border: none; border-radius: 5px; padding:4px 8px 4px 22px; display:inline-block; cursor:pointer; background: url(/images/design/ico_btn_tableinfo.png) no-repeat 10px center #f26c4f; color:#fff; border: 1px solid #f26c4f;}
+.btn_system,
+.ui-widget-content a.btnClass.btn_system{padding-left:25px; background: url(/images/design/ico_btn_system.png) no-repeat 8px center #f26c4f; margin-left:2px;}
+
+/*예산심사조서 - 조회*/
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-view,
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-hdiv,
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-bdiv,
+#gbox_BUDGET_SELECT_NEW_GRD,
+#mainBody #mainCenter .csGrid .ui-jqgrid.ui-widget.ui-widget-content.ui-corner-all
+{width:100% !important; height:auto !important;}

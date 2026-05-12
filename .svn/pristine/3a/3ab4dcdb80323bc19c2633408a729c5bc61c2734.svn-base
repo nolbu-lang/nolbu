@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ManageUser">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+
+    <sql id="ManageUser.selectManageUserUserListSub01">
+        FROM TB_USER A,
+             TB_USERPOWGRP B,
+             TB_POWGR C
+        WHERE A.USER_ID = B.USER_ID
+          AND B.POW_GR_CD = C.POW_GR_CD
+          AND A.USE_YN = 'Y'
+          AND B.USE_YN = 'Y'
+        <isNotEmpty property="userid" prepend="">
+          AND A.LOGIN_ID LIKE '%' || #userid# || '%'
+        </isNotEmpty>
+        <isNotEmpty property="usernm" prepend="">
+          AND A.USER_NM LIKE '%' || #usernm# || '%'
+        </isNotEmpty>
+
+    </sql>
+
+    <select id="ManageUser.selectManageUserUserList" parameterClass="Map" resultClass="egovMap">
+        /*ManageUser.selectManageUserUserList*/
+        SELECT T.*
+          FROM (SELECT ROWNUM AS ROW_NUM
+                     , T1.*
+                  FROM (SELECT A.USER_ID
+                             , A.USER_NM
+                             , A.LOGIN_ID
+                             , C.POW_GR_NM
+                             , C.POW_GR_CD
+                             , A.PSWD
+                             , TO_CHAR(A.FINAL_CONNECT_DATE, 'YYYY-MM-DD HH24:MI:SS') AS FINAL_CONNECT_DATE
+                             , A.FINAL_CONNECT_IP
+                       <include refid="ManageUser.selectManageUserUserListSub01" />
+                       ) T1
+               ) T
+         WHERE 1 = 1
+        <isNotEqual property="selectAll" compareValue="Y" prepend="">
+           AND T.ROW_NUM BETWEEN NVL(#start#, 0) AND NVL(#rowNum#, 0) + NVL(#start#, 0) -1
+        </isNotEqual>
+    </select>
+
+    <select id="ManageUser.selectManageUserUserListCnt" parameterClass="Map" resultClass="java.lang.Integer">
+        SELECT COUNT(A.USER_ID) AS TOTALCNT
+        <include refid="ManageUser.selectManageUserUserListSub01" />
+    </select>
+    
+    <update id="ManageUser.deleteManageUser" parameterClass="Map" >
+        /*ManageUser.deleteManageUser*/
+        UPDATE TB_USER 
+           SET USE_YN = 'N'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND USER_ID = #deleteUserId#
+    </update>
+    
+    <update id="ManageUser.deleteManageUserPowgbr" parameterClass="Map" >
+        /*ManageUser.deleteManageUserPowgbr*/
+        UPDATE TB_USERPOWGRP
+           SET USE_YN = 'N'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND USER_ID = #deleteUserId#
+    </update>
+</sqlMap>

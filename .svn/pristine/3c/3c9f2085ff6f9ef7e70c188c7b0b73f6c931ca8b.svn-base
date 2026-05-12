@@ -1,0 +1,57 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import com.cs.bcjis.comm.BcjisCommAbstractDAO;
+
+@Repository("reportWrite0F0DAO")
+public class ReportWrite0F0DAO extends BcjisCommAbstractDAO {
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0List(Map map) throws Exception{
+        return list("ReportWrite0F0.selectReport0F0List", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public int selectReport0F0ListCnt(Map map) throws Exception {
+        return (Integer) getSqlMapClientTemplate().queryForObject("ReportWrite0F0.selectReport0F0ListCnt", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public int selectReportAttrCnt(Map map) throws Exception {
+    	return (Integer) getSqlMapClientTemplate().queryForObject("ReportWrite0F0.selectReportAttrCnt", map);
+    }
+ 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void insertReportAttr(Map map) throws Exception {
+    	insert("ReportWrite0F0.insertReportAttr", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void insertReportAttrSel(Map map) throws Exception {
+    	insert("ReportWrite0F0.insertReportAttrSel", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateReportAttr(Map map) throws Exception {
+    	update("ReportWrite0F0.updateReportAttr", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateReportAttrSel(Map map) throws Exception {
+    	update("ReportWrite0F0.updateReportAttrSel", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0ExcelList(Map map) throws Exception{
+    	return list("ReportWrite0F0.selectReport0F0ExcelList", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void deleteReportAttr(Map map) throws Exception {
+    	delete("ReportWrite0F0.deleteReportAttr", map);
+    }
+}

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrDeptSelt">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <sql id="DialogDgrDeptSelt.selectDgrDeptSeltListSub01">
+                          FROM TB_DGRDEPT A
+                         WHERE 1 = 1
+                         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+                           AND EXISTS (SELECT 1
+                                         FROM TB_USERDEPT Z
+                                        WHERE Z.USER_ID = #userId#
+                                          AND Z.DEPT_CD = A.DEPT_CD
+                                          AND Z.USE_YN = 'Y'
+                                          AND ROWNUM = 1
+                                      )
+                         </isEqual>
+                           AND A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                         <isNotEmpty prepend="" property="officeCd">
+                           AND A.OFFICE_CD = #officeCd#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="deptNm">
+                           AND A.DEPT_NM LIKE '%' || #deptNm# || '%'
+                         </isNotEmpty>
+    </sql>
+    
+    <select id="DialogDgrDeptSelt.selectDgrDeptSeltList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrDeptSelt.selectDgrDeptSeltList*/
+        SELECT T.*
+          FROM (SELECT ROWNUM AS ROW_NUM
+                     , T1.*
+                  FROM (
+                        SELECT A.FIS_YEAR AS FIS_YEAR
+                             , A.BGT_DGR AS BGT_DGR
+                             , A.OFFICE_CD AS OFFICE_CD
+                             , A.OFFICE_NM AS OFFICE_NM
+                             , A.DEPT_CD AS DEPT_CD
+                             , A.DEPT_NM AS DEPT_NM
+                             , A.DEPT_RANK AS DEPT_RANK
+                           <include refid="DialogDgrDeptSelt.selectDgrDeptSeltListSub01"/>
+                         ORDER BY A.OFFICE_RANK
+                                , A.DEPT_RANK
+                       ) T1
+               ) T
+         WHERE 1 = 1
+         <isNotEqual property="selectAll" compareValue="Y" prepend="" >
+           AND T.ROW_NUM BETWEEN NVL(#start#, 0) AND NVL(#rowNum#, 0) + NVL(#start#, 0) -1
+         </isNotEqual>
+    </select>
+    
+    <select id="DialogDgrDeptSelt.selectDgrDeptSeltListCnt" parameterClass="Map" resultClass="java.lang.Integer" >
+            /*DialogDgrDeptSelt.selectDgrDeptSeltListCnt*/
+            SELECT COUNT(A.DEPT_CD) AS TOTALCNT
+            <include refid="DialogDgrDeptSelt.selectDgrDeptSeltListSub01"/>
+    </select>
+</sqlMap>

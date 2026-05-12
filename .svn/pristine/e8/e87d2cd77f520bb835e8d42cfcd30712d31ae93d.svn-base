@@ -1,0 +1,14 @@
+$(document).ready(function() {
+    bcjisCommMainObj = {};
+    
+    mainLayout = $('#wrap').layout({
+        north__size : 70,
+        west__size : 270,
+        south__size : 72
+    });
+   
+    //상단 자동 토글
+    mainLayout.toggle('north');
+    //하단 자동 토글
+    mainLayout.toggle('south');
+});

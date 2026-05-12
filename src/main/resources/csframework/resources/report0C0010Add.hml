@@ -1,0 +1,123 @@
+            <P ParaShape="22" Style="0">
+                <TEXT CharShape="18">
+                    <CHAR>(단위 : 백만원)</CHAR>
+                </TEXT>
+            </P>
+            <P ParaShape="0" Style="0">
+                <TEXT CharShape="30">
+                    <TABLE BorderFill="1" CellSpacing="0" ColCount="5" PageBreak="None" RepeatHeader="true" RowCount="#rowCount#">
+                        <SHAPEOBJECT InstId="1826651189" Lock="false" NumberingType="Table" ZOrder="31">
+                            <SIZE Height="18020" HeightRelTo="Absolute" Protect="false" Width="63157" WidthRelTo="Absolute" />
+                            <POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Column" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para" />
+                            <OUTSIDEMARGIN Bottom="140" Left="140" Right="140" Top="140" />
+                        </SHAPEOBJECT>
+                        <INSIDEMARGIN Bottom="140" Left="140" Right="140" Top="140" />
+                        <ROW>
+                            <CELL BorderFill="26" ColAddr="0" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="3660" Protect="false" RowAddr="0" RowSpan="2" Width="18048">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="17" Style="0">
+                                        <TEXT CharShape="42">
+                                            <CHAR>구 분</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="12" ColAddr="1" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="3660" Protect="false" RowAddr="0" RowSpan="2" Width="10594">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="15" Style="0">
+                                        <TEXT CharShape="42">
+                                            <CHAR>‘#fisYearShort#.당초예산</CHAR>
+                                        </TEXT>
+                                        <TEXT CharShape="20" />
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="11" ColAddr="2" ColSpan="2" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="1580" Protect="false" RowAddr="0" RowSpan="1" Width="18490">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="13" Style="0">
+                                        <TEXT CharShape="42">
+                                            <CHAR>#fisYear#년도 #addTimes#회추경</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="10" ColAddr="4" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="3660" Protect="false" RowAddr="0" RowSpan="2" Width="16025">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="11" Style="0">
+                                        <TEXT CharShape="33">
+                                            <CHAR>비고</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                        </ROW>
+                        <ROW>
+                            <CELL BorderFill="7" ColAddr="2" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2080" Protect="false" RowAddr="1" RowSpan="1" Width="9245">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="13" Style="0">
+                                        <TEXT CharShape="42">
+                                            <CHAR>요구액</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="15" ColAddr="3" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2080" Protect="false" RowAddr="1" RowSpan="1" Width="9245">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="13" Style="0">
+                                        <TEXT CharShape="43">
+                                            <CHAR>심사(안)</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                        </ROW>
+                        <ROW>
+                            <CELL BorderFill="9" ColAddr="0" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2246" Protect="false" RowAddr="2" RowSpan="1" Width="18048">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="21" Style="0">
+                                        <TEXT CharShape="24">
+                                            <CHAR>소 계</CHAR>
+                                        </TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="15" ColAddr="1" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2246" Protect="false" RowAddr="2" RowSpan="1" Width="10594">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="15" Style="0">
+                                        <TEXT CharShape="69"><CHAR>#preDefFrscAmt0#</CHAR></TEXT>
+                                    </P>
+                                    #preDefFrscAmt0Detl#
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="21" ColAddr="2" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2246" Protect="false" RowAddr="2" RowSpan="1" Width="9245">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="15" Style="0">
+                                        <TEXT CharShape="69"><CHAR>#dmnFrscAmt0#</CHAR></TEXT>
+                                    </P>
+                                    #dmnFrscAmt0Detl#
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="15" ColAddr="3" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2246" Protect="false" RowAddr="2" RowSpan="1" Width="9245">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="15" Style="0">
+                                        <TEXT CharShape="69"><CHAR>#frscAmt0#</CHAR></TEXT>
+                                    </P>
+                                    #frscAmt0Detl#
+                                </PARALIST>
+                            </CELL>
+                            <CELL BorderFill="10" ColAddr="4" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="2246" Protect="false" RowAddr="2" RowSpan="1" Width="16025">
+                                <PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">
+                                    <P ParaShape="19" Style="0">
+                                        <TEXT CharShape="34"><CHAR>#investPlanCont#</CHAR></TEXT>
+                                    </P>
+                                </PARALIST>
+                            </CELL>
+                        </ROW>
+                        #report0C0010AddRow#
+                    </TABLE>
+                    <CHAR />
+                </TEXT>
+            </P>
+            <P ParaShape="0" Style="0">
+                <TEXT CharShape="26" />
+            </P>

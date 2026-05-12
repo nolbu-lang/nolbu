@@ -1,0 +1,1065 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BcjisHisComm">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <insert id="BcjisHisComm.insertTbDgroffice020H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbDgroffice020H*/
+        INSERT 
+          INTO TB_DGROFFICE020_H(
+               FIS_YEAR
+             , BGT_DGR
+             , OFFICE_CD
+             , HIS_SEQ
+             , HIS_FG
+             , OFFICE_RANK
+             , OFFICE_RANK020
+             , REGI_ID
+             , REGI_DATE)
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , OFFICE_CD
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_DGROFFICE020_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD) AS HIS_SEQ
+             , #hisFg#
+             , OFFICE_RANK
+             , OFFICE_RANK020
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGROFFICE020 A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND OFFICE_CD = #officeCd#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbDgrcompoH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbDgrcompoH*/
+        INSERT 
+          INTO TB_DGRCOMPO_H(
+               FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , DEPT_CD
+             , DBIZ_CD
+             , TE_MNG_MOK_CD
+             , TE_MNG_MOK_NM
+             , TE_BGT_COMPO_SEQ
+             , DEMAND_COMPO_SORT_SEQ
+             , DEMAND_COMPO_LEVEL
+             , DEMAND_COMP_GROUND
+             , DEMAND_COMP_FORMULAR
+             , DEMAND_BGT_AMT
+             , DEMAND_DIFF_AMT
+             , DEMAND_COMPO_LEVEL_AMT
+             , DEMAND_FORM_DSP_YN
+             , COMPO_SORT_SEQ
+             , COMPO_LEVEL
+             , COMP_GROUND
+             , COMP_FORMULAR
+             , BGT_AMT
+             , PRE_FORMULAR
+             , PRE_AMT
+             , DIFF_AMT
+             , COMPO_LEVEL_AMT
+             , FORM_DSP_YN
+             , UP_TE_BGT_COMPO_SEQ
+             , UP_TE_BGT_COMPO_ID
+             , SORT_SEQ
+             , PRE_COMP_FORMULAR
+             , PRE_BGT_AMT
+             , REGI_ID
+             , REGI_DATE)
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_DGRCOMPO_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , DEPT_CD
+             , DBIZ_CD
+             , TE_MNG_MOK_CD
+             , TE_MNG_MOK_NM
+             , TE_BGT_COMPO_SEQ
+             , DEMAND_COMPO_SORT_SEQ
+             , DEMAND_COMPO_LEVEL
+             , DEMAND_COMP_GROUND
+             , DEMAND_COMP_FORMULAR
+             , DEMAND_BGT_AMT
+             , DEMAND_DIFF_AMT
+             , DEMAND_COMPO_LEVEL_AMT
+             , DEMAND_FORM_DSP_YN
+             , COMPO_SORT_SEQ
+             , COMPO_LEVEL
+             , COMP_GROUND
+             , COMP_FORMULAR
+             , BGT_AMT
+             , PRE_FORMULAR
+             , PRE_AMT
+             , DIFF_AMT
+             , COMPO_LEVEL_AMT
+             , FORM_DSP_YN
+             , UP_TE_BGT_COMPO_SEQ
+             , UP_TE_BGT_COMPO_ID
+             , SORT_SEQ
+             , PRE_COMP_FORMULAR
+             , PRE_BGT_AMT
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbDgrcompofrscH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbDgrcompofrscH*/
+        INSERT TB_DGRCOMPOFRSC_H(
+               FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , FRSC_FG_CD
+             , HIS_SEQ
+             , HIS_FG
+             , DMN_DEF_FRSC_AMT
+             , ADJ_DEF_FRSC_AMT
+             , PRE_DEF_FRSC_AMT
+             , PRE_FRSC_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , FRSC_FG_CD
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_DGRCOMPOFRSC_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND Z.FRSC_FG_CD = A.FRSC_FG_CD) AS HIS_SEQ
+             , #hisFg#
+             , DMN_DEF_FRSC_AMT
+             , ADJ_DEF_FRSC_AMT
+             , PRE_DEF_FRSC_AMT
+             , PRE_FRSC_AMT
+             , TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPOFRSC A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="frscFgCd">
+           AND FRSC_FG_CD = #frscFgCd#
+         </isNotEmpty>
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbDgrcompocharH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbDgrcompocharH*/
+        INSERT TB_DGRCOMPOCHAR_H(
+               FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , CHAR_FG_CD
+             , HIS_SEQ
+             , HIS_FG
+             , DMN_DEF_CHAR_AMT
+             , ADJ_DEF_CHAR_AMT
+             , PRE_DEF_CHAR_AMT
+             , PRE_CHAR_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , CHAR_FG_CD
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_DGRCOMPOCHAR_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND Z.CHAR_FG_CD = A.CHAR_FG_CD) AS HIS_SEQ
+             , #hisFg#
+             , DMN_DEF_CHAR_AMT
+             , ADJ_DEF_CHAR_AMT
+             , PRE_DEF_CHAR_AMT
+             , PRE_CHAR_AMT
+             , TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPOCHAR A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="charFgCd">
+           AND CHAR_FG_CD = #charFgCd#
+         </isNotEmpty>
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReportH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReportH*/
+        INSERT TB_REPORT_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbSheetH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbSheetH*/
+        INSERT TB_SHEET_H(
+               SHEET_CD
+             , SHEET_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT SHEET_CD
+             , SHEET_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_SHEET_H Z WHERE Z.SHEET_CD = A.SHEET_CD AND Z.SHEET_DETL_CD = A.SHEET_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_SHEET A
+         WHERE 1 = 1
+           AND SHEET_CD = #sheetCd#
+           AND SHEET_DETL_CD = #sheetDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbPledgeH" parameterClass="Map" >
+        /*BcjisHisComm.insertTbPledgeH*/
+        INSERT TB_PLEDGE_H(
+               PLEDGE_BIZ_ID
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , EXAM_CONT
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , YEAR1_FRSC_AMT1
+             , YEAR1_FRSC_AMT2
+             , YEAR1_FRSC_AMT3
+             , YEAR1_FRSC_AMT4
+             , YEAR1_FRSC_AMT5
+             , YEAR1_FRSC_AMT6
+             , YEAR2_FRSC_AMT1
+             , YEAR2_FRSC_AMT2
+             , YEAR2_FRSC_AMT3
+             , YEAR2_FRSC_AMT4
+             , YEAR2_FRSC_AMT5
+             , YEAR2_FRSC_AMT6
+             , YEAR3_FRSC_AMT1
+             , YEAR3_FRSC_AMT2
+             , YEAR3_FRSC_AMT3
+             , YEAR3_FRSC_AMT4
+             , YEAR3_FRSC_AMT5
+             , YEAR3_FRSC_AMT6
+             , YEAR4_FRSC_AMT1
+             , YEAR4_FRSC_AMT2
+             , YEAR4_FRSC_AMT3
+             , YEAR4_FRSC_AMT4
+             , YEAR4_FRSC_AMT5
+             , YEAR4_FRSC_AMT6
+             , YEAR5_FRSC_AMT1
+             , YEAR5_FRSC_AMT2
+             , YEAR5_FRSC_AMT3
+             , YEAR5_FRSC_AMT4
+             , YEAR5_FRSC_AMT5
+             , YEAR5_FRSC_AMT6
+             , REGI_ID
+             , REGI_DATE)
+        SELECT PLEDGE_BIZ_ID
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_PLEDGE_H Z WHERE Z.PLEDGE_BIZ_ID = A.PLEDGE_BIZ_ID AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , EXAM_CONT
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , YEAR1_FRSC_AMT1
+             , YEAR1_FRSC_AMT2
+             , YEAR1_FRSC_AMT3
+             , YEAR1_FRSC_AMT4
+             , YEAR1_FRSC_AMT5
+             , YEAR1_FRSC_AMT6
+             , YEAR2_FRSC_AMT1
+             , YEAR2_FRSC_AMT2
+             , YEAR2_FRSC_AMT3
+             , YEAR2_FRSC_AMT4
+             , YEAR2_FRSC_AMT5
+             , YEAR2_FRSC_AMT6
+             , YEAR3_FRSC_AMT1
+             , YEAR3_FRSC_AMT2
+             , YEAR3_FRSC_AMT3
+             , YEAR3_FRSC_AMT4
+             , YEAR3_FRSC_AMT5
+             , YEAR3_FRSC_AMT6
+             , YEAR4_FRSC_AMT1
+             , YEAR4_FRSC_AMT2
+             , YEAR4_FRSC_AMT3
+             , YEAR4_FRSC_AMT4
+             , YEAR4_FRSC_AMT5
+             , YEAR4_FRSC_AMT6
+             , YEAR5_FRSC_AMT1
+             , YEAR5_FRSC_AMT2
+             , YEAR5_FRSC_AMT3
+             , YEAR5_FRSC_AMT4
+             , YEAR5_FRSC_AMT5
+             , YEAR5_FRSC_AMT6
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_PLEDGE A
+         WHERE 1 = 1
+           AND PLEDGE_BIZ_ID = #pledgeBizId#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport010H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport010H*/
+        INSERT TB_REPORT010_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , INVEST_PLAN
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT010_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , INVEST_PLAN
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT010 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport020H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport020H*/
+        INSERT TB_REPORT020_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , REPORT_SORT_SEQ
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , TOT_CHAR_AMT1
+             , TOT_CHAR_AMT2
+             , TOT_CHAR_AMT3
+             , PRE_INV_FRSC_AMT1
+             , PRE_INV_FRSC_AMT2
+             , PRE_INV_FRSC_AMT3
+             , PRE_INV_FRSC_AMT4
+             , PRE_INV_FRSC_AMT5
+             , PRE_INV_FRSC_AMT6
+             , PRE_INV_CHAR_AMT1
+             , PRE_INV_CHAR_AMT2
+             , PRE_INV_CHAR_AMT3
+             , MAYOR_REPORT_YN
+             , INVEST_PLAN
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT020_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , REPORT_SORT_SEQ
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , TOT_CHAR_AMT1
+             , TOT_CHAR_AMT2
+             , TOT_CHAR_AMT3
+             , PRE_INV_FRSC_AMT1
+             , PRE_INV_FRSC_AMT2
+             , PRE_INV_FRSC_AMT3
+             , PRE_INV_FRSC_AMT4
+             , PRE_INV_FRSC_AMT5
+             , PRE_INV_FRSC_AMT6
+             , PRE_INV_CHAR_AMT1
+             , PRE_INV_CHAR_AMT2
+             , PRE_INV_CHAR_AMT3
+             , MAYOR_REPORT_YN
+             , INVEST_PLAN
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT020 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport030H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport030H*/
+        INSERT TB_REPORT030_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , DEPT_CD
+             , DBIZ_CD
+             , HIS_SEQ
+             , HIS_FG
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , PRE_NATN_EXP
+             , PRE_SI_EXP
+             , GU_GOON_EXP
+             , NATN_BIZ_NM
+             , MNSTRY_NM
+             , NATN_BUDN_RATE
+             , SI_BUDN_RATE
+             , GU_BUDN_RATE
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , DEPT_CD
+             , DBIZ_CD
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT030_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND Z.DBIZ_CD = A.DBIZ_CD) AS HIS_SEQ
+             , #hisFg#
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , PRE_NATN_EXP
+             , PRE_SI_EXP
+             , GU_GOON_EXP
+             , NATN_BIZ_NM
+             , MNSTRY_NM
+             , NATN_BUDN_RATE
+             , SI_BUDN_RATE
+             , GU_BUDN_RATE
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT030 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND DEPT_CD = #deptCd#
+           AND DBIZ_CD = #dbizCd#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport040H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport040H*/
+        INSERT TB_REPORT040_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , STAFF_CNT
+             , STAFF_CURR_CNT
+             , DRIVER_CNT
+             , ETC_CNT
+             , EXP_FG
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT040_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , STAFF_CNT
+             , STAFF_CURR_CNT
+             , DRIVER_CNT
+             , ETC_CNT
+             , EXP_FG
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT040 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport050H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport050H*/
+        INSERT TB_REPORT050_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT050_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT050 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport055H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport055H*/
+        INSERT TB_REPORT055_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , JUDG_RSLT_AMT
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT055_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , JUDG_RSLT_AMT
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT055 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport060H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport060H*/
+        INSERT TB_REPORT060_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT060_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT060 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport070H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport070H*/
+        INSERT TB_REPORT070_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , ORDER_YMD_SEQ
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , CONSIDER_AMT1
+             , CONSIDER_AMT2
+             , CONSIDER_AMT3
+             , CONSIDER_AMT4
+             , CONSIDER_AMT5
+             , CONSIDER_AMT6
+             , REPORT_SORT_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , ORDER_YMD_SEQ
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT070_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , CONSIDER_AMT1
+             , CONSIDER_AMT2
+             , CONSIDER_AMT3
+             , CONSIDER_AMT4
+             , CONSIDER_AMT5
+             , CONSIDER_AMT6
+             , REPORT_SORT_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT070 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport080H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport080H*/
+        INSERT TB_REPORT080_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , IMPORT_PERSON_NM
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT
+             , ADD_DEMAND_AMT
+             , REFLECT_AMT
+             , REPORT_SORT_SEQ
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT080_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , IMPORT_PERSON_NM
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT
+             , ADD_DEMAND_AMT
+             , REFLECT_AMT
+             , REPORT_SORT_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT080 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport090H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport090H*/
+        INSERT TB_REPORT090_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT090_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT090 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport0A0H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport0A0H*/
+        INSERT TB_REPORT0A0_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , MAYOR_REPORT_YN
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT0A0_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , MAYOR_REPORT_YN
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT0A0 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport0B0H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport0B0H*/
+        INSERT TB_REPORT0B0_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , BIZ_NM
+             , BIZ_AMOUNT
+             , BIZ_PERIOD
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT0B0_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , BIZ_NM
+             , BIZ_AMOUNT
+             , BIZ_PERIOD
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT0B0 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <insert id="BcjisHisComm.insertTbReport0C0H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport0C0H*/
+        INSERT TB_REPORT0C0_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , BIZ_NM
+             , DEMAND_TITLE
+             , DEMAND_CONT
+             , EXPLAIN_CONT
+             , EXAM_CONT
+             , TOT_FRSC_CONT
+             , PRE_INV_FRSC_CONT
+             , PRE_DEF_FRSC_CONT
+             , PRE_FRSC_CONT
+             , DMN_FRSC_CONT
+             , FRSC_CONT
+             , INVEST_PLAN0
+             , INVEST_PLAN1
+             , INVEST_PLAN2
+             , INVEST_PLAN6
+             , INVEST_PLAN_CONT
+             , SRCH_VAL
+             , REPORT_FG
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT0C0_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , BIZ_NM
+             , DEMAND_TITLE
+             , DEMAND_CONT
+             , EXPLAIN_CONT
+             , EXAM_CONT
+             , TOT_FRSC_CONT
+             , PRE_INV_FRSC_CONT
+             , PRE_DEF_FRSC_CONT
+             , PRE_FRSC_CONT
+             , DMN_FRSC_CONT
+             , FRSC_CONT
+             , INVEST_PLAN0
+             , INVEST_PLAN1
+             , INVEST_PLAN2
+             , INVEST_PLAN6
+             , INVEST_PLAN_CONT
+             , SRCH_VAL
+             , REPORT_FG
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT0C0 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+
+    <insert id="BcjisHisComm.insertTbReport0D0H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbReport0D0H*/
+        INSERT TB_REPORT0D0_H(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , HIS_SEQ
+             , HIS_FG
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , MAYOR_REPORT_YN
+             , REGI_ID
+             , REGI_DATE)
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_REPORT0D0_H Z WHERE Z.REPORT_CD = A.REPORT_CD AND Z.REPORT_DETL_CD = A.REPORT_DETL_CD AND Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS HIS_SEQ
+             , #hisFg#
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , MAYOR_REPORT_YN
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT0D0 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+</sqlMap>

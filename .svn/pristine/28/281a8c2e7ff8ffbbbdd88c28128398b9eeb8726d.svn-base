@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogManageUserRegi">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+       
+    <select id="DialogManageUserRegi.selectDialogManageUser" parameterClass="Map" resultClass="egovMap" >
+        /*DialogManageUserRegi.selectDialogManageUser*/
+        SELECT A.LOGIN_ID
+          FROM TB_USER A
+         WHERE 1 = 1
+           AND A.LOGIN_ID = #loginId#
+    </select>
+    
+     <insert id="DialogManageUserRegi.insertDialogManageUserUser" parameterClass="Map" >
+        /*DialogManageUserRegi.insertDialogManageUserUser*/
+        INSERT 
+          INTO TB_USER(
+               USER_ID
+             , USER_NM
+             , PSWD
+             , CONNECT_YN
+             , USE_YN
+             , LOGIN_ID
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+          VALUES (#newUserId#
+               , #userNm#
+               , #userPass#
+               , NVL(#connectYn#, 'Y')
+               , NVL(#useYn#, 'Y')
+               , #loginId#
+               , #userId#
+               , SYSTIMESTAMP
+               , #userId#
+               , SYSTIMESTAMP)
+
+    </insert>
+    
+    
+    <insert id="DialogManageUserRegi.insertDialogManageUserPowgrp" parameterClass="Map" >
+        /*DialogManageUserRegi.insertDialogManageUserPowgrp*/
+        INSERT 
+          INTO TB_USERPOWGRP(
+               USER_ID
+             , POW_GR_CD
+             , USE_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+          VALUES (#newUserId#
+               , #powGrCd#
+               , NVL(#useYn#, 'Y')
+               , #userId#
+               , SYSTIMESTAMP
+               , #userId#
+               , SYSTIMESTAMP)
+
+    </insert>
+       
+    <select id="DialogManageUserRegi.selectManageUserRegiReport" parameterClass="Map" resultClass="egovMap" >
+        /*DialogManageUserRegi.selectManageUserRegiReport*/
+         SELECT A.DETL_CD AS REPORT_CD
+              , A.DETL_CD_NM AS REPORT_NM
+              , NVL(B.USE_YN, 'N') AS SEL_YN
+           FROM TB_COMMCDDETL A
+              , (SELECT B.REPORT_CD
+                      , B.USE_YN
+                   FROM TB_USERREPORT B
+                  WHERE 1 = 1
+                    AND B.USER_ID = #userId#
+                ) B
+          WHERE A.DETL_CD = B.REPORT_CD(+)
+            AND A.CL_CD = 'RP001'
+            AND A.USE_YN = 'Y'
+          ORDER BY REPORT_CD
+    </select>
+    
+    <update id="DialogManageUserRegi.updateManageUserReportUseYn" parameterClass="Map" >
+        /*DialogManageUserRegi.updateManageUserReportUseYn*/
+        UPDATE TB_USERREPORT
+           SET USE_YN = 'N'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE USER_ID = #reportUserId#
+    </update>
+    
+    
+    <update id="DialogManageUserRegi.updateManageUserReport" parameterClass="Map" >
+        /*DialogManageUserRegi.updateManageUserReport*/
+        MERGE INTO TB_USERREPORT A
+             USING (SELECT #reportUserId# AS USER_ID
+                         , #reportCd# AS REPORT_CD
+                         , 'Y' AS USE_YN
+                   ) B 
+                ON A.USER_ID = B.USER_ID
+                   AND A.REPORT_CD = B.REPORT_CD
+              WHEN MATCHED THEN
+                UPDATE 
+                   SET A.USE_YN = B.USE_YN
+                     , MODI_ID = #userId#
+                     , MODI_DATE = SYSTIMESTAMP
+              WHEN NOT MATCHED THEN 
+                INSERT (A.USER_ID, A.REPORT_CD, A.USE_YN, A.REGI_ID, A.REGI_DATE, A.MODI_ID, A.MODI_DATE)
+                VALUES (B.USER_ID, B.REPORT_CD, B.USE_YN, #userId#, SYSTIMESTAMP, #userId#, SYSTIMESTAMP)
+    </update>
+    
+    <select id="DialogManageUserRegi.selectManageUserRegiDept" parameterClass="Map" resultClass="egovMap" >
+        /*DialogManageUserRegi.selectManageUserRegiDept*/
+        SELECT T.DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID
+             , T.OFFICE_CD
+             , T.DEPT_CD
+             , T.DGRCOMPO_NM AS DGRCOMPO_NM
+             , T.DGR_LEVEL AS DGR_LEVEL
+             , T.UP_DGRCOMPO_ID AS PARENT
+             , DECODE(T.DGR_LEVEL, 0, 'false', 'true') AS IS_LEAF
+             , DECODE(T.DGR_LEVEL, 0, 'false', 'false') AS EXPANDED
+             , 'true' AS LOADED
+             , T.DGR_LEVEL AS "LEVEL"
+             , NVL((SELECT CASE WHEN COUNT(USER_ID) > 0 THEN 'Y'
+                                ELSE 'N'
+                           END
+                      FROM TB_USERDEPT Z
+                     WHERE 1 = 1
+                       AND Z.USER_ID = #userId#
+                       AND Z.OFFICE_CD = DECODE(T.DGR_LEVEL, 0, T.OFFICE_CD, Z.OFFICE_CD) 
+                       AND Z.DEPT_CD = DECODE(T.DGR_LEVEL, 0, Z.DEPT_CD, T.DEPT_CD)
+                       AND Z.USE_YN = 'Y'
+               ), 'N') AS SEL_YN
+          FROM (SELECT DECODE(H.CT, 1, A.OFFICE_CD || '_' || '0000000'
+                                  , A.OFFICE_CD || '_' || A.DEPT_CD
+                       ) AS DGRCOMPO_ID
+                     , DECODE(H.CT, 1, '0000' || '_' || '0000000'
+                                  , A.OFFICE_CD || '_' || '0000000'
+                       ) AS UP_DGRCOMPO_ID
+                     , DECODE(H.CT, 1, 0, 1) AS DGR_LEVEL
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , DECODE(H.CT, 1, '0000000', A.DEPT_CD) AS DEPT_CD
+                     , DECODE(H.CT, 1, (SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.OFFICE_CD = A.OFFICE_CD ORDER BY A.FIS_YEAR DESC, A.BGT_DGR DESC LIMIT 0, 1), A.DEPT_NM) AS DGRCOMPO_NM
+                  FROM (SELECT Z.*
+                          FROM (SELECT *
+                                     , ROW_NUMBER() OVER (PARTITION BY DEPT_CD ORDER BY FIS_YEAR DESC, BGT_DGR DESC) AS SEQNUM
+                                 FROM TB_DGRDEPT Z
+                               ) Z
+                         WHERE Z.SEQNUM = 1
+                       ) A
+                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                 GROUP BY DECODE(H.CT, 1, A.OFFICE_CD || '_' || '0000000'
+                                     , A.OFFICE_CD || '_' || A.DEPT_CD
+                       )
+               ) T
+    </select>
+    
+    <update id="DialogManageUserRegi.updateManageUserDeptUseYn" parameterClass="Map" >
+        /*DialogManageUserRegi.updateManageUserDeptUseYn*/
+        UPDATE TB_USERDEPT
+           SET USE_YN = 'N'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE USER_ID = #deptUserId#
+    </update>
+    
+    
+    <update id="DialogManageUserRegi.updateManageUserDept" parameterClass="Map" >
+        /*DialogManageUserRegi.updateManageUserDept*/
+        MERGE INTO TB_USERDEPT A
+             USING (SELECT #deptUserId# AS USER_ID
+                         , #deptCd# AS DEPT_CD
+                         , #officeCd# AS OFFICE_CD
+                         , 'Y' AS USE_YN
+                   ) B 
+                ON A.USER_ID = B.USER_ID
+                   AND A.DEPT_CD = B.DEPT_CD
+              WHEN MATCHED THEN
+                UPDATE 
+                   SET A.USE_YN = B.USE_YN
+                     , MODI_ID = #userId#
+                     , MODI_DATE = SYSTIMESTAMP
+              WHEN NOT MATCHED THEN 
+                INSERT (A.USER_ID, A.DEPT_CD, A.OFFICE_CD, A.USE_YN, A.REGI_ID, A.REGI_DATE, A.MODI_ID, A.MODI_DATE)
+                VALUES (B.USER_ID, B.DEPT_CD, B.OFFICE_CD, B.USE_YN, #userId#, SYSTIMESTAMP, #userId#, SYSTIMESTAMP)
+    </update>
+</sqlMap>

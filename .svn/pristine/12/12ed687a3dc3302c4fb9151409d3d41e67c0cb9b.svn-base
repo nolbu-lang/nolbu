@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ page import = "java.util.Map" %>
+<%@ page import = "java.util.HashMap" %>
+<%@ page import = "com.cs.bcjis.comm.util.BcjisCommUtil" %>
+<%@ page import = "org.springframework.web.context.WebApplicationContext" %>
+<%@ page import = "org.springframework.web.context.support.WebApplicationContextUtils" %>
+<%
+    String title = "예산편성심사정보시스템";
+    String contextPath = request.getContextPath();
+%>
+
+<html lang="ko">   
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<link rel="icon" href="${pageContext.request.contextPath}/images/<spring:eval expression="@config['Globals.LocalCd']"/>/favicon.ico" />
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/<spring:eval expression="@config['Globals.LocalCd']"/>/theme.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ui.jqgrid.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/my.jquery-ui.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/bcjis.jqgrid.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/fullcalendar.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/fullcalendar.print.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/jquery.layout.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/<spring:eval expression="@config['Globals.LocalCd']"/>/bcjis.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/<spring:eval expression="@config['Globals.LocalCd']"/>/comm.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/uxiscustom.css" >
+
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery-1.9.1.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery-impromptu.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery-ui-1.10.1.custom.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/grid.locale-kr.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.jqGrid.src.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/autogrow.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/ajaxfileupload.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/fullcalendar.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.jstree.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.layout.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.numeric.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/autoNumeric.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.maxlength.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/sly.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/cs.jquery.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/bcjisComm.js"></script>
+
+<script>
+  var ctx = "<%=request.getContextPath()%>";
+</script>
+
+<title><%=title%></title>
+</head>
+<body>
+
+<!--wrap s-->
+<div id="wrap">

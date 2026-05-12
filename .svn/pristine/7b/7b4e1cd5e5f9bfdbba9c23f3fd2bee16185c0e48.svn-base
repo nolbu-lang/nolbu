@@ -1,0 +1,45 @@
+package com.cs.bcjis.report.util;
+
+public class Report0F0SaveFrscAmtsVO {
+    private String frscNm = "";
+    private long totFrscAmt = 0l;
+    private long preInvFrscAmt = 0l;
+
+    public Report0F0SaveFrscAmtsVO(String frscNm, long totFrscAmt, long preInvFrscAmt) {
+        this.frscNm = frscNm;
+        this.setTotFrscAmt(totFrscAmt);
+        this.setPreInvFrscAmt(preInvFrscAmt);
+    }
+
+    public String getFrscNm() {
+        return frscNm;
+    }
+
+    public void setFrscNm(String frscNm) {
+        this.frscNm = frscNm;
+    }
+
+    public long getTotFrscAmt() {
+		return totFrscAmt;
+	}
+
+	public void setTotFrscAmt(long totFrscAmt) {
+		this.totFrscAmt = totFrscAmt;
+	}
+
+	public long getPreInvFrscAmt() {
+		return preInvFrscAmt;
+	}
+
+	public void setPreInvFrscAmt(long preInvFrscAmt) {
+		this.preInvFrscAmt = preInvFrscAmt;
+	}
+	
+    @Override
+    public String toString() {
+        return "Report010SaveFrscAmtsVO [frscNm=" + frscNm + ", totFrscAmt=" + totFrscAmt + ", preInvFrscAmt=" + preInvFrscAmt + "]";
+    }
+
+	
+
+}

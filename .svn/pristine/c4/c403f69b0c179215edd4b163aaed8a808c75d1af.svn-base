@@ -1,0 +1,188 @@
+html,body {
+	font-size: 12px;
+	font-family: Dotum, Verdana, Gulim, Arial, sans-serif;
+    color: #494949;
+	line-height: 16px;
+	font-weight: normal;
+	padding: 0px;
+	margin: 0px;
+	width: 100%; 
+	height : 100%;
+	overflow: auto;
+}
+
+#wrap {
+	height: 100%;
+	margin: 0 auto;
+	width: 100%;
+	min-width: 700px;
+	_width: 700px; /* min-width for IE6 */
+}
+
+.pane {
+	display: none; /* will appear when layout inits */
+}
+
+
+.ui-state-disabled,
+.ui-widget-content .ui-state-disabled,
+.ui-widget-header .ui-state-disabled {
+    opacity: .70;
+    filter:Alpha(Opacity=70);
+    background-image: none;
+}
+.ui-state-disabled .ui-icon {
+    filter:Alpha(Opacity=70); /* For IE8 - See #6059 */
+}
+
+.bcjisGrid {;}
+
+/*.ui-jqgrid .ui-jqgrid-btable { cursor : pointer; }*/
+input {margin:0px;padding:0px;font-style:normal;font-family: Dotum,Verdana,Gulim,Arial,AppleGothic,"애플고딕",sans-serif;color:#000000;font-weight:normal;font-size:12px}
+textarea{margin:0px;padding:0px;font-style:normal;font-family: Dotum,Verdana,Gulim,Arial,AppleGothic,"애플고딕",sans-serif;color:#000000;font-weight:normal;font-size:12px;line-height:18px;}
+
+fieldset {border:0;margin:0px;padding:0px;}
+legend {display:none;position:absolute;visibility:hidden;}
+caption {visibility:hidden;width:0px; height:0px; overflow:hidden;font-size:0px;margin:0px;padding:0px;line-height:0px;}
+img {border:0;vertical-align:top;}
+optgroup {font-style:normal;font-size:0px;height:0px;line-height:0px;}
+
+.csGrid {;}
+
+.EllipsText {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	-o-text-overflow: ellipsis;
+	-ms-text-overflow: ellipsis;
+	-moz-binding: url(/xe/ellipsis.xml#ellipsis)
+}
+
+.bcjis-loading {
+	display: none;
+	width: 40px;
+	height: 50px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	text-align: center;
+	margin-left: -25px;
+	margin-top: -25px;
+	z-index: 101;
+}
+
+/*에러페이지*/
+.error_bg {
+	width: 710px;
+	height: 148px;
+	background: url(images/comm/bg_error.gif) no-repeat 0 0;
+}
+
+.error_msg {
+	width: 400px;
+	padding: 50px 0 0 230px;
+}
+
+.error_msg li {
+	font-family: Dotum, 돋움;
+	font-weight: bold;
+	font-size: 11px;
+}
+
+.nondiv {
+    width: 100%;
+}
+
+.nondiv table {
+    width: 100%;
+    border-collapse: collapse;
+    padding: 0px;
+}
+
+.nondiv table tbody tr {
+    padding: 0;
+    border-spacing: 0px 0px;
+}
+
+.nondiv table tbody td {
+    padding: 0;
+    border-spacing: 0px 0px;
+}
+
+.amtDialogDgrcompModify {
+    ;
+}
+
+.amtInput020 {
+	text-align:right;
+	width: 70px;
+}
+
+.amtView020Tr {
+    border-right:0px !important;
+}
+
+.amtView020Td {
+    text-align: right !important; 
+    border-right: 0px !important;
+}
+
+.amtInput030 {
+    text-align:right;
+    width: 70px;
+}
+
+.amtInput040 {
+    text-align:right;
+    width: 40px;
+}
+
+.amtInput055 {
+    text-align:right;
+    width: 70px;
+}
+
+.amtInput070 {
+    text-align:right;
+    width: 70px;
+}
+
+.amtInput080 {
+    text-align:right;
+    width: 90px;
+}
+
+.amtInput0B0 {
+    text-align:right;
+    width: 90px;
+}
+
+.amtInput0C0 {
+    text-align:right;
+    width: 100%;
+}
+
+.amtView0C0Td {
+    text-align: right !important; 
+    border-right: 0px !important;
+}
+
+.jqgridSubTable {
+	width: 100%;
+    padding: 0px;
+    
+}
+
+.jqgridSubTable tbody tr {
+    border-right: 1px solid #aaaaaa/*{borderColorContent}*/;
+    background: #ffffff/*{bgColorContent}*/ url(images/ui-bg_flat_75_ffffff_40x100.png)/*{bgImgUrlContent}*/ 50%/*{bgContentXPos}*/ 50%/*{bgContentYPos}*/ repeat-x/*{bgContentRepeat}*/;
+    color: #222222/*{fcContent}*/;
+}
+
+.jqgridSubTable tbody tr td {
+    border-bottom-width: 1px !important;
+    border-bottom-color: #aaaaaa !important;
+    border-bottom-style: solid !important;
+}
+
+.contents_login {display:inline-block;width:565px;height:287px;background:url(images/login_bg.gif) no-repeat 0 0;}

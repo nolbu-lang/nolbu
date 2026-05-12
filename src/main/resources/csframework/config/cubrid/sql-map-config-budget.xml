@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetComm.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCommCd.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetApply.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCopy.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCopyNew.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetModify.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetPreCopy.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetSelect.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetSheetSelect.xml"/>
+</sqlMapConfig>
+ 

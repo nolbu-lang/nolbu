@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeCopy.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeManage.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeMatch.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeSelect.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeReport.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeReport1.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeReport2.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeReport3.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/pledge/PledgeReport4.xml"/>
+</sqlMapConfig>

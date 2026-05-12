@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BcjisFile">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+    <typeAlias alias="bcjisFileVO" type="com.cs.bcjis.comm.web.BcjisFileVO" />
+
+    <insert id="BcjisFile.insertTbFile" parameterClass="bcjisFileVO">
+        /*BcjisFile.insertTbFile*/
+        INSERT 
+          INTO TB_FILE(
+               ATCH_FILE_ID
+             , REGI_DATE
+             , USE_YN)
+        VALUES (#atchFileId#
+             , SYSDATE
+             , 'Y')
+    </insert>
+
+    <insert id="BcjisFile.insertTbFileDetl" parameterClass="bcjisFileVO">
+        /*BcjisFile.insertTbFileDetl*/
+        INSERT 
+          INTO TB_FILE_DETL(
+               ATCH_FILE_ID
+             , FILE_SN
+             , FILE_STRE_COURS
+             , STRE_FILE_NM
+             , ORIGNL_FILE_NM
+             , FILE_EXTSN
+             , FILE_SIZE)
+        VALUES (#atchFileId#
+             , #fileSn#
+             , #fileStreCours#
+             , #streFileNm#
+             , #orignlFileNm#
+             , #fileExtsn#
+             , #fileMg#)
+    </insert>
+
+    <resultMap id="fileList" class="com.cs.bcjis.comm.web.BcjisFileVO">
+        <result property="atchFileId" column="ATCH_FILE_ID" columnIndex="1"/>
+        <result property="fileExtsn" column="FILE_EXTSN" columnIndex="2"/>
+        <result property="fileMg" column="FILE_SIZE" columnIndex="3"/>
+        <result property="fileSn" column="FILE_SN" columnIndex="4"/>
+        <result property="fileStreCours" column="FILE_STRE_COURS" columnIndex="5"/>
+        <result property="orignlFileNm" column="ORIGNL_FILE_NM" columnIndex="6"/>
+        <result property="streFileNm" column="STRE_FILE_NM" columnIndex="7"/>
+        <result property="regiDate" column="REGI_DATE" columnIndex="8"/>          
+    </resultMap>
+    
+    <select id="BcjisFile.selectFileList" parameterClass="bcjisFileVO" resultMap="fileList">
+        /*BcjisFile.selectFileList*/
+        SELECT A.ATCH_FILE_ID
+             , B.FILE_SN
+             , B.FILE_STRE_COURS
+             , B.STRE_FILE_NM
+             , B.FILE_EXTSN
+             , B.ORIGNL_FILE_NM
+             , B.FILE_SIZE
+             , A.REGI_DATE
+          FROM TB_FILE A
+             , TB_FILE_DETL b
+         WHERE 1 = 1
+           AND B.ATCH_FILE_ID = A.ATCH_FILE_ID 
+           AND A.ATCH_FILE_ID = #atchFileId#
+         <isNotEmpty prepend="" property="fileSn">
+           AND B.FILE_SN = #fileSn#
+         </isNotEmpty>
+           AND A.USE_YN = 'Y'
+         ORDER BY B.FILE_SN
+    </select>
+
+    <resultMap id="fileDetail" class="com.cs.bcjis.comm.web.BcjisFileVO">
+        <result property="atchFileId" column="ATCH_FILE_ID" columnIndex="1"/>
+        <result property="fileExtsn" column="FILE_EXTSN" columnIndex="2"/>
+        <result property="fileMg" column="FILE_SIZE" columnIndex="3"/>
+        <result property="fileSn" column="FILE_SN" columnIndex="4"/>
+        <result property="fileStreCours" column="FILE_STRE_COURS" columnIndex="5"/>
+        <result property="orignlFileNm" column="ORIGNL_FILE_NM" columnIndex="6"/>
+        <result property="streFileNm" column="STRE_FILE_NM" columnIndex="7"/>
+    </resultMap>
+    
+    <select id="BcjisFile.selectFileInf" parameterClass="bcjisFileVO" resultMap="fileDetail">
+        /*BcjisFile.selectFileInf*/
+        SELECT ATCH_FILE_ID
+             , FILE_SN
+             , FILE_STRE_COURS
+             , STRE_FILE_NM
+             , FILE_EXTSN
+             , ORIGNL_FILE_NM
+             , FILE_SIZE
+          FROM TB_FILE_DETL
+         WHERE 1 = 1
+           AND ATCH_FILE_ID = #atchFileId#
+           AND FILE_SN = #fileSn#
+    </select>
+    
+    <delete id="BcjisFile.deleteFileInf" parameterClass="bcjisFileVO" >
+        /*BcjisFile.deleteFileInf*/
+        DELETE 
+          FROM TB_FILE_DETL
+         WHERE 1 = 1
+           AND ATCH_FILE_ID = #atchFileId#
+         <isNotEmpty property="fileSn" prepend="">
+           AND FILE_SN = #fileSn#
+         </isNotEmpty>
+    </delete>
+    
+</sqlMap>

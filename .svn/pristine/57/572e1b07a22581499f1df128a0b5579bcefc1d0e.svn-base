@@ -1,0 +1,305 @@
+package com.cs.bcjis.manage.util;
+
+import java.io.File;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import com.cs.bcjis.comm.service.BcjisFileMngService;
+import com.cs.bcjis.comm.web.BcjisFileVO;
+import com.cs.bcjis.report.service.ReportWrite000Service;
+import com.cs.bcjis.report.service.ReportWrite001Service;
+import com.cs.bcjis.report.service.ReportWrite002Service;
+import com.cs.bcjis.report.service.ReportWrite010Service;
+import com.cs.bcjis.report.service.ReportWrite020Service;
+import com.cs.bcjis.report.service.ReportWrite030Service;
+import com.cs.bcjis.report.service.ReportWrite040Service;
+import com.cs.bcjis.report.service.ReportWrite050Service;
+import com.cs.bcjis.report.service.ReportWrite055Service;
+import com.cs.bcjis.report.service.ReportWrite060Service;
+import com.cs.bcjis.report.service.ReportWrite090Service;
+import com.cs.bcjis.report.util.Report000SaveFile;
+import com.cs.bcjis.report.util.Report001SaveFile;
+import com.cs.bcjis.report.util.Report002SaveFile;
+import com.cs.bcjis.report.util.Report010SaveFile;
+import com.cs.bcjis.report.util.Report020SaveFile;
+import com.cs.bcjis.report.util.Report030SaveFile;
+import com.cs.bcjis.report.util.Report040SaveFile;
+import com.cs.bcjis.report.util.Report050SaveFile;
+import com.cs.bcjis.report.util.Report055SaveFile;
+import com.cs.bcjis.report.util.Report060SaveFile;
+import com.cs.bcjis.report.util.Report090SaveFile;
+
+public class ManageCloseUtil implements Runnable {
+    private JSONObject jsonParam = null;
+    private String atchFileId = null;
+
+    private ReportWrite000Service reportWrite000Service = null;
+    private Report000SaveFile report000SaveFile = null;
+
+    private ReportWrite001Service reportWrite001Service = null;
+    private Report001SaveFile report001SaveFile = null;
+
+    private ReportWrite002Service reportWrite002Service = null;
+    private Report002SaveFile report002SaveFile = null;
+
+    private ReportWrite010Service reportWrite010Service = null;
+    private Report010SaveFile report010SaveFile = null;
+
+    private ReportWrite020Service reportWrite020Service = null;
+    private Report020SaveFile report020SaveFile = null;
+
+    private ReportWrite030Service reportWrite030Service = null;
+    private Report030SaveFile report030SaveFile = null;
+
+    private ReportWrite040Service reportWrite040Service = null;
+    private Report040SaveFile report040SaveFile = null;
+
+    private ReportWrite050Service reportWrite050Service = null;
+    private Report050SaveFile report050SaveFile = null;
+
+    private ReportWrite055Service reportWrite055Service = null;
+    private Report055SaveFile report055SaveFile = null;
+
+    private ReportWrite060Service reportWrite060Service = null;
+    private Report060SaveFile report060SaveFile = null;
+
+    private ReportWrite090Service reportWrite090Service = null;
+    private Report090SaveFile report090SaveFile = null;
+
+    private BcjisFileMngService bcjisFileMngService = null;
+
+    public ManageCloseUtil(JSONObject jsonParam, String atchFileId
+            , ReportWrite000Service reportWrite000Service, Report000SaveFile report000SaveFile
+            , ReportWrite001Service reportWrite001Service, Report001SaveFile report001SaveFile
+            , ReportWrite002Service reportWrite002Service, Report002SaveFile report002SaveFile
+            , ReportWrite010Service reportWrite010Service, Report010SaveFile report010SaveFile
+            , ReportWrite020Service reportWrite020Service, Report020SaveFile report020SaveFile
+            , ReportWrite030Service reportWrite030Service, Report030SaveFile report030SaveFile
+            , ReportWrite040Service reportWrite040Service, Report040SaveFile report040SaveFile
+            , ReportWrite050Service reportWrite050Service, Report050SaveFile report050SaveFile
+            , ReportWrite055Service reportWrite055Service, Report055SaveFile report055SaveFile
+            , ReportWrite060Service reportWrite060Service, Report060SaveFile report060SaveFile
+            , ReportWrite090Service reportWrite090Service, Report090SaveFile report090SaveFile
+            , BcjisFileMngService bcjisFileMngService
+            ) {
+
+        this.jsonParam = jsonParam;
+        this.atchFileId = atchFileId;
+        this.reportWrite000Service = reportWrite000Service;
+        this.report000SaveFile = report000SaveFile;
+        
+        this.reportWrite001Service = reportWrite001Service;
+        this.report001SaveFile = report001SaveFile;
+        
+        this.reportWrite002Service = reportWrite002Service;
+        this.report002SaveFile = report002SaveFile;
+        
+        this.reportWrite010Service = reportWrite010Service;
+        this.report010SaveFile = report010SaveFile;
+        
+        this.reportWrite020Service = reportWrite020Service;
+        this.report020SaveFile = report020SaveFile;
+        
+        this.reportWrite030Service = reportWrite030Service;
+        this.report030SaveFile = report030SaveFile;
+        
+        this.reportWrite040Service = reportWrite040Service;
+        this.report040SaveFile = report040SaveFile;
+        
+        this.reportWrite050Service = reportWrite050Service;
+        this.report050SaveFile = report050SaveFile;
+        
+        this.reportWrite055Service = reportWrite055Service;
+        this.report055SaveFile = report055SaveFile;
+        
+        this.reportWrite060Service = reportWrite060Service;
+        this.report060SaveFile = report060SaveFile;
+        
+        this.reportWrite090Service = reportWrite090Service;
+        this.report090SaveFile = report090SaveFile;
+        
+        this.bcjisFileMngService = bcjisFileMngService;
+    }
+
+    public void run() {
+
+        try {
+            // 집계표
+            jsonParam.put("fileNm", "집계표");
+            jsonParam.put("reportCd", "000");
+            jsonParam.put("reportDetlCd", "000");
+            jsonParam.put("fisFgMstCd", "100");
+
+            JSONArray resultList = JSONArray.fromObject(reportWrite000Service.selectReport000SheetList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report000SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("1");
+            jsonParam.put("fisFgMstCd", "");
+
+            // 기준인건비
+            jsonParam.put("fileNm", "기준인건비집계표");
+            jsonParam.put("reportCd", "000");
+            jsonParam.put("reportDetlCd", "001");
+
+            JSONArray dataList = JSONArray.fromObject(reportWrite001Service.selectReport001SheetList(jsonParam));
+            JSONArray totList = JSONArray.fromObject(reportWrite001Service.selectReportTotSheetList(jsonParam));
+            JSONArray totList2 = JSONArray.fromObject(reportWrite001Service.selectReportTotSheetList2(jsonParam));
+
+            jsonParam.put("dataList", dataList);
+            jsonParam.put("totList", totList);
+            jsonParam.put("totList2", totList2);
+
+            report001SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("2");
+            
+            //경상사업심사조서
+            jsonParam.put("fileNm", "경상사업심사조서");
+            jsonParam.put("reportCd", "010");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite010Service.selectReport010SheetList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report010SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            
+            insertFileInfo("110");
+            
+            //투자사업
+            createReport020("120");
+            
+            //국고보조사업심사조서
+            jsonParam.put("fileNm", "국고보조사업심사조서");
+            jsonParam.put("reportCd", "030");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            totList = JSONArray.fromObject(reportWrite030Service.selectReport030Sheet001List(jsonParam));
+            dataList = JSONArray.fromObject(reportWrite030Service.selectReport030ExcelList(jsonParam));
+            JSONArray dataList034 = JSONArray.fromObject(reportWrite030Service.selectReport034ExcelList(jsonParam));
+            dataList.addAll(dataList034);
+            jsonParam.put("totList", totList);
+            jsonParam.put("dataList", dataList);
+            report030SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("130");
+            
+            //기본경비
+            jsonParam.put("fileNm", "기본경비심사조서");
+            jsonParam.put("reportCd", "040");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite040Service.selectReport040ExcelList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report040SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("140");
+            
+            //시책추진
+            jsonParam.put("fileNm", "시책추진심사조서");
+            jsonParam.put("reportCd", "050");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite050Service.selectReport050ExcelList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report050SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("150");
+            
+            //국외여비
+            jsonParam.put("fileNm", "국외여비심사조서");
+            jsonParam.put("reportCd", "055");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite055Service.selectReport055ExcelList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report055SaveFile.buildExcelDocument(jsonParam, "CL", "");
+            insertFileInfo("155");
+            
+            //공통
+            jsonParam.put("fileNm", "공통심사조서");
+            jsonParam.put("reportCd", "060");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite060Service.selectReport060ExcelList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report060SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("160");
+            
+            //무기계약
+            jsonParam.put("fileNm", "무기계약심사조서");
+            jsonParam.put("reportCd", "090");
+            jsonParam.put("reportDetlCd", "");
+            jsonParam.put("amtUnit", "1000");
+            
+            resultList = JSONArray.fromObject(reportWrite090Service.selectReport090ExcelList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report090SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("190");
+
+            // 기초자료
+            jsonParam.put("fileNm", "기초자료");
+            jsonParam.put("reportCd", "000");
+            jsonParam.put("reportDetlCd", "R10");
+            jsonParam.put("amtUnit", "1000");
+
+            resultList = JSONArray.fromObject(reportWrite002Service.selectReport002SheetList(jsonParam));
+            jsonParam.put("dataList", resultList);
+            report002SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            insertFileInfo("3");
+            
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void createReport020(String fileSn) throws Exception{
+        // 투자
+        jsonParam.put("fileNm", "투자사업심사조서");
+        jsonParam.put("reportCd", "020");
+        jsonParam.put("reportDetlCd", "");
+        jsonParam.put("amtUnit", "1000000");
+
+        JSONArray officeList = JSONArray.fromObject(reportWrite020Service.selectReport020OfficeList(jsonParam));
+        JSONArray officeSiList = JSONArray.fromObject(reportWrite020Service.selectReport020OfficeSiList(jsonParam));
+        JSONArray officeSi022List = JSONArray.fromObject(reportWrite020Service.selectReportOfficeSi022List(jsonParam));
+        JSONArray totList = JSONArray.fromObject(reportWrite020Service.selectReport020RptTotList(jsonParam));
+        JSONArray dataList = JSONArray.fromObject(reportWrite020Service.selectReport020ExcelList(jsonParam));
+        JSONArray dataList027 = JSONArray.fromObject(reportWrite020Service.selectReport027ExcelList(jsonParam));
+        JSONArray dataListTot = JSONArray.fromObject(reportWrite020Service.selectReport020ExcelListTot(jsonParam));
+        JSONArray bizList = JSONArray.fromObject(reportWrite020Service.selectReportBizExcelList(jsonParam));
+        JSONArray bizListTot = JSONArray.fromObject(reportWrite020Service.selectReportBizExcelListTot(jsonParam));
+
+        jsonParam.put("officeList", officeList);
+        jsonParam.put("officeSiList", officeSiList);
+        jsonParam.put("officeSi022List", officeSi022List);
+        jsonParam.put("totList", totList);
+        jsonParam.put("dataList", dataList);
+        jsonParam.put("dataList027", dataList027);
+        jsonParam.put("dataListTot", dataListTot);
+        jsonParam.put("bizList", bizList);
+        jsonParam.put("bizListTot", bizListTot);
+
+        report020SaveFile.buildSheetDocument(jsonParam, "CL", "");
+        insertFileInfo(fileSn);
+    }
+    
+    public void insertFileInfo(String fileSn) throws Exception{
+        File realFile = new File(String.valueOf(jsonParam.get("realFileName")));
+        BcjisFileVO bcjisFileVO = new BcjisFileVO();
+        bcjisFileVO.setAtchFileId(atchFileId);
+        bcjisFileVO.setFileSn(fileSn);
+        bcjisFileVO.setFileStreCours(realFile.getParent() + File.separator);
+        bcjisFileVO.setStreFileNm(realFile.getName());
+        bcjisFileVO.setOrignlFileNm(String.valueOf(jsonParam.get("fileName")));
+        bcjisFileVO.setFileExtsn(".xlsx");
+
+        if("1".equals(fileSn) == true){
+            bcjisFileMngService.insertFile(bcjisFileVO);
+        }
+        
+        bcjisFileMngService.insertFileDetl(bcjisFileVO);
+    }
+}

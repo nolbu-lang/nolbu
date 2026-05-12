@@ -1,0 +1,87 @@
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@include file="/jsp/comm/commHeader.jsp"%>
+<script src="${pageContext.request.contextPath}/js/main/main.js"></script>
+<div id="mainPane" class="pane ui-layout-center" style="overflow-y:hidden;">
+  <div id="mainTabs01" style="height:100%;border:0px;">
+	<div class="tab_slide_box">
+		<ul style="min-height:31px;_width:31px;">
+		  <!-- <li><a href="#mainTabs01-1">알림</a></li> -->
+		</ul>
+	</div>
+
+<!--
+	<script>
+
+	$(function(){
+		//depth2-slide
+		var $submenuframe = $('.tab_slide_box');
+		$submenuframe.sly({
+			horizontal: 1,
+			itemNav: 'basic',
+			smart: 1,
+			activateOn: 'click',
+			mouseDragging: 1,
+			touchDragging: 1,
+			releaseSwing: 1,
+			//startAt: 0,
+			scrollBy: 1,
+			activatePageOn: 'click',
+			speed: 600,
+			elasticBounds: 1,
+			easing: 'easeOutExpo',
+			dragHandle: 1,
+			dynamicHandle: 1,
+			clickBar: 1,
+		});
+			
+	});
+
+
+	function sizeControl(width) {
+		width = parseInt(width);
+		var bodyHeight = document.documentElement.clientHeight; 
+		var bodyWidth = document.documentElement.clientWidth; 
+		var chkHeader = $('header').outerHeight();
+
+		$('.tab_slide_box').sly('reload');
+	}
+	jQuery(function($){
+		sizeControl($(this).width());
+		$(window).resize(function() {
+			if(this.resizeTO) {
+				clearTimeout(this.resizeTO);
+			}
+			this.resizeTO = setTimeout(function() {
+				$(this).trigger('resizeEnd');
+			}, 50);
+		});
+	});	
+	$(window).on('resizeEnd', function() {
+		sizeControl($(this).width());
+	});
+	$(window).load( function() { 
+		sizeControl($(this).width());
+	});
+
+	</script>
+-->
+  <!--
+    <div id="mainTabs01-1" style="height:100%;">
+      알림페이지.
+    </div>
+   -->
+  </div>
+</div>
+<div class="pane ui-layout-north">
+  <%@include file="/jsp/comm/mainNorth.jsp"%> 
+</div>
+<div class="pane ui-layout-west">
+  <%@include file="/jsp/comm/leftMenu.jsp"%>
+</div>
+<div class="pane ui-layout-south" style="overflow: hidden;">
+  <%@include file="/jsp/comm/mainSouth.jsp"%>
+</div>
+<%@include file="/WEB-INF/views/dialog/dialogDgrDeptSelt.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoModify.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogManageCloseHis.jsp"%>
+<%@include file="/jsp/comm/commFooter.jsp"%>

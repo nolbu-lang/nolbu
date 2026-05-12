@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="Login">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <resultMap id="bcjisUserVoInfo" class="com.cs.bcjis.comm.web.BcjisUserVO">
+        <result property="userId" column="USER_ID" columnIndex="1"/>
+        <result property="resideNo" column="RESIDE_NO" columnIndex="2"/>
+        <result property="userNm" column="USER_NM" columnIndex="3"/>
+        <result property="pswd" column="PSWD" columnIndex="4"/>
+        <result property="deptCd" column="DEPT_CD" columnIndex="5"/>
+        <result property="posCatCd" column="POS_CAT_CD" columnIndex="6"/>
+        <result property="posClCd" column="POS_CL_CD" columnIndex="7"/>
+        <result property="posRankCd" column="POS_RANK_CD" columnIndex="8"/>
+        <result property="salclassCd" column="SALCLASS_CD" columnIndex="9"/>
+        <result property="integCustSno" column="INTEG_CUST_SNO" columnIndex="10"/>
+        <result property="connectYn" column="CONNECT_YN" columnIndex="11"/>
+        <result property="finalConnectDate" column="FINAL_CONNECT_DATE" columnIndex="12"/>
+        <result property="finalConnectIp" column="FINAL_CONNECT_IP" columnIndex="13"/>
+        <result property="useYn" column="USE_YN" columnIndex="14"/>
+        <result property="finalConnectSessid" column="FINAL_CONNECT_SESSID" columnIndex="15"/>
+        <result property="lowDeptCd" column="LOW_DEPT_CD" columnIndex="16"/>
+        <result property="prePswd" column="PRE_PSWD" columnIndex="17"/>
+        <result property="pswdChngDate" column="PSWD_CHNG_DATE" columnIndex="18"/>
+        <result property="loginId" column="LOGIN_ID" columnIndex="19"/>
+        <result property="loginIdFg" column="LOGIN_ID_FG" columnIndex="20"/>
+        <result property="hpgId" column="HPG_ID" columnIndex="21"/>
+        <result property="hpgPswd" column="HPG_PSWD" columnIndex="22"/>
+        <result property="portalId" column="PORTAL_ID" columnIndex="23"/>
+        <result property="portalIdYn" column="PORTAL_ID_YN" columnIndex="24"/>
+        <result property="loginFailCnt" column="LOGIN_FAIL_CNT" columnIndex="25"/>
+        <result property="userStatCd" column="USER_STAT_CD" columnIndex="26"/>
+        <result property="userStatNm" column="USER_STAT_NM" columnIndex="27"/>
+        <result property="regiId" column="REGI_ID" columnIndex="28"/>
+        <result property="regiDate" column="REGI_DATE" columnIndex="29"/>
+        <result property="modiId" column="MODI_ID" columnIndex="30"/>
+        <result property="modiDate" column="MODI_DATE" columnIndex="31"/>
+        <result property="userDeptYn" column="USER_DEPT_YN" columnIndex="32"/>
+        <result property="powGrCd" column="POW_GR_CD" columnIndex="33"/>
+    </resultMap>
+    
+    <select id="Login.selectLoginInfo" parameterClass="Map" resultMap="bcjisUserVoInfo" >
+        /*Login.selectLoginInfo*/
+        SELECT A.USER_ID
+             , A.RESIDE_NO
+             , A.USER_NM
+             , A.PSWD
+             , A.DEPT_CD
+             , A.POS_CAT_CD
+             , A.POS_CL_CD
+             , A.POS_RANK_CD
+             , A.SALCLASS_CD
+             , A.INTEG_CUST_SNO
+             , A.CONNECT_YN
+             , A.FINAL_CONNECT_DATE
+             , A.FINAL_CONNECT_IP
+             , A.USE_YN
+             , A.FINAL_CONNECT_SESSID
+             , A.LOW_DEPT_CD
+             , A.PRE_PSWD
+             , A.PSWD_CHNG_DATE
+             , A.LOGIN_ID
+             , A.LOGIN_ID_FG
+             , A.HPG_ID
+             , A.HPG_PSWD
+             , A.PORTAL_ID
+             , A.PORTAL_ID_YN
+             , A.LOGIN_FAIL_CNT
+             , A.USER_STAT_CD
+             , A.USER_STAT_NM
+             , A.REGI_ID
+             , A.REGI_DATE
+             , A.MODI_ID
+             , A.MODI_DATE
+             , NVL((SELECT Z.POW_GR_CD 
+                      FROM TB_USERPOWGRP Z 
+                     WHERE Z.USER_ID = A.USER_ID 
+                       AND Z.USE_YN = 'Y'
+                      ORDER BY Z.POW_GR_CD
+                      LIMIT 0, 1
+                   )
+               , 'BC004') AS POW_GR_CD
+             , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'N' ELSE 'Y' END 
+                      FROM TB_USERPOWGRP Z 
+                     WHERE Z.USER_ID = A.USER_ID 
+                       AND Z.POW_GR_CD IN ('BC001', 'BC002')
+                       AND Z.USE_YN = 'Y' 
+                   )
+               , 'Y') AS USER_DEPT_YN
+          FROM TB_USER A
+         WHERE 1 = 1
+         <isNotEmpty prepend="" property="userId">
+           AND A.USER_ID = #userId#
+         </isNotEmpty>
+         <isNotEmpty prepend="" property="loginId">
+           AND A.LOGIN_ID = #loginId#
+         </isNotEmpty>
+           AND A.USE_YN = 'Y'
+    </select>
+    
+    <update id="Login.updateUserLoginInfo" parameterClass="Map" >
+        /*Login.updateUserLoginInfo*/
+        UPDATE TB_USER
+           SET CONNECT_YN = NVL(#connectYn#, CONNECT_YN)
+             , FINAL_CONNECT_DATE = NVL(SYSTIMESTAMP, FINAL_CONNECT_DATE)
+             , FINAL_CONNECT_IP = NVL(#finalConnectIp#, FINAL_CONNECT_IP)
+             , FINAL_CONNECT_SESSID = NVL(#finalConnectSessid#, FINAL_CONNECT_SESSID)
+         WHERE 1 = 1
+           AND USER_ID = #userId#
+    </update>
+    
+</sqlMap>

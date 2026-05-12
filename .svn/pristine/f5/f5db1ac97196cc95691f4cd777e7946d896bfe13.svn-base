@@ -1,0 +1,520 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.hssf.record.ExtendedFormatRecord;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Repository;
+
+import com.cs.bcjis.comm.BcjisCommAbstractDAO;
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+
+@Repository("reportCommDAO")
+public class ReportCommDAO extends BcjisCommAbstractDAO {
+
+    @SuppressWarnings("rawtypes")
+    public void insertReport(String reportCd, Map map) throws Exception {
+        if ("070".equals(reportCd) == true) {
+            insertReport070(map);
+        } else {
+            insertReport(map);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void deleteReport(String reportCd, Map map) throws Exception {
+        if ("070".equals(reportCd) == true) {
+            deleteReport070(map);
+        } else {
+            deleteReport(map);
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void insertReport(Map map) throws Exception {
+    	boolean detlFlag = true;
+        insert("ReportComm.insertReport", map);
+        String reportCd = String.valueOf(map.get("reportCd"));
+        
+        if(reportCd != null && Integer.parseInt(reportCd) >= 100){
+        	detlFlag = false;
+    	}
+        
+        if(detlFlag){
+        	insert("ReportComm.insertReport" + map.get("reportCd"), map);
+        }
+
+        if ("020".equals(map.get("reportCd")) == true) {
+            insert("ReportComm.insertReport020D", map);
+        }
+
+        try { 
+            map.put("hisFg", "010");
+            if(detlFlag){
+            	insert("BcjisHisComm.insertTbReport" + map.get("reportCd") + "H", map);
+            }
+            insert("BcjisHisComm.insertTbReportH", map);
+        } catch (Exception e) {
+            logger.error("deleteAllReport(map)", e);
+        }
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateReport(Map map) throws Exception {
+        
+    	update("ReportComm.updateReport", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void deleteAllReport(Map map) throws Exception {
+        try {
+            map.put("hisFg", "030");
+            insert("BcjisHisComm.insertTbReport010H", map);
+            insert("BcjisHisComm.insertTbReport020H", map);
+            insert("BcjisHisComm.insertTbReport030H", map);
+            insert("BcjisHisComm.insertTbReport040H", map);
+            insert("BcjisHisComm.insertTbReport050H", map);
+            insert("BcjisHisComm.insertTbReport055H", map);
+            insert("BcjisHisComm.insertTbReport060H", map);
+            insert("BcjisHisComm.insertTbReport070H", map);
+            insert("BcjisHisComm.insertTbReport080H", map);
+            insert("BcjisHisComm.insertTbReport090H", map);
+            insert("BcjisHisComm.insertTbReport0A0H", map);
+            insert("BcjisHisComm.insertTbReport0B0H", map);
+            insert("BcjisHisComm.insertTbReport0C0H", map);
+            insert("BcjisHisComm.insertTbReportH", map);
+        } catch (Exception e) {
+            logger.error("deleteAllReport(map)", e);
+        }
+
+        delete("ReportComm.deleteReport010", map);
+        delete("ReportComm.deleteReport020D", map);
+        delete("ReportComm.deleteReport020", map);
+        delete("ReportComm.deleteReport030", map);
+        delete("ReportComm.deleteReport040", map);
+        delete("ReportComm.deleteReport050", map);
+        delete("ReportComm.deleteReport055", map);
+        delete("ReportComm.deleteReport060", map);
+        delete("ReportComm.deleteReport070", map);
+        delete("ReportComm.deleteReport080", map);
+        delete("ReportComm.deleteReport090", map);
+        delete("ReportComm.deleteReport0A0", map);
+        delete("ReportComm.deleteReport0B0", map);
+        delete("ReportComm.deleteReport0C0", map);
+        delete("ReportComm.deleteReport", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void deleteReport(Map map) throws Exception {
+    	boolean delDetlFlag = true;
+    	String reportCd = String.valueOf(map.get("reportCd"));
+    	if(reportCd != null && Integer.parseInt(reportCd) >= 100){
+    		delDetlFlag = false;
+    	}
+    	
+        try {
+            map.put("hisFg", "030");
+            if(delDetlFlag){
+            	insert("BcjisHisComm.insertTbReport" + map.get("reportCd") + "H", map);
+                if ("010".equals(map.get("reportCd")) == true) {
+                    insert("BcjisHisComm.insertTbReport0A0H", map);
+                }
+            }
+
+            insert("BcjisHisComm.insertTbReportH", map);
+        } catch (Exception e) {
+            logger.error("deleteReport(map)", e);
+        }
+
+        if(delDetlFlag){
+        	delete("ReportComm.deleteReport" + map.get("reportCd"), map);
+        }
+        if ("010".equals(map.get("reportCd")) == true) {
+            delete("ReportComm.deleteReport0A0", map);
+        }
+
+        if ("020".equals(map.get("reportCd")) == true) {
+            insert("ReportComm.deleteReport020D", map);
+        }
+
+        if ("0C0".equals(map.get("reportCd")) == true && delDetlFlag) {
+            insert("ReportComm.deleteReport0C0D", map);
+        }
+
+        delete("ReportComm.deleteReport", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void insertReport070(Map map) throws Exception {
+        insert("ReportComm.insertReport070", map);
+
+        try {
+            map.put("hisFg", "010");
+            insert("BcjisHisComm.insertTbReport070H", map);
+        } catch (Exception e) {
+            logger.error("deleteAllReport(map)", e);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void insertReport070s(Map map) throws Exception {
+        insert("ReportComm.insertReport070s", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void deleteReport070(Map map) throws Exception {
+        try {
+            map.put("hisFg", "030");
+            insert("BcjisHisComm.insertTbReport070H", map);
+        } catch (Exception e) {
+            logger.error("deleteReport(map)", e);
+        }
+
+        delete("ReportComm.deleteReport070", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Map selectReportInfo(Map map) throws Exception {
+        return (Map) selectByPk("ReportComm.selectReportInfo", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReportStyleList(Map map) throws Exception {
+        return list("ReportComm.selectReportStyleList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReportHeaderList(Map map) throws Exception {
+        return list("ReportComm.selectReportHeaderList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReportMergeList(Map map) throws Exception {
+        return list("ReportComm.selectReportMergeList", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void copyReport(Map map) throws Exception {
+        try {
+            map.put("hisFg", "020");
+            insert("BcjisHisComm.insertTbReport" + map.get("reportCd") + "H", map);
+        } catch (Exception e) {
+            logger.error("deleteReport(map)", e);
+        }
+
+        update("ReportComm.copyReport" + map.get("reportCd"), map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Map<String, CellStyle> getReportStyleMap(Map param, XSSFWorkbook wb) throws Exception {
+        Map<String, CellStyle> styles = new HashMap<String, CellStyle>();
+        XSSFCellStyle style = null;
+        XSSFFont font = null;
+
+        List list = selectReportStyleList(param);
+        Map map = null;
+        for (int i = 0; i < list.size(); i++) {
+            map = (Map) list.get(i);
+
+            style = wb.createCellStyle();
+            font = wb.createFont();
+
+            ExtendedFormatRecord e = new ExtendedFormatRecord();
+            e.setShrinkToFit(true);
+            style.setDataFormat(e.getFormatIndex());
+
+            font.setFontHeightInPoints(BcjisCommUtil.getShortValue(map.get("fontHeight")));
+            if ("Y".equals(map.get("fontWeightYn")) == true) {
+                font.setBoldweight(BcjisCommUtil.getShortValue(map.get("fontWeight")));
+            }
+            font.setFontName(String.valueOf(map.get("fontNm")));
+            if ("Y".equals(map.get("fontColorYn")) == true) {
+                font.setColor(new XSSFColor(new byte[] { BcjisCommUtil.getByteValue(map.get("fontColorR")), BcjisCommUtil.getByteValue(map.get("fontColorB")), BcjisCommUtil.getByteValue(map.get("fontColorG")) }));
+
+            }
+
+            style.setAlignment(BcjisCommUtil.getShortValue(map.get("alignment")));
+            style.setVerticalAlignment(BcjisCommUtil.getShortValue(map.get("vAlignment")));
+
+            if ("Y".equals(map.get("borderRightYn")) == true) {
+                style.setBorderRight(BcjisCommUtil.getShortValue(map.get("borderRight")));
+                style.setRightBorderColor(BcjisCommUtil.getShortValue(map.get("borderRightColor")));
+            }
+
+            if ("Y".equals(map.get("borderLeftYn")) == true) {
+                style.setBorderLeft(BcjisCommUtil.getShortValue(map.get("borderLeft")));
+                style.setLeftBorderColor(BcjisCommUtil.getShortValue(map.get("borderLeftColor")));
+            }
+
+            if ("Y".equals(map.get("borderTopYn")) == true) {
+                style.setBorderTop(BcjisCommUtil.getShortValue(map.get("borderTop")));
+                style.setTopBorderColor(BcjisCommUtil.getShortValue(map.get("borderTopColor")));
+            }
+
+            if ("Y".equals(map.get("borderBottomYn")) == true) {
+                style.setBorderBottom(BcjisCommUtil.getShortValue(map.get("borderBottom")));
+                style.setBottomBorderColor(BcjisCommUtil.getShortValue(map.get("borderBottomColor")));
+            }
+
+            if ("Y".equals(map.get("foreFillYn")) == true) {
+                style.setFillForegroundColor(new XSSFColor(new byte[] { BcjisCommUtil.getByteValue(map.get("foreGroundColorR")), BcjisCommUtil.getByteValue(map.get("foreGroundColorB")), BcjisCommUtil.getByteValue(map.get("foreGroundColorG")) }));
+
+                style.setFillPattern(BcjisCommUtil.getShortValue(map.get("fillPattern")));
+            }
+
+            if ("Y".equals(map.get("wrapTextYn")) == true) {
+                style.setWrapText(true);
+            }
+
+            if (BcjisCommUtil.getShortValue(map.get("dataFormat")) > (short) 0) {
+                style.setDataFormat(BcjisCommUtil.getShortValue(map.get("dataFormat")));
+
+            } else if (BcjisCommUtil.isNullString(map.get("userDataFormat")) == false) {
+                style.setDataFormat(wb.getCreationHelper().createDataFormat().getFormat(String.valueOf(map.get("userDataFormat"))));
+            }
+
+            style.setFont(font);
+            styles.put(String.valueOf(map.get("styleNm")), style);
+        }
+
+        return styles;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReportColWidthList(Map map) throws Exception {
+        return list("ReportComm.selectReportColWidthList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setReportColWidth(Map param, XSSFSheet sheet) throws Exception {
+        List list = selectReportColWidthList(param);
+        Map map = null;
+        for (int i = 0; i < list.size(); i++) {
+            map = (Map) list.get(i);
+
+            sheet.setColumnWidth(BcjisCommUtil.getIntValue(map.get("colSeq")), BcjisCommUtil.getIntValue(map.get("colWidth")));
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReportContList(Map map) throws Exception {
+        return list("ReportComm.selectReportContList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectDgrcompoChildIdList(Map map) throws Exception {
+        return list("ReportComm.selectDgrcompoChildIdList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateSrchValReport(Map map) throws Exception {
+        update("ReportComm.updateSrchValReport" + map.get("reportCd"), map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateSrchValChildReport(Map map) throws Exception {
+        updateSrchValReport(map);
+
+        List list = selectDgrcompoChildIdList(map);
+        if (list == null || list.size() < 1) {
+            return;
+        }
+
+        Map tempMap = null;
+        for (int i = 0; i < list.size(); i++) {
+            tempMap = (Map) list.get(i);
+
+            updateSrchValChildReport(tempMap);
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateReportSortSeqReport(Map map) throws Exception {
+        update("ReportComm.updateReportSortSeqReport" + map.get("reportCd"), map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateReportSortSeqChildReport(Map map) throws Exception {
+        updateReportSortSeqReport(map);
+
+        List list = selectDgrcompoChildIdList(map);
+        if (list == null || list.size() < 1) {
+            return;
+        }
+
+        Map tempMap = null;
+        for (int i = 0; i < list.size(); i++) {
+            tempMap = (Map) list.get(i);
+            tempMap.put("reportSortSeq", map.get("reportSortSeq"));
+            
+            updateReportSortSeqChildReport(tempMap);
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateMayorReportYnReport(Map map) throws Exception {
+        update("ReportComm.updateMayorReportYnReport" + map.get("reportCd"), map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateMayorReportYnChildReport(Map map) throws Exception {
+        updateMayorReportYnReport(map);
+
+        List list = selectDgrcompoChildIdList(map);
+        if (list == null || list.size() < 1) {
+            return;
+        }
+
+        Map tempMap = null;
+        for (int i = 0; i < list.size(); i++) {
+            tempMap = (Map) list.get(i);
+            tempMap.put("mayorReportYn", map.get("mayorReportYn"));
+            
+            updateMayorReportYnChildReport(tempMap);
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateCheckYnReport(Map map) throws Exception {
+        update("ReportComm.updateReport020D", map);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateCheckYnChildReport(Map map) throws Exception {
+        
+        updateCheckYnReport(map);
+
+        List list = selectDgrcompoChildIdList(map);
+        if (list == null || list.size() < 1) {
+            return;
+        }
+
+        Map tempMap = null;
+        for (int i = 0; i < list.size(); i++) {
+            tempMap = (Map) list.get(i);
+            tempMap.put("localGovCd", map.get("localGovCd"));
+            tempMap.put("checkYn", map.get("checkYn"));
+
+            updateCheckYnChildReport(tempMap);
+        }
+
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateReport020D(Map map) throws Exception {
+        Map param = new HashMap();
+
+        param.put("reportCd", map.get("reportCd"));
+        param.put("reportDetlCd", map.get("reportDetlCd"));
+        param.put("fisYear", map.get("fisYear"));
+        param.put("bgtDgr", map.get("bgtDgr"));
+        param.put("teBgtCompoId", map.get("teBgtCompoId"));
+        
+        if ("Y".equals(map.get("checkYn3250000Yn")) == true) {
+            param.put("localGovCd", "3250000");
+            param.put("checkYn", map.get("checkYn3250000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3260000Yn")) == true) {
+            param.put("localGovCd", "3260000");
+            param.put("checkYn", map.get("checkYn3260000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3270000Yn")) == true) {
+            param.put("localGovCd", "3270000");
+            param.put("checkYn", map.get("checkYn3270000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3280000Yn")) == true) {
+            param.put("localGovCd", "3280000");
+            param.put("checkYn", map.get("checkYn3280000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3290000Yn")) == true) {
+            param.put("localGovCd", "3290000");
+            param.put("checkYn", map.get("checkYn3290000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3300000Yn")) == true) {
+            param.put("localGovCd", "3300000");
+            param.put("checkYn", map.get("checkYn3300000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3310000Yn")) == true) {
+            param.put("localGovCd", "3310000");
+            param.put("checkYn", map.get("checkYn3310000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3320000Yn")) == true) {
+            param.put("localGovCd", "3320000");
+            param.put("checkYn", map.get("checkYn3320000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3330000Yn")) == true) {
+            param.put("localGovCd", "3330000");
+            param.put("checkYn", map.get("checkYn3330000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3340000Yn")) == true) {
+            param.put("localGovCd", "3340000");
+            param.put("checkYn", map.get("checkYn3340000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3350000Yn")) == true) {
+            param.put("localGovCd", "3350000");
+            param.put("checkYn", map.get("checkYn3350000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3360000Yn")) == true) {
+            param.put("localGovCd", "3360000");
+            param.put("checkYn", map.get("checkYn3360000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3370000Yn")) == true) {
+            param.put("localGovCd", "3370000");
+            param.put("checkYn", map.get("checkYn3370000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3380000Yn")) == true) {
+            param.put("localGovCd", "3380000");
+            param.put("checkYn", map.get("checkYn3380000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3390000Yn")) == true) {
+            param.put("localGovCd", "3390000");
+            param.put("checkYn", map.get("checkYn3390000"));
+            updateCheckYnChildReport(param);
+        }
+
+        if ("Y".equals(map.get("checkYn3400000Yn")) == true) {
+            param.put("localGovCd", "3400000");
+            param.put("checkYn", map.get("checkYn3400000"));
+            updateCheckYnChildReport(param);
+        }
+    }
+}

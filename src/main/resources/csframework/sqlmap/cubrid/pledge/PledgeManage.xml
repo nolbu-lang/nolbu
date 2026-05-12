@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="PledgeManage">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="PledgeManage.selectPledgeInfoList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeManage.selectPledgeInfoList*/
+        SELECT A.PLEDGE_INFO_ID || '_' || '00000000000' AS PLEDGE_ID
+             , A.PLEDGE_INFO_NM 
+               || '(' || SUBSTRING(A.PLEDGE_BEGIN_YMD, 1, 4) || '-' || SUBSTRING(A.PLEDGE_BEGIN_YMD, 5, 2) || '-' || SUBSTRING(A.PLEDGE_BEGIN_YMD, 7, 2)
+               || ' ~ ' 
+               || SUBSTRING(A.PLEDGE_END_YMD, 1, 4) || '-' || SUBSTRING(A.PLEDGE_END_YMD, 5, 2) || '-' || SUBSTRING(A.PLEDGE_END_YMD, 7, 2) || ')'
+               AS PLEDGE_INFO
+             , A.PLEDGE_INFO_ID AS PLEDGE_INFO_ID
+             , A.PLEDGE_INFO_NM AS PLEDGE_INFO_NM 
+             , A.PLEDGE_BEGIN_YMD AS PLEDGE_BEGIN_YMD
+             , A.PLEDGE_END_YMD AS PLEDGE_END_YMD
+             , '00000000000' AS PLEDGE_BIZ_ID
+             , '00000000000' AS UP_PLEDGE_BIZ_ID
+             , '' AS PLEDGE_BIZ_FG
+             , '' PLEDGE_BIZ_NM
+             , 0 AS PLEDGE_BIZ_LEVEL
+             , 0 AS PLEDGE_BIZ_SEQ
+             , CASE WHEN (SELECT COUNT(1) FROM TB_PLEDGEBIZ Z WHERE Z.PLEDGE_INFO_ID = A.PLEDGE_INFO_ID AND Z.DEL_YN = 'N') > 0 THEN 'false' ELSE 'true' END AS IS_LEAF
+             , '00000000000' || '_' || '00000000000' AS PARENT
+             , 'true' AS EXPANDED
+             , 'true' AS LOADED
+             , 0 AS "LEVEL"
+          FROM TB_PLEDGEINFO A
+         WHERE 1 = 1
+           AND A.PLEDGE_INFO_ID = #pledgeInfoId#
+           AND A.DEL_YN = 'N'
+        UNION ALL
+        SELECT T.PLEDGE_INFO_ID || '_' || T.PLEDGE_BIZ_ID AS PLEDGE_ID
+             , T.PLEDGE_BIZ_FG || '. ' || T.PLEDGE_BIZ_NM AS PLEDGE_INFO
+             , A.PLEDGE_INFO_ID AS PLEDGE_INFO_ID
+             , A.PLEDGE_INFO_NM AS PLEDGE_INFO_NM 
+             , A.PLEDGE_BEGIN_YMD AS PLEDGE_BEGIN_YMD
+             , A.PLEDGE_END_YMD AS PLEDGE_END_YMD
+             , T.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+             , T.UP_PLEDGE_BIZ_ID AS UP_PLEDGE_BIZ_ID
+             , T.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+             , T.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+             , T.PLEDGE_BIZ_LEVEL AS PLEDGE_BIZ_LEVEL
+             , T.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+             , CASE WHEN (SELECT COUNT(1) FROM TB_PLEDGEBIZ Z WHERE Z.UP_PLEDGE_BIZ_ID = T.PLEDGE_BIZ_ID AND Z.DEL_YN = 'N') > 0 THEN 'false' ELSE 'true' END AS IS_LEAF
+             , T.PLEDGE_INFO_ID || '_' || T.UP_PLEDGE_BIZ_ID AS PARENT
+             , 'true' AS EXPANDED
+             , 'true' AS LOADED
+             , T.PLEDGE_BIZ_LEVEL AS "LEVEL"
+          FROM (SELECT A.PLEDGE_BIZ_ID
+                     , A.UP_PLEDGE_BIZ_ID
+                     , A.PLEDGE_BIZ_FG
+                     , A.PLEDGE_BIZ_NM
+                     , A.PLEDGE_BIZ_LEVEL
+                     , A.PLEDGE_BIZ_SEQ
+                     , A.PLEDGE_INFO_ID
+                  FROM TB_PLEDGEBIZ A
+                     , (SELECT BB.PLEDGE_BIZ_ID
+                          FROM TB_PLEDGEBIZ BB
+                         WHERE 1 = 1
+                           AND BB.PLEDGE_INFO_ID = #pledgeInfoId#
+                           AND BB.DEL_YN = 'N'
+                       ) B
+                 WHERE 1 = 1
+                   AND A.PLEDGE_BIZ_ID = B.PLEDGE_BIZ_ID
+                 START WITH A.UP_PLEDGE_BIZ_ID = '00000000000'
+                CONNECT BY PRIOR A.PLEDGE_BIZ_ID = A.UP_PLEDGE_BIZ_ID
+                 ORDER SIBLINGS BY A.PLEDGE_BIZ_SEQ
+               ) T
+             , TB_PLEDGEINFO A
+         WHERE 1 = 1
+           AND T.PLEDGE_INFO_ID = A.PLEDGE_INFO_ID
+    </select>
+    
+    <update id="PledgeManage.deletePledgeInfo" parameterClass="Map" >
+        /*PledgeManage.deletePledgeInfo*/
+        UPDATE TB_PLEDGEINFO
+           SET DEL_YN = 'Y'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND PLEDGE_INFO_ID = #pledgeInfoId#
+    </update>
+    
+    <update id="PledgeManage.deletePledgeBiz" parameterClass="Map" >
+        /*PledgeManage.deletePledgeBiz*/
+        UPDATE TB_PLEDGEBIZ
+           SET DEL_YN = 'Y'
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND PLEDGE_BIZ_ID = #pledgeBizId#
+    </update>
+    
+</sqlMap>

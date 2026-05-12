@@ -1,0 +1,124 @@
+package com.cs.bcjis.report.web;
+
+import org.apache.log4j.Logger;
+
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.cs.bcjis.comm.AjaxJsonView;
+import com.cs.bcjis.comm.BcjisMessageSource;
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.report.service.ReportWrite000Service;
+import com.cs.bcjis.report.util.Report000SaveFile;
+import com.cs.bcjis.report.util.Report000SaveFileNew;
+@Controller
+public class ReportWrite000Controller {
+    /**
+     * Logger for this class
+     */
+    private static final Logger logger = Logger.getLogger(ReportWrite000Controller.class);
+    
+    @Resource(name = "reportWrite000Service")
+    private ReportWrite000Service reportWrite000Service;
+
+    @Resource(name = "bcjisMessageSource")
+    private BcjisMessageSource bcjisMessageSource;
+    
+    @Resource(name="report000SaveFile")
+    Report000SaveFile report000SaveFile;
+    
+    @Resource(name="report000SaveFileNew")
+    Report000SaveFileNew report000SaveFileNew;
+
+    @RequestMapping("/report/reportWrite000.do")
+    public String reportWrite000(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("reportWrite000(Map, ModelMap, HttpServletRequest) - start");
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("reportWrite000(Map, ModelMap, HttpServletRequest) - end");
+        }
+        return "report/reportWrite000";
+    }
+    
+    @RequestMapping("/report/ajaxReportWrite000SaveSheet.do")
+    public ModelAndView ajaxReportWrite000SaveSheet(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxReportWrite000SaveSheet(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+            JSONArray resultList = JSONArray.fromObject(reportWrite000Service.selectReport000SheetList(jsonParam));
+
+            jsonParam.put("dataList", resultList);
+
+            report000SaveFile.buildSheetDocument(jsonParam, "RP", "");
+            
+            jsonObject.put("fileName", jsonParam.get("fileName"));
+            jsonObject.put("realFileName", jsonParam.get("realFileName"));
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+        } catch (Exception e) {
+            logger.error("ajaxReportWrite000SaveSheet(ModelMap, HttpServletRequest)", e);
+            
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.saveSheet000"));
+        }
+
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxReportWrite000SaveSheet(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+    
+    @RequestMapping("/report/ajaxReportWrite000SaveSheetNew.do")
+    public ModelAndView ajaxReportWrite000SaveSheetNew(ModelMap model, HttpServletRequest request) throws Exception {
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxReportWrite000SaveSheetNew(ModelMap, HttpServletRequest) - start");
+    	}
+    	
+    	ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+    	JSONObject jsonObject = new JSONObject();
+    	
+    	try {
+    		JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+    		JSONArray resultList = JSONArray.fromObject(reportWrite000Service.selectReport000SheetListNew(jsonParam));
+    		
+    		jsonParam.put("dataList", resultList);
+    		jsonParam.put("dataList2", resultList);
+    		
+    		report000SaveFileNew.buildSheetDocument(jsonParam, "RP", "");
+    		
+    		jsonObject.put("fileName", jsonParam.get("fileName"));
+    		jsonObject.put("realFileName", jsonParam.get("realFileName"));
+    		jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+    	} catch (Exception e) {
+    		logger.error("ajaxReportWrite000SaveSheetNew(ModelMap, HttpServletRequest)", e);
+    		
+    		jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.saveSheet000"));
+    	}
+    	
+    	ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+    	
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxReportWrite000SaveSheetNew(ModelMap, HttpServletRequest) - end");
+    	}
+    	return ajaxModel;
+    }
+    
+}

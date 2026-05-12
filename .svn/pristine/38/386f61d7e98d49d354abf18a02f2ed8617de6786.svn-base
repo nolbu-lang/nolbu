@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ManageCommcd">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    
+    <sql id="ManageCommcd.selectManageCommcdCommcddetlListSub01">
+                          FROM TB_COMMCD A
+                             , TB_COMMCDDETL B
+                         WHERE 1 = 1 
+                           AND A.CL_CD = B.CL_CD
+                        <isNotEmpty property="detlcdnm" prepend="">
+                           AND B.DETL_CD_NM LIKE '%' || #detlcdnm# || '%'
+                        </isNotEmpty>
+
+    </sql>
+    
+    <select id="ManageCommcd.selectManageCommcdCommcddetlList" parameterClass="Map" resultClass="egovMap" >
+        /*ManageCommcd.selectManageCommcdCommcddetlList*/
+        SELECT T.*
+          FROM (SELECT ROWNUM AS ROW_NUM
+                     , T1.*
+                  FROM (SELECT A.CL_CD
+                             , A.CL_CD_NM
+                             , B.DETL_CD
+                             , B.DETL_CD_NM
+                         <include refid="ManageCommcd.selectManageCommcdCommcddetlListSub01"/>
+                       ) T1
+               ) T
+         WHERE 1 = 1
+         <isNotEqual property="selectAll" compareValue="Y" prepend="" >
+           AND T.ROW_NUM BETWEEN NVL(#start#, 0) AND NVL(#rowNum#, 0) + NVL(#start#, 0) -1
+         </isNotEqual>
+    </select>
+    
+    <select id="ManageCommcd.selectManageCommcdCommcddetlListCnt" parameterClass="Map" resultClass="java.lang.Integer" >
+            SELECT COUNT(A.CL_CD) AS TOTALCNT
+            <include refid="ManageCommcd.selectManageCommcdCommcddetlListSub01"/>
+    </select>
+</sqlMap>

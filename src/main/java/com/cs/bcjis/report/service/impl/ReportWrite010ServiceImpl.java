@@ -1,0 +1,87 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.springframework.stereotype.Service;
+
+import com.cs.bcjis.budget.service.impl.BudgetCommDAO;
+import com.cs.bcjis.report.service.ReportWrite010Service;
+
+@Service("reportWrite010Service")
+public class ReportWrite010ServiceImpl implements ReportWrite010Service {
+    @Resource(name = "budgetCommDAO")
+    private BudgetCommDAO budgetCommDAO;
+
+    @Resource(name = "reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+
+    @Resource(name = "reportWrite010DAO")
+    private ReportWrite010DAO reportWrite010DAO;
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport010List(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010List(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int selectReport010PageListCnt(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010PageListCnt(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport010PageList(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010PageList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport010TotList(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010TotList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport010ExcelList(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010ExcelList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport010SheetList(Map map) throws Exception {
+        return reportWrite010DAO.selectReport010SheetList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport012ExcelList(Map map) throws Exception {
+        return reportWrite010DAO.selectReport012ExcelList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void saveReport010(JSONObject jsonParam) throws Exception {
+        List saveDatas = jsonParam.getJSONArray("saveDatas");
+        JSONObject tempParam = null;
+
+        for (int i = 0; i < saveDatas.size(); i++) {
+            tempParam = (JSONObject) saveDatas.get(i);
+            tempParam.put("userId", jsonParam.get("userId"));
+
+            String updateReportFlag = (String) tempParam.get("updateReportFlag");
+            //보고항목, 사전절차 수정시 업데이트
+            if(updateReportFlag != null && "Y".equals(updateReportFlag)){
+            	reportCommDAO.updateReport(tempParam);
+            }
+            
+            reportWrite010DAO.updateReport010(tempParam);
+
+            if ("Y".equals(tempParam.get("srchValYn")) == true) {
+                reportCommDAO.updateSrchValChildReport(tempParam);
+            }
+
+            if ("Y".equals(tempParam.get("reflegFgYn")) == true && "020".equals(tempParam.get("reflectFg")) == true) {
+                budgetCommDAO.updateDiffAmtByReflegFg(tempParam);
+            }
+        }
+    }
+}

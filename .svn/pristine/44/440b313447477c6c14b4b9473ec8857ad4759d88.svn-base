@@ -1,0 +1,1450 @@
+package com.cs.bcjis.report.util;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.apache.poi.hssf.record.ExtendedFormatRecord;
+import org.apache.poi.hssf.usermodel.HeaderFooter;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Footer;
+import org.apache.poi.ss.usermodel.PageOrder;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetView;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSheetViewType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.report.service.impl.ReportCommDAO;
+
+@Component("report000SaveFileNew")
+public class Report000SaveFileNew {
+
+    @Autowired
+    @Qualifier("config")
+    private Properties config;
+
+    @Resource(name = "reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void buildSheetDocument(Map model, String KeyStr, String storePath) throws Exception {
+        String fileNm = String.valueOf(model.get("fileNm"));
+        if (BcjisCommUtil.isNullString(fileNm) == true) {
+            fileNm = config.getProperty("Globals.SystemName");
+        }
+
+        XSSFWorkbook wb = new XSSFWorkbook();
+
+        data2(model, wb, (List<Object>) model.get("dataList2"));
+        data(model, wb, (List<Object>) model.get("dataList"));
+ 
+        if (wb.getNumberOfSheets() < 1) {
+            wb.createSheet("Sheet1");
+        } 
+
+        String storePathString = ReportSaveUtil.getStorePathString(config, storePath, KeyStr);
+        model.put("fileName", fileNm + ".xlsx");
+        model.put("realFileName", ReportSaveUtil.writeExcelFile(wb, storePathString));
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void data(Map model, XSSFWorkbook wb, List<Object> categories) throws Exception {
+        int rowNum = 0;
+        XSSFSheet sheet = null;
+
+        Map reportInfo = reportCommDAO.selectReportInfo(model);
+        Map tmpModel = new HashMap();
+        tmpModel.put("reportCd", "0001");
+        tmpModel.put("reportDetlCd", "0001");
+        tmpModel.put("fisYear", "2019");
+        tmpModel.put("bgtDgr", "3");
+        model = tmpModel;
+        
+        Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(tmpModel, wb);
+
+        sheet = wb.createSheet(ReportSaveUtil.getStringValue(reportInfo.get("sheetNm")));
+        ReportFormulaUtil reportFormulaUtil = new ReportFormulaUtil(sheet);
+
+        rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 63);
+
+        JSONObject category = null;
+        while (!categories.isEmpty()) {
+            category = (JSONObject) categories.remove(0);
+            rowNum = writeData(sheet, rowNum, category, styles, reportFormulaUtil);
+        }
+        
+        if (sheet != null) {
+            ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 63);
+            reportFormulaUtil.writeCellFormula();
+
+            sheet = null;
+        }
+    }
+    
+    public void data2(Map model, XSSFWorkbook wb, List<Object> categories) throws Exception {
+    	int rowNum = 0;
+    	XSSFSheet sheet = null;
+    	
+    	Map reportInfo = reportCommDAO.selectReportInfo(model);
+    	Map tmpModel = new HashMap();
+    	tmpModel.put("reportCd", "0001");
+    	tmpModel.put("reportDetlCd", "0001");
+    	tmpModel.put("fisYear", "2019");
+    	tmpModel.put("bgtDgr", "3");
+    	model = tmpModel;
+    	
+    	Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(tmpModel, wb);
+    	
+    	sheet = wb.createSheet("요약");
+    	ReportFormulaUtil reportFormulaUtil = new ReportFormulaUtil(sheet);
+    	
+    	rowNum = writeHeader2(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 63);
+    	
+    	JSONObject category = null;
+    	while (!categories.isEmpty()) {
+    		category = (JSONObject) categories.remove(0);
+    		rowNum = writeData(sheet, rowNum, category, styles, reportFormulaUtil);
+    	}
+    	
+    	if (sheet != null) {
+    		tmpModel = new HashMap();
+        	tmpModel.put("reportCd", "0002");
+        	tmpModel.put("reportDetlCd", "0002");
+        	tmpModel.put("fisYear", "2019");
+        	tmpModel.put("bgtDgr", "3");
+        	model = tmpModel;
+    		ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 63);
+    		reportFormulaUtil.writeCellFormula();
+    		
+    		sheet = null;
+    	}
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeHeader(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title, int unitPos) throws Exception {
+        Row row = null;
+        Cell cell = null;
+
+        List list = null;
+        Map map = null;
+
+        int repeatingStartRow = 0;
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(21f);
+
+        Cell titleCell = row.createCell(1);
+        titleCell.setCellStyle(styles.get("title"));
+        titleCell.setCellValue(title);
+
+        rowNum = writeReportCont(model, sheet, rowNum, styles, unitPos);
+
+        repeatingStartRow = rowNum;
+
+        int preRowSeq = -1;
+        int rowSeq = -1;
+        int cellSeq = -1;
+        String headerCont = "";
+
+        //list = reportCommDAO.selectReportHeaderList(model);
+        list = getHeader();
+        while (!list.isEmpty()) {
+        	map = (Map) list.remove(0);
+
+            rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+            cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+            headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+            if (rowSeq < 0) {
+                throw new Exception("보고서 Header 정보 오류입니다.");
+            }
+
+            if (preRowSeq == -1 || preRowSeq != rowSeq) {
+                row = sheet.createRow(rowNum);
+                rowNum++;
+                row.setHeightInPoints(13.5f);
+            }
+
+            preRowSeq = rowSeq;
+
+            cell = row.createCell(cellSeq);
+            
+            cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+            if (BcjisCommUtil.isNullString(headerCont) == false) {
+                cell.setCellValue(headerCont);
+            }
+        }
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+        printSetup.setLandscape(true);
+        printSetup.setPageOrder(PageOrder.OVER_THEN_DOWN);
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+
+        sheet.setHorizontallyCenter(true);
+
+        sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + rowNum));
+        sheet.setRepeatingColumns(CellRangeAddress.valueOf("A:B"));
+
+        sheet.createFreezePane(3, 8);
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+
+        Footer footer = sheet.getFooter();
+
+        footer.setCenter("" + HeaderFooter.page());
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+
+        //ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+        String mergeVal = "";
+        List mergeList = null;
+        Map mergeMap = null;
+        mergeList = getMergeData();
+        while (!mergeList.isEmpty()) {
+        	mergeMap = (Map) mergeList.remove(0);
+
+            mergeVal = ReportSaveUtil.getStringValue(mergeMap.get("mergeVal"));
+            if (BcjisCommUtil.isNullString(mergeVal) == false) {
+                sheet.addMergedRegion(CellRangeAddress.valueOf(mergeVal));
+            }
+        }
+
+        return rowNum;
+    }
+    
+    public int writeHeader2(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title, int unitPos) throws Exception {
+    	Row row = null;
+    	Cell cell = null;
+    	
+    	List list = null;
+    	Map map = null;
+    	
+    	int repeatingStartRow = 0;
+    	
+    	row = sheet.createRow(rowNum);
+    	rowNum++;
+    	row.setHeightInPoints(21f);
+    	
+    	Cell titleCell = row.createCell(1);
+    	titleCell.setCellStyle(styles.get("title"));
+    	titleCell.setCellValue(title);
+    	
+    	rowNum = writeReportCont2(model, sheet, rowNum, styles, unitPos);
+    	
+    	repeatingStartRow = rowNum;
+    	
+    	int preRowSeq = -1;
+    	int rowSeq = -1;
+    	int cellSeq = -1;
+    	String headerCont = "";
+    	
+    	//list = reportCommDAO.selectReportHeaderList(model);
+    	list = getHeader2();
+    	while (!list.isEmpty()) {
+    		map = (Map) list.remove(0);
+    		
+    		rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+    		cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+    		headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+    		if (rowSeq < 0) {
+    			throw new Exception("보고서 Header 정보 오류입니다.");
+    		}
+    		
+    		if (preRowSeq == -1 || preRowSeq != rowSeq) {
+    			row = sheet.createRow(rowNum);
+    			rowNum++;
+    			row.setHeightInPoints(13.5f);
+    		}
+    		
+    		preRowSeq = rowSeq;
+    		
+    		cell = row.createCell(cellSeq);
+    		
+    		cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+    		if (BcjisCommUtil.isNullString(headerCont) == false) {
+    			cell.setCellValue(headerCont);
+    		}
+    	}
+    	
+    	XSSFPrintSetup printSetup = sheet.getPrintSetup();
+    	printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+    	printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+    	printSetup.setLandscape(true);
+    	printSetup.setPageOrder(PageOrder.OVER_THEN_DOWN);
+    	
+    	sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+    	sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+    	sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+    	sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+    	sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+    	sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+    	
+    	sheet.setHorizontallyCenter(true);
+    	
+    	sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + rowNum));
+    	sheet.setRepeatingColumns(CellRangeAddress.valueOf("A:B"));
+    	
+    	sheet.createFreezePane(3, 8);
+    	sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+    	
+    	Footer footer = sheet.getFooter();
+    	
+    	footer.setCenter("" + HeaderFooter.page());
+    	
+    	CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+    	view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+    	
+    	//ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+    	String mergeVal = "";
+    	List mergeList = null;
+    	Map mergeMap = null;
+    	mergeList = getMergeData2();
+    	while (!mergeList.isEmpty()) {
+    		mergeMap = (Map) mergeList.remove(0);
+    		
+    		mergeVal = ReportSaveUtil.getStringValue(mergeMap.get("mergeVal"));
+    		if (BcjisCommUtil.isNullString(mergeVal) == false) {
+    			sheet.addMergedRegion(CellRangeAddress.valueOf(mergeVal));
+    		}
+    	}
+    	
+    	return rowNum;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeReportCont(Map param, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, int unitPos) throws Exception {
+        float rowHeight = 18f;
+        Row row = null;
+        Cell cell = null;
+
+        List list = reportCommDAO.selectReportContList(param);
+        Map map = null;
+        for (int i = 0; i < 1; i++) {
+            map = (Map) list.get(i);
+
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get("cont"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(map.get("cont")));
+
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$D$" + rowNum));
+        }
+
+        cell = row.createCell(unitPos);
+        cell.setCellStyle(styles.get("unit"));
+        cell.setCellValue("(단위:천원)");
+
+        return rowNum;
+    }
+    
+    public int writeReportCont2(Map param, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, int unitPos) throws Exception {
+    	float rowHeight = 18f;
+    	Row row = null;
+    	Cell cell = null;
+    	
+    	List list = reportCommDAO.selectReportContList(param);
+    	Map map = null;
+    	for (int i = 0; i < 1; i++) {
+    		map = (Map) list.get(i);
+    		
+    		row = sheet.createRow(rowNum);
+    		rowNum++;
+    		row.setHeightInPoints(rowHeight);
+    		
+    		cell = row.createCell(1);
+    		//cell.setCellStyle(styles.get("cont"));
+    		//cell.setCellValue(ReportSaveUtil.getStringValue(map.get("cont")));
+    		 
+    		sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$D$" + rowNum));
+    	}
+    	
+    	cell = row.createCell(unitPos);
+    	cell.setCellStyle(styles.get("unit"));
+    	cell.setCellValue("(단위:천원)");
+    	
+    	return rowNum;
+    }
+
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, ReportFormulaUtil reportFormulaUtil) throws Exception {
+        float rowHeight = 17.75f;
+        Row row = null;
+        Cell cell = null;
+
+        int dgrLevel = 0;
+        try {
+            dgrLevel = Integer.parseInt(String.valueOf(category.get("dgrLevel")));
+        } catch (NumberFormatException nfe) {
+            throw nfe;
+        }
+
+        int deptCnt = ReportSaveUtil.getIntValue(category.get("deptCnt"));
+
+        String dgrcompoId = ReportSaveUtil.getStringValue(category.get("dgrcompoId"));
+        String upDgrcompoId = ReportSaveUtil.getStringValue(category.get("upDgrcompoId"));
+
+        boolean formulaFlag = true;
+        if (dgrLevel > 1 || deptCnt == 1) {
+            formulaFlag = false;
+        }
+
+        String preStyleNm = ReportSaveUtil.getStringValue(category.get("preStyleNm"));
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        for (int i = 0; i <= 63; i++) {
+            cell = row.createCell(i);
+            cell.setCellStyle(styles.get(preStyleNm + "Col" + i));
+            if (i < 2) {
+                cell.setCellValue(ReportSaveUtil.getStringValue(category.get("col" + i)));
+            } else if (i == 2) {
+                cell.setCellFormula("D" + (rowNum) + "+" + "H" + (rowNum) + "+" + "L" + (rowNum) + "+" + "M" + (rowNum) + "+" + "W" + (rowNum) + "+" + "AA" + (rowNum));
+            } else if (i == 3) {
+                cell.setCellFormula("E" + (rowNum) + "+" + "F" + (rowNum) + "+" + "G" + (rowNum));
+            } else if (i == 7) {
+                cell.setCellFormula("I" + (rowNum) + "+" + "J" + (rowNum) + "+" + "K" + (rowNum));
+            } else if (i == 12) {
+                cell.setCellFormula("N" + (rowNum) + "+" + "R" + (rowNum) + "+" + "V" + (rowNum));
+            } else if (i == 13) {
+                cell.setCellFormula("O" + (rowNum) + "+" + "P" + (rowNum) + "+" + "Q" + (rowNum));
+            } else if (i == 17) {
+                cell.setCellFormula("S" + (rowNum) + "+" + "T" + (rowNum) + "+" + "U" + (rowNum));
+            } else if (i == 22) {
+                cell.setCellFormula("X" + (rowNum) + "+" + "Y" + (rowNum) + "+" + "Z" + (rowNum));
+            } else if (i == 26) {
+                cell.setCellFormula("AB" + (rowNum) + "+" + "AN" + (rowNum));
+            } else if (i == 27) {
+                cell.setCellFormula("AC" + (rowNum) + "+" + "AD" + (rowNum));
+            } else if (i == 28) {
+                cell.setCellFormula("AF" + (rowNum) + "+" + "AI" + (rowNum) + "+" + "AL" + (rowNum));
+            } else if (i == 29) {
+                cell.setCellFormula("AG" + (rowNum) + "+" + "AJ" + (rowNum) + "+" + "AM" + (rowNum));
+            } else if (i == 30) {
+                cell.setCellFormula("AF" + (rowNum) + "+" + "AG" + (rowNum));
+            } else if (i == 33) {
+                cell.setCellFormula("AI" + (rowNum) + "+" + "AJ" + (rowNum));
+            } else if (i == 36) {
+                cell.setCellFormula("AL" + (rowNum) + "+" + "AM" + (rowNum));
+            } else if (i == 39) {
+                cell.setCellFormula("AO" + (rowNum) + "+" + "BH" + (rowNum));
+            } else if (i == 40) {
+                cell.setCellFormula("AP" + (rowNum) + "+" + "AQ" + (rowNum));
+            } else if (i == 42) {
+                cell.setCellFormula("AR" + (rowNum) + "+" + "AS" + (rowNum) + "+" + "BG" + (rowNum));
+            } else if (i == 44) {
+                cell.setCellFormula("AT" + (rowNum) + "+" + "AU" + (rowNum) + "+" + "AV" + (rowNum) + "+" + "AW" + (rowNum) + "+" + "AX" + (rowNum) + "+" + "AY" + (rowNum) + "+" + "AZ" + (rowNum) + "+" + "BA" + (rowNum) + "+" + "BB" + (rowNum) + "+" + "BC" + (rowNum) + "+" + "BD" + (rowNum) + "+" + "BE" + (rowNum) + "+" + "BF" + (rowNum));
+            } else if (i == 59) {
+                cell.setCellFormula("BI" + (rowNum) + "+" + "BJ" + (rowNum) + "+" + "BK" + (rowNum) + "+" + "BL" + (rowNum));
+            } else {
+                if (formulaFlag == false) {
+                    cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("col" + i)));
+                }
+            }
+        }
+
+        if (formulaFlag == true) {
+            addDataFormulaCell(reportFormulaUtil, dgrcompoId, rowNum);
+        }
+        addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);
+
+        if (dgrLevel < 2) {
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$B$" + rowNum));
+        }
+
+        return rowNum;
+    }
+
+    //세로 합계(2레벨)
+    public void addDataFormulaValue(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        //reportFormulaUtil.addFormulaValue(keyStr + "_A", "A" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_B", "B" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_C", "C" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_D", "D" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_E", "E" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_F", "F" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_G", "G" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_H", "H" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_I", "I" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_J", "J" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_K", "K" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_L", "L" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_M", "M" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_N", "N" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_O", "O" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_P", "P" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_Q", "Q" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_R", "R" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_S", "S" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_T", "T" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_U", "U" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_V", "V" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_W", "W" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_X", "X" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_Y", "Y" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_Z", "Z" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AA", "AA" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AB", "AB" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AC", "AC" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AD", "AD" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AE", "AE" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AF", "AF" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AG", "AG" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AH", "AH" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AI", "AI" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AJ", "AJ" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AK", "AK" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AL", "AL" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AM", "AM" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AN", "AN" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AO", "AO" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AP", "AP" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AQ", "AQ" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AR", "AR" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_AS", "AS" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AT", "AT" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AU", "AU" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AV", "AV" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AW", "AW" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AX", "AX" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AY", "AY" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_AZ", "AZ" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BA", "BA" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BB", "BB" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BC", "BC" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BD", "BD" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BE", "BE" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BF", "BF" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_BG", "BG" + rowNum);
+        //reportFormulaUtil.addFormulaValue(keyStr + "_BH", "BH" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BI", "BI" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BJ", "BJ" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BK", "BK" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_BL", "BL" + rowNum);
+    }
+
+    public void addDataFormulaCell(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum) {
+        //reportFormulaUtil.addFormulaCell(keyStr + "_A", rowNum - 1, 0);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_B", rowNum - 1, 1);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_C", rowNum - 1, 2);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_D", rowNum - 1, 3);
+        reportFormulaUtil.addFormulaCell(keyStr + "_E", rowNum - 1, 4);
+        reportFormulaUtil.addFormulaCell(keyStr + "_F", rowNum - 1, 5);
+        reportFormulaUtil.addFormulaCell(keyStr + "_G", rowNum - 1, 6);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_H", rowNum - 1, 7);
+        reportFormulaUtil.addFormulaCell(keyStr + "_I", rowNum - 1, 8);
+        reportFormulaUtil.addFormulaCell(keyStr + "_J", rowNum - 1, 9);
+        reportFormulaUtil.addFormulaCell(keyStr + "_K", rowNum - 1, 10);
+        reportFormulaUtil.addFormulaCell(keyStr + "_L", rowNum - 1, 11);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_M", rowNum - 1, 12);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_N", rowNum - 1, 13);
+        reportFormulaUtil.addFormulaCell(keyStr + "_O", rowNum - 1, 14);
+        reportFormulaUtil.addFormulaCell(keyStr + "_P", rowNum - 1, 15);
+        reportFormulaUtil.addFormulaCell(keyStr + "_Q", rowNum - 1, 16);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_R", rowNum - 1, 17);
+        reportFormulaUtil.addFormulaCell(keyStr + "_S", rowNum - 1, 18);
+        reportFormulaUtil.addFormulaCell(keyStr + "_T", rowNum - 1, 19);
+        reportFormulaUtil.addFormulaCell(keyStr + "_U", rowNum - 1, 20);
+        reportFormulaUtil.addFormulaCell(keyStr + "_V", rowNum - 1, 21);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_W", rowNum - 1, 22);
+        reportFormulaUtil.addFormulaCell(keyStr + "_X", rowNum - 1, 23);
+        reportFormulaUtil.addFormulaCell(keyStr + "_Y", rowNum - 1, 24);
+        reportFormulaUtil.addFormulaCell(keyStr + "_Z", rowNum - 1, 25);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AA", rowNum - 1, 26);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AB", rowNum - 1, 27);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AC", rowNum - 1, 28);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AD", rowNum - 1, 29);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AE", rowNum - 1, 30);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AF", rowNum - 1, 31);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AG", rowNum - 1, 32);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AH", rowNum - 1, 33);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AI", rowNum - 1, 34);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AJ", rowNum - 1, 35);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AK", rowNum - 1, 36);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AL", rowNum - 1, 37);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AM", rowNum - 1, 38);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AN", rowNum - 1, 39);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AO", rowNum - 1, 40);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AP", rowNum - 1, 41);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AQ", rowNum - 1, 42);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AR", rowNum - 1, 43);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_AS", rowNum - 1, 44);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AT", rowNum - 1, 45);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AU", rowNum - 1, 46);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AV", rowNum - 1, 47);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AW", rowNum - 1, 48);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AX", rowNum - 1, 49);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AY", rowNum - 1, 50);
+        reportFormulaUtil.addFormulaCell(keyStr + "_AZ", rowNum - 1, 51);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BA", rowNum - 1, 52);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BB", rowNum - 1, 53);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BC", rowNum - 1, 54);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BD", rowNum - 1, 55);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BE", rowNum - 1, 56);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BF", rowNum - 1, 57);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_BG", rowNum - 1, 58);
+        //reportFormulaUtil.addFormulaCell(keyStr + "_BH", rowNum - 1, 59);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BI", rowNum - 1, 60);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BJ", rowNum - 1, 61);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BK", rowNum - 1, 62);
+        reportFormulaUtil.addFormulaCell(keyStr + "_BL", rowNum - 1, 63);
+    }
+    
+    public List getHeader(){
+    	List header = new ArrayList();
+    	 
+    	header.add(rtnHeaderData(0, 0, "구             분"));
+    	header.add(rtnHeaderData(0, 1, ""));
+    	header.add(rtnHeaderData(0, 2, "예산총액(동일)"));
+    	header.add(rtnHeaderData(0, 3, "기  준  인  건  비"));
+    	header.add(rtnHeaderData(0, 4, ""));
+    	header.add(rtnHeaderData(0, 5, ""));
+    	header.add(rtnHeaderData(0, 6, ""));
+    	header.add(rtnHeaderData(0, 7, "채    무    상    환"));
+    	header.add(rtnHeaderData(0, 8, ""));
+    	header.add(rtnHeaderData(0, 9, ""));
+    	header.add(rtnHeaderData(0, 10, ""));
+    	header.add(rtnHeaderData(0, 11, "예비비"));
+    	header.add(rtnHeaderData(0, 12, "법        정        경        비"));
+    	header.add(rtnHeaderData(0, 13, ""));
+    	header.add(rtnHeaderData(0, 14, ""));
+    	header.add(rtnHeaderData(0, 15, ""));
+    	header.add(rtnHeaderData(0, 16, ""));
+    	header.add(rtnHeaderData(0, 17, ""));
+    	header.add(rtnHeaderData(0, 18, ""));
+    	header.add(rtnHeaderData(0, 19, ""));
+    	header.add(rtnHeaderData(0, 20, ""));
+    	header.add(rtnHeaderData(0, 21, ""));
+    	header.add(rtnHeaderData(0, 22, "용  도  지  정  경  비"));
+    	header.add(rtnHeaderData(0, 23, ""));
+    	header.add(rtnHeaderData(0, 24, ""));
+    	header.add(rtnHeaderData(0, 25, ""));
+    	header.add(rtnHeaderData(0, 26, "사업비"));
+    	header.add(rtnHeaderData(0, 27, "국  고  보  조  사  업"));
+    	header.add(rtnHeaderData(0, 28, ""));
+    	header.add(rtnHeaderData(0, 29, ""));
+    	header.add(rtnHeaderData(0, 30, ""));
+    	header.add(rtnHeaderData(0, 31, ""));
+    	header.add(rtnHeaderData(0, 32, ""));
+    	header.add(rtnHeaderData(0, 33, ""));
+    	header.add(rtnHeaderData(0, 34, ""));
+    	header.add(rtnHeaderData(0, 35, ""));
+    	header.add(rtnHeaderData(0, 36, ""));
+    	header.add(rtnHeaderData(0, 37, ""));
+    	header.add(rtnHeaderData(0, 38, ""));
+    	header.add(rtnHeaderData(0, 39, "경상+투자\r\n\r\n(H)\r\n(H=I+J)"));
+    	header.add(rtnHeaderData(0, 40, "경         상         사         업         비"));
+    	header.add(rtnHeaderData(0, 41, ""));
+    	header.add(rtnHeaderData(0, 42, ""));
+    	header.add(rtnHeaderData(0, 43, ""));
+    	header.add(rtnHeaderData(0, 44, ""));
+    	header.add(rtnHeaderData(0, 45, ""));
+    	header.add(rtnHeaderData(0, 46, ""));
+    	header.add(rtnHeaderData(0, 47, ""));
+    	header.add(rtnHeaderData(0, 48, ""));
+    	header.add(rtnHeaderData(0, 49, ""));
+    	header.add(rtnHeaderData(0, 50, ""));
+    	header.add(rtnHeaderData(0, 51, ""));
+    	header.add(rtnHeaderData(0, 52, ""));
+    	header.add(rtnHeaderData(0, 53, ""));
+    	header.add(rtnHeaderData(0, 54, ""));
+    	header.add(rtnHeaderData(0, 55, ""));
+    	header.add(rtnHeaderData(0, 56, ""));
+    	header.add(rtnHeaderData(0, 57, ""));
+    	header.add(rtnHeaderData(0, 58, ""));
+    	header.add(rtnHeaderData(0, 59, "투     자     사     업     비")); 
+    	header.add(rtnHeaderData(0, 60, ""));
+    	header.add(rtnHeaderData(0, 61, ""));
+    	header.add(rtnHeaderData(0, 62, ""));
+    	header.add(rtnHeaderData(0, 63, ""));
+    	
+    	header.add(rtnHeaderData(1, 0, ""));
+    	header.add(rtnHeaderData(1, 1, ""));
+    	header.add(rtnHeaderData(1, 2, "(A+B+C+D+E+F)"));
+    	header.add(rtnHeaderData(1, 3, "계\r\n(A)"));
+    	header.add(rtnHeaderData(1, 4, "일반직+전문직"));
+    	header.add(rtnHeaderData(1, 5, "공무직"));
+    	header.add(rtnHeaderData(1, 6, "시간제"));
+    	header.add(rtnHeaderData(1, 7, "계\r\n(B)"));
+    	header.add(rtnHeaderData(1, 8, "지 방 채"));
+    	header.add(rtnHeaderData(1, 9, "채무부담"));
+    	header.add(rtnHeaderData(1, 10, "통합관리기금"));
+    	header.add(rtnHeaderData(1, 11, ""));
+    	header.add(rtnHeaderData(1, 12, "계\r\n(D)"));
+    	header.add(rtnHeaderData(1, 13, "자 치 구 · 군   교 부 금"));
+    	header.add(rtnHeaderData(1, 14, ""));
+    	header.add(rtnHeaderData(1, 15, ""));
+    	header.add(rtnHeaderData(1, 16, ""));
+    	header.add(rtnHeaderData(1, 17, "전 출 금(법정)"));
+    	header.add(rtnHeaderData(1, 18, ""));
+    	header.add(rtnHeaderData(1, 19, ""));
+    	header.add(rtnHeaderData(1, 20, ""));
+    	header.add(rtnHeaderData(1, 21, "교 육 비"));
+    	header.add(rtnHeaderData(1, 22, "계\r\n(E)"));
+    	header.add(rtnHeaderData(1, 23, "운수업계\r\n보 조 금\r\n\r\n(307-09)"));
+    	header.add(rtnHeaderData(1, 24, "교육비\r\n전입금"));
+    	header.add(rtnHeaderData(1, 25, "국고보조금\r\n반 환 금\r\n\r\n(802-01)"));
+    	header.add(rtnHeaderData(1, 26, ""));
+    	header.add(rtnHeaderData(1, 27, "계\r\n(G)"));
+    	header.add(rtnHeaderData(1, 28, "국고+균특+기금"));
+    	header.add(rtnHeaderData(1, 29, "일반국비\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 30, "국 고 보 조 금 (511-01)"));
+    	header.add(rtnHeaderData(1, 31, ""));
+    	header.add(rtnHeaderData(1, 32, ""));
+    	header.add(rtnHeaderData(1, 33, "균 특 보 조 금 (511-02)"));
+    	header.add(rtnHeaderData(1, 34, ""));
+    	header.add(rtnHeaderData(1, 35, ""));
+    	header.add(rtnHeaderData(1, 36, "기 금 보 조 금 (511-03)"));
+    	header.add(rtnHeaderData(1, 37, ""));
+    	header.add(rtnHeaderData(1, 38, ""));
+    	header.add(rtnHeaderData(1, 39, ""));
+    	header.add(rtnHeaderData(1, 40, "계\r\n(I)"));
+    	header.add(rtnHeaderData(1, 41, "경상국비\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 42, "기    타    경    상    경    비"));
+    	header.add(rtnHeaderData(1, 43, ""));
+    	header.add(rtnHeaderData(1, 44, ""));
+    	header.add(rtnHeaderData(1, 45, ""));
+    	header.add(rtnHeaderData(1, 46, ""));
+    	header.add(rtnHeaderData(1, 47, ""));
+    	header.add(rtnHeaderData(1, 48, ""));
+    	header.add(rtnHeaderData(1, 49, ""));
+    	header.add(rtnHeaderData(1, 50, ""));
+    	header.add(rtnHeaderData(1, 51, ""));
+    	header.add(rtnHeaderData(1, 52, ""));
+    	header.add(rtnHeaderData(1, 53, ""));
+    	header.add(rtnHeaderData(1, 54, ""));
+    	header.add(rtnHeaderData(1, 55, ""));
+    	header.add(rtnHeaderData(1, 56, ""));
+    	header.add(rtnHeaderData(1, 57, ""));
+    	header.add(rtnHeaderData(1, 58, ""));
+    	header.add(rtnHeaderData(1, 59, "계\r\n(J)")); 
+    	header.add(rtnHeaderData(1, 60, "자체사업"));
+    	header.add(rtnHeaderData(1, 61, "국고투자\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 62, "국비직접\r\n(매칭펀드)"));
+    	header.add(rtnHeaderData(1, 63, "투자비\r\n삭감액"));
+
+    	header.add(rtnHeaderData(2, 0, ""));
+    	header.add(rtnHeaderData(2, 1, ""));
+    	header.add(rtnHeaderData(2, 2, ""));
+    	//header.add(rtnHeaderData(2, 2, "기준인건비/채무상환/예비비/법정경비/용도지정경비+(국고보조사업)+(경상사업비+투자사업비))"));
+    	header.add(rtnHeaderData(2, 3, ""));
+    	header.add(rtnHeaderData(2, 4, "+청원경찰"));
+    	header.add(rtnHeaderData(2, 5, "보수"));
+    	header.add(rtnHeaderData(2, 6, "임기제"));
+    	header.add(rtnHeaderData(2, 7, ""));
+    	header.add(rtnHeaderData(2, 8, "상     환"));
+    	header.add(rtnHeaderData(2, 9, "상     환"));
+    	header.add(rtnHeaderData(2, 10, "(예수금원리금)"));
+    	header.add(rtnHeaderData(2, 11, ""));
+    	header.add(rtnHeaderData(2, 12, ""));
+    	header.add(rtnHeaderData(2, 13, "소계"));
+    	header.add(rtnHeaderData(2, 14, "징    수"));
+    	header.add(rtnHeaderData(2, 15, "자치구"));
+    	header.add(rtnHeaderData(2, 16, "기장군"));
+    	header.add(rtnHeaderData(2, 17, "소계"));
+    	header.add(rtnHeaderData(2, 18, "국고대여장학금"));
+    	header.add(rtnHeaderData(2, 19, "기타회계"));
+    	header.add(rtnHeaderData(2, 20, "기금전출금"));
+    	header.add(rtnHeaderData(2, 21, "특별회계"));
+    	header.add(rtnHeaderData(2, 22, ""));
+    	header.add(rtnHeaderData(2, 23, "보조금"));
+    	header.add(rtnHeaderData(2, 24, "전입금"));
+    	header.add(rtnHeaderData(2, 25, ""));
+    	header.add(rtnHeaderData(2, 26, "(국고+경상+투자)"));
+    	header.add(rtnHeaderData(2, 27, ""));
+    	header.add(rtnHeaderData(2, 28, ""));
+    	header.add(rtnHeaderData(2, 29, ""));
+    	header.add(rtnHeaderData(2, 30, "소계"));
+    	header.add(rtnHeaderData(2, 31, "국 비"));
+    	header.add(rtnHeaderData(2, 32, "시 비"));
+    	header.add(rtnHeaderData(2, 33, "소계"));
+    	header.add(rtnHeaderData(2, 34, "국 비"));
+    	header.add(rtnHeaderData(2, 35, "시 비"));
+    	header.add(rtnHeaderData(2, 36, "소계"));
+    	header.add(rtnHeaderData(2, 37, "국 비"));
+    	header.add(rtnHeaderData(2, 38, "시 비"));
+    	header.add(rtnHeaderData(2, 39, ""));
+    	header.add(rtnHeaderData(2, 40, ""));
+    	header.add(rtnHeaderData(2, 41, ""));
+    	header.add(rtnHeaderData(2, 42, "소계\r\n\r\n(①+②+③)"));
+    	header.add(rtnHeaderData(2, 43, "그외 경상비\r\n\r\n①"));
+    	header.add(rtnHeaderData(2, 44, "공  통  심  사  기  본  경  비"));
+    	header.add(rtnHeaderData(2, 45, ""));
+    	header.add(rtnHeaderData(2, 46, ""));
+    	header.add(rtnHeaderData(2, 47, ""));
+    	header.add(rtnHeaderData(2, 48, ""));
+    	header.add(rtnHeaderData(2, 49, ""));
+    	header.add(rtnHeaderData(2, 50, ""));
+    	header.add(rtnHeaderData(2, 51, ""));
+    	header.add(rtnHeaderData(2, 52, ""));
+    	header.add(rtnHeaderData(2, 53, ""));
+    	header.add(rtnHeaderData(2, 54, ""));
+    	header.add(rtnHeaderData(2, 55, ""));
+    	header.add(rtnHeaderData(2, 56, ""));
+    	header.add(rtnHeaderData(2, 57, ""));
+    	header.add(rtnHeaderData(2, 58, "경상비\r\n삭감액\r\n③"));
+    	header.add(rtnHeaderData(2, 59, ""));
+    	header.add(rtnHeaderData(2, 60, ""));
+    	header.add(rtnHeaderData(2, 61, "매칭시비"));
+    	header.add(rtnHeaderData(2, 62, "(매칭펀드)"));
+    	header.add(rtnHeaderData(2, 63, ""));
+    	
+    	header.add(rtnHeaderData(3, 0, ""));
+    	header.add(rtnHeaderData(3, 1, ""));
+    	header.add(rtnHeaderData(3, 2, ""));
+    	header.add(rtnHeaderData(3, 3, ""));
+    	header.add(rtnHeaderData(3, 4, ""));
+    	header.add(rtnHeaderData(3, 5, ""));
+    	header.add(rtnHeaderData(3, 6, ""));
+    	header.add(rtnHeaderData(3, 7, ""));
+    	header.add(rtnHeaderData(3, 8, ""));
+    	header.add(rtnHeaderData(3, 9, ""));
+    	header.add(rtnHeaderData(3, 10, "상     환"));
+    	header.add(rtnHeaderData(3, 11, "(C)"));
+    	header.add(rtnHeaderData(3, 12, ""));
+    	header.add(rtnHeaderData(3, 13, ""));
+    	header.add(rtnHeaderData(3, 14, "교부금"));
+    	header.add(rtnHeaderData(3, 15, "조정교부금"));
+    	header.add(rtnHeaderData(3, 16, "조정교부금"));
+    	header.add(rtnHeaderData(3, 17, ""));
+    	header.add(rtnHeaderData(3, 18, "지방세연구원"));
+    	header.add(rtnHeaderData(3, 19, "전출금"));
+    	header.add(rtnHeaderData(3, 20, "전 출 금"));
+    	header.add(rtnHeaderData(3, 21, "전 출 금"));
+    	header.add(rtnHeaderData(3, 22, ""));
+    	header.add(rtnHeaderData(3, 23, ""));
+    	header.add(rtnHeaderData(3, 24, ""));
+    	header.add(rtnHeaderData(3, 25, ""));
+    	header.add(rtnHeaderData(3, 26, "(F)"));
+    	header.add(rtnHeaderData(3, 27, ""));
+    	header.add(rtnHeaderData(3, 28, ""));
+    	header.add(rtnHeaderData(3, 29, ""));
+    	header.add(rtnHeaderData(3, 30, ""));
+    	header.add(rtnHeaderData(3, 31, ""));
+    	header.add(rtnHeaderData(3, 32, ""));
+    	header.add(rtnHeaderData(3, 33, ""));
+    	header.add(rtnHeaderData(3, 34, ""));
+    	header.add(rtnHeaderData(3, 35, ""));
+    	header.add(rtnHeaderData(3, 36, ""));
+    	header.add(rtnHeaderData(3, 37, ""));
+    	header.add(rtnHeaderData(3, 38, ""));
+    	header.add(rtnHeaderData(3, 39, ""));
+    	header.add(rtnHeaderData(3, 40, ""));
+    	header.add(rtnHeaderData(3, 41, ""));
+    	header.add(rtnHeaderData(3, 42, ""));
+    	header.add(rtnHeaderData(3, 43, ""));
+    	header.add(rtnHeaderData(3, 44, "소계"));
+    	header.add(rtnHeaderData(3, 45, "기본수용비"));
+    	header.add(rtnHeaderData(3, 46, "급량비"));
+    	header.add(rtnHeaderData(3, 47, "당직수당"));
+    	header.add(rtnHeaderData(3, 48, "출장여비"));
+    	header.add(rtnHeaderData(3, 49, "월액여비"));
+    	header.add(rtnHeaderData(3, 50, "시책업추비"));
+    	header.add(rtnHeaderData(3, 51, "기간제근로자"));
+    	header.add(rtnHeaderData(3, 52, "위원회수당"));
+    	header.add(rtnHeaderData(3, 53, "워크숍경비"));
+    	header.add(rtnHeaderData(3, 54, "국외여비"));
+    	header.add(rtnHeaderData(3, 55, "국제화여비"));
+    	header.add(rtnHeaderData(3, 56, "사회복무요원"));
+    	header.add(rtnHeaderData(3, 57, "포상금"));
+    	header.add(rtnHeaderData(3, 58, ""));
+    	header.add(rtnHeaderData(3, 59, ""));
+    	header.add(rtnHeaderData(3, 60, ""));
+    	header.add(rtnHeaderData(3, 61, ""));
+    	header.add(rtnHeaderData(3, 62, ""));
+    	header.add(rtnHeaderData(3, 63, ""));
+    	
+    	
+    	header.add(rtnHeaderData(4, 0, ""));
+    	header.add(rtnHeaderData(4, 1, ""));
+    	header.add(rtnHeaderData(4, 2, ""));
+    	header.add(rtnHeaderData(4, 3, ""));
+    	header.add(rtnHeaderData(4, 4, "(101-01,02)"));
+    	header.add(rtnHeaderData(4, 5, "(101-03)"));
+    	header.add(rtnHeaderData(4, 6, "(101-02)"));
+    	header.add(rtnHeaderData(4, 7, ""));
+    	header.add(rtnHeaderData(4, 8, ""));
+    	header.add(rtnHeaderData(4, 9, ""));
+    	header.add(rtnHeaderData(4, 10, "705"));
+    	header.add(rtnHeaderData(4, 11, "801"));
+    	header.add(rtnHeaderData(4, 12, ""));
+    	header.add(rtnHeaderData(4, 13, ""));
+    	header.add(rtnHeaderData(4, 14, "(308-02)"));
+    	header.add(rtnHeaderData(4, 15, "(308-03)"));
+    	header.add(rtnHeaderData(4, 16, "(308-04)"));
+    	header.add(rtnHeaderData(4, 17, ""));
+    	header.add(rtnHeaderData(4, 18, "출연금"));
+    	header.add(rtnHeaderData(4, 19, "701"));
+    	header.add(rtnHeaderData(4, 20, "702"));
+    	header.add(rtnHeaderData(4, 21, "703"));
+    	header.add(rtnHeaderData(4, 22, ""));
+    	header.add(rtnHeaderData(4, 23, ""));
+    	header.add(rtnHeaderData(4, 24, ""));
+    	header.add(rtnHeaderData(4, 25, ""));
+    	header.add(rtnHeaderData(4, 26, "(F=G+H)"));
+    	header.add(rtnHeaderData(4, 27, ""));
+    	header.add(rtnHeaderData(4, 28, ""));
+    	header.add(rtnHeaderData(4, 29, ""));
+    	header.add(rtnHeaderData(4, 30, ""));
+    	header.add(rtnHeaderData(4, 31, ""));
+    	header.add(rtnHeaderData(4, 32, ""));
+    	header.add(rtnHeaderData(4, 33, ""));
+    	header.add(rtnHeaderData(4, 34, ""));
+    	header.add(rtnHeaderData(4, 35, ""));
+    	header.add(rtnHeaderData(4, 36, ""));
+    	header.add(rtnHeaderData(4, 37, ""));
+    	header.add(rtnHeaderData(4, 38, ""));
+    	header.add(rtnHeaderData(4, 39, ""));
+    	header.add(rtnHeaderData(4, 40, ""));
+    	header.add(rtnHeaderData(4, 41, ""));
+    	header.add(rtnHeaderData(4, 42, ""));
+    	header.add(rtnHeaderData(4, 43, ""));
+    	header.add(rtnHeaderData(4, 44, "②"));
+    	header.add(rtnHeaderData(4, 45, "(201-01)"));
+    	header.add(rtnHeaderData(4, 46, "(201-01)"));
+    	header.add(rtnHeaderData(4, 47, "(201-01)"));
+    	header.add(rtnHeaderData(4, 48, "(202-01)"));
+    	header.add(rtnHeaderData(4, 49, "(202-02)"));
+    	header.add(rtnHeaderData(4, 50, "(203-03)"));
+    	header.add(rtnHeaderData(4, 51, "(101-04)"));
+    	header.add(rtnHeaderData(4, 52, "(201-01)"));
+    	header.add(rtnHeaderData(4, 53, "(201-01)"));
+    	header.add(rtnHeaderData(4, 54, "(202-03)"));
+    	header.add(rtnHeaderData(4, 55, "(202-04)"));
+    	header.add(rtnHeaderData(4, 56, "(303-09)"));
+    	header.add(rtnHeaderData(4, 57, "(303-01)"));
+    	header.add(rtnHeaderData(4, 58, ""));
+    	header.add(rtnHeaderData(4, 59, ""));
+    	header.add(rtnHeaderData(4, 60, ""));
+    	header.add(rtnHeaderData(4, 61, ""));
+    	header.add(rtnHeaderData(4, 62, ""));
+    	header.add(rtnHeaderData(4, 63, ""));
+    	
+    	return header;
+    }
+    
+    public List getHeader2(){
+    	List header = new ArrayList();
+    	
+    	header.add(rtnHeaderData(0, 0, "구             분"));
+    	header.add(rtnHeaderData(0, 1, ""));
+    	header.add(rtnHeaderData(0, 2, "예산총액(동일)"));
+    	header.add(rtnHeaderData(0, 3, "인  건  비"));
+    	header.add(rtnHeaderData(0, 4, ""));
+    	header.add(rtnHeaderData(0, 5, ""));
+    	header.add(rtnHeaderData(0, 6, ""));
+    	header.add(rtnHeaderData(0, 7, "채무상환"));
+    	header.add(rtnHeaderData(0, 8, ""));
+    	header.add(rtnHeaderData(0, 9, ""));
+    	header.add(rtnHeaderData(0, 10, ""));
+    	header.add(rtnHeaderData(0, 11, "예비비"));
+    	header.add(rtnHeaderData(0, 12, "법정경비"));
+    	header.add(rtnHeaderData(0, 13, ""));
+    	header.add(rtnHeaderData(0, 14, ""));
+    	header.add(rtnHeaderData(0, 15, ""));
+    	header.add(rtnHeaderData(0, 16, ""));
+    	header.add(rtnHeaderData(0, 17, ""));
+    	header.add(rtnHeaderData(0, 18, ""));
+    	header.add(rtnHeaderData(0, 19, ""));
+    	header.add(rtnHeaderData(0, 20, ""));
+    	header.add(rtnHeaderData(0, 21, ""));
+    	header.add(rtnHeaderData(0, 22, "용도지정"));
+    	header.add(rtnHeaderData(0, 23, ""));
+    	header.add(rtnHeaderData(0, 24, ""));
+    	header.add(rtnHeaderData(0, 25, ""));
+    	header.add(rtnHeaderData(0, 26, "사업비"));
+    	header.add(rtnHeaderData(0, 27, "국  고  보  조  사  업"));
+    	header.add(rtnHeaderData(0, 28, ""));
+    	header.add(rtnHeaderData(0, 29, ""));
+    	header.add(rtnHeaderData(0, 30, ""));
+    	header.add(rtnHeaderData(0, 31, ""));
+    	header.add(rtnHeaderData(0, 32, ""));
+    	header.add(rtnHeaderData(0, 33, ""));
+    	header.add(rtnHeaderData(0, 34, ""));
+    	header.add(rtnHeaderData(0, 35, ""));
+    	header.add(rtnHeaderData(0, 36, ""));
+    	header.add(rtnHeaderData(0, 37, ""));
+    	header.add(rtnHeaderData(0, 38, ""));
+    	header.add(rtnHeaderData(0, 39, "경상+투자\r\n\r\n(H)\r\n(H=I+J)"));
+    	header.add(rtnHeaderData(0, 40, "경    상    사    업"));
+    	header.add(rtnHeaderData(0, 41, ""));
+    	header.add(rtnHeaderData(0, 42, ""));
+    	header.add(rtnHeaderData(0, 43, ""));
+    	header.add(rtnHeaderData(0, 44, ""));
+    	header.add(rtnHeaderData(0, 45, ""));
+    	header.add(rtnHeaderData(0, 46, ""));
+    	header.add(rtnHeaderData(0, 47, ""));
+    	header.add(rtnHeaderData(0, 48, ""));
+    	header.add(rtnHeaderData(0, 49, ""));
+    	header.add(rtnHeaderData(0, 50, ""));
+    	header.add(rtnHeaderData(0, 51, ""));
+    	header.add(rtnHeaderData(0, 52, ""));
+    	header.add(rtnHeaderData(0, 53, ""));
+    	header.add(rtnHeaderData(0, 54, ""));
+    	header.add(rtnHeaderData(0, 55, ""));
+    	header.add(rtnHeaderData(0, 56, ""));
+    	header.add(rtnHeaderData(0, 57, ""));
+    	header.add(rtnHeaderData(0, 58, ""));
+    	header.add(rtnHeaderData(0, 59, "투   자   사   업   비")); 
+    	header.add(rtnHeaderData(0, 60, ""));
+    	header.add(rtnHeaderData(0, 61, ""));
+    	header.add(rtnHeaderData(0, 62, ""));
+    	header.add(rtnHeaderData(0, 63, ""));
+    	
+    	header.add(rtnHeaderData(1, 0, ""));
+    	header.add(rtnHeaderData(1, 1, ""));
+    	header.add(rtnHeaderData(1, 2, "(A+B+C+D+E+F)"));
+    	header.add(rtnHeaderData(1, 3, "계\r\n(A)"));
+    	header.add(rtnHeaderData(1, 4, "일반직+전문직"));
+    	header.add(rtnHeaderData(1, 5, "공무직"));
+    	header.add(rtnHeaderData(1, 6, "시간제"));
+    	header.add(rtnHeaderData(1, 7, "계\r\n(B)"));
+    	header.add(rtnHeaderData(1, 8, "지 방 채"));
+    	header.add(rtnHeaderData(1, 9, "채무부담"));
+    	header.add(rtnHeaderData(1, 10, "통합관리기금"));
+    	header.add(rtnHeaderData(1, 11, ""));
+    	header.add(rtnHeaderData(1, 12, "계\r\n(D)"));
+    	header.add(rtnHeaderData(1, 13, "자 치 구 · 군   교 부 금"));
+    	header.add(rtnHeaderData(1, 14, ""));
+    	header.add(rtnHeaderData(1, 15, ""));
+    	header.add(rtnHeaderData(1, 16, ""));
+    	header.add(rtnHeaderData(1, 17, "전 출 금(법정)"));
+    	header.add(rtnHeaderData(1, 18, ""));
+    	header.add(rtnHeaderData(1, 19, ""));
+    	header.add(rtnHeaderData(1, 20, ""));
+    	header.add(rtnHeaderData(1, 21, "교 육 비"));
+    	header.add(rtnHeaderData(1, 22, "계\r\n(E)"));
+    	header.add(rtnHeaderData(1, 23, "운수업계\r\n보 조 금\r\n\r\n(307-09)"));
+    	header.add(rtnHeaderData(1, 24, "교육비\r\n전입금"));
+    	header.add(rtnHeaderData(1, 25, "국고보조금\r\n반 환 금\r\n\r\n(802-01)"));
+    	header.add(rtnHeaderData(1, 26, ""));
+    	header.add(rtnHeaderData(1, 27, "계\r\n(G)"));
+    	header.add(rtnHeaderData(1, 28, "국고+균특+기금"));
+    	header.add(rtnHeaderData(1, 29, "일반국비\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 30, "국 고 보 조 금 (511-01)"));
+    	header.add(rtnHeaderData(1, 31, ""));
+    	header.add(rtnHeaderData(1, 32, ""));
+    	header.add(rtnHeaderData(1, 33, "균 특 보 조 금 (511-02)"));
+    	header.add(rtnHeaderData(1, 34, ""));
+    	header.add(rtnHeaderData(1, 35, ""));
+    	header.add(rtnHeaderData(1, 36, "기 금 보 조 금 (511-03)"));
+    	header.add(rtnHeaderData(1, 37, ""));
+    	header.add(rtnHeaderData(1, 38, ""));
+    	header.add(rtnHeaderData(1, 39, ""));
+    	header.add(rtnHeaderData(1, 40, "계\r\n(I)"));
+    	header.add(rtnHeaderData(1, 41, "경상국비\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 42, "기타경상경비"));
+    	header.add(rtnHeaderData(1, 43, ""));
+    	header.add(rtnHeaderData(1, 44, ""));
+    	header.add(rtnHeaderData(1, 45, ""));
+    	header.add(rtnHeaderData(1, 46, ""));
+    	header.add(rtnHeaderData(1, 47, ""));
+    	header.add(rtnHeaderData(1, 48, ""));
+    	header.add(rtnHeaderData(1, 49, ""));
+    	header.add(rtnHeaderData(1, 50, ""));
+    	header.add(rtnHeaderData(1, 51, ""));
+    	header.add(rtnHeaderData(1, 52, ""));
+    	header.add(rtnHeaderData(1, 53, ""));
+    	header.add(rtnHeaderData(1, 54, ""));
+    	header.add(rtnHeaderData(1, 55, ""));
+    	header.add(rtnHeaderData(1, 56, ""));
+    	header.add(rtnHeaderData(1, 57, ""));
+    	header.add(rtnHeaderData(1, 58, ""));
+    	header.add(rtnHeaderData(1, 59, "계\r\n(J)")); 
+    	header.add(rtnHeaderData(1, 60, "자체사업"));
+    	header.add(rtnHeaderData(1, 61, "국고투자\r\n매칭시비"));
+    	header.add(rtnHeaderData(1, 62, "국비직접\r\n(매칭펀드)"));
+    	header.add(rtnHeaderData(1, 63, "투자비\r\n삭감액"));
+    	
+    	header.add(rtnHeaderData(2, 0, ""));
+    	header.add(rtnHeaderData(2, 1, ""));
+    	header.add(rtnHeaderData(2, 2, ""));
+    	//header.add(rtnHeaderData(2, 2, "기준인건비/채무상환/예비비/법정경비/용도지정경비+(국고보조사업)+(경상사업비+투자사업비))"));
+    	header.add(rtnHeaderData(2, 3, ""));
+    	header.add(rtnHeaderData(2, 4, "+청원경찰"));
+    	header.add(rtnHeaderData(2, 5, "보수"));
+    	header.add(rtnHeaderData(2, 6, "임기제"));
+    	header.add(rtnHeaderData(2, 7, ""));
+    	header.add(rtnHeaderData(2, 8, "상     환"));
+    	header.add(rtnHeaderData(2, 9, "상     환"));
+    	header.add(rtnHeaderData(2, 10, "(예수금원리금)"));
+    	header.add(rtnHeaderData(2, 11, ""));
+    	header.add(rtnHeaderData(2, 12, ""));
+    	header.add(rtnHeaderData(2, 13, "소계"));
+    	header.add(rtnHeaderData(2, 14, "징    수"));
+    	header.add(rtnHeaderData(2, 15, "자치구"));
+    	header.add(rtnHeaderData(2, 16, "기장군"));
+    	header.add(rtnHeaderData(2, 17, "소계"));
+    	header.add(rtnHeaderData(2, 18, "국고대여장학금"));
+    	header.add(rtnHeaderData(2, 19, "기타회계"));
+    	header.add(rtnHeaderData(2, 20, "기금전출금"));
+    	header.add(rtnHeaderData(2, 21, "특별회계"));
+    	header.add(rtnHeaderData(2, 22, ""));
+    	header.add(rtnHeaderData(2, 23, "보조금"));
+    	header.add(rtnHeaderData(2, 24, "전입금"));
+    	header.add(rtnHeaderData(2, 25, ""));
+    	header.add(rtnHeaderData(2, 26, "(국고+경상+투자)"));
+    	header.add(rtnHeaderData(2, 27, ""));
+    	header.add(rtnHeaderData(2, 28, ""));
+    	header.add(rtnHeaderData(2, 29, ""));
+    	header.add(rtnHeaderData(2, 30, "소계"));
+    	header.add(rtnHeaderData(2, 31, "국 비"));
+    	header.add(rtnHeaderData(2, 32, "시 비"));
+    	header.add(rtnHeaderData(2, 33, "소계"));
+    	header.add(rtnHeaderData(2, 34, "국 비"));
+    	header.add(rtnHeaderData(2, 35, "시 비"));
+    	header.add(rtnHeaderData(2, 36, "소계"));
+    	header.add(rtnHeaderData(2, 37, "국 비"));
+    	header.add(rtnHeaderData(2, 38, "시 비"));
+    	header.add(rtnHeaderData(2, 39, ""));
+    	header.add(rtnHeaderData(2, 40, ""));
+    	header.add(rtnHeaderData(2, 41, ""));
+    	header.add(rtnHeaderData(2, 42, ""));
+    	header.add(rtnHeaderData(2, 43, "그외 경상비\r\n\r\n①"));
+    	header.add(rtnHeaderData(2, 44, "공  통  심  사  기  본  경  비"));
+    	header.add(rtnHeaderData(2, 45, ""));
+    	header.add(rtnHeaderData(2, 46, ""));
+    	header.add(rtnHeaderData(2, 47, ""));
+    	header.add(rtnHeaderData(2, 48, ""));
+    	header.add(rtnHeaderData(2, 49, ""));
+    	header.add(rtnHeaderData(2, 50, ""));
+    	header.add(rtnHeaderData(2, 51, ""));
+    	header.add(rtnHeaderData(2, 52, ""));
+    	header.add(rtnHeaderData(2, 53, ""));
+    	header.add(rtnHeaderData(2, 54, ""));
+    	header.add(rtnHeaderData(2, 55, ""));
+    	header.add(rtnHeaderData(2, 56, ""));
+    	header.add(rtnHeaderData(2, 57, ""));
+    	header.add(rtnHeaderData(2, 58, "경상비\r\n삭감액\r\n③"));
+    	header.add(rtnHeaderData(2, 59, ""));
+    	header.add(rtnHeaderData(2, 60, ""));
+    	header.add(rtnHeaderData(2, 61, "매칭시비"));
+    	header.add(rtnHeaderData(2, 62, "(매칭펀드)"));
+    	header.add(rtnHeaderData(2, 63, ""));
+    	
+    	header.add(rtnHeaderData(3, 0, ""));
+    	header.add(rtnHeaderData(3, 1, ""));
+    	header.add(rtnHeaderData(3, 2, ""));
+    	header.add(rtnHeaderData(3, 3, ""));
+    	header.add(rtnHeaderData(3, 4, ""));
+    	header.add(rtnHeaderData(3, 5, ""));
+    	header.add(rtnHeaderData(3, 6, ""));
+    	header.add(rtnHeaderData(3, 7, ""));
+    	header.add(rtnHeaderData(3, 8, ""));
+    	header.add(rtnHeaderData(3, 9, ""));
+    	header.add(rtnHeaderData(3, 10, "상     환"));
+    	header.add(rtnHeaderData(3, 11, "(C)"));
+    	header.add(rtnHeaderData(3, 12, ""));
+    	header.add(rtnHeaderData(3, 13, ""));
+    	header.add(rtnHeaderData(3, 14, "교부금"));
+    	header.add(rtnHeaderData(3, 15, "조정교부금"));
+    	header.add(rtnHeaderData(3, 16, "조정교부금"));
+    	header.add(rtnHeaderData(3, 17, ""));
+    	header.add(rtnHeaderData(3, 18, "지방세연구원"));
+    	header.add(rtnHeaderData(3, 19, "전출금"));
+    	header.add(rtnHeaderData(3, 20, "전 출 금"));
+    	header.add(rtnHeaderData(3, 21, "전 출 금"));
+    	header.add(rtnHeaderData(3, 22, ""));
+    	header.add(rtnHeaderData(3, 23, ""));
+    	header.add(rtnHeaderData(3, 24, ""));
+    	header.add(rtnHeaderData(3, 25, ""));
+    	header.add(rtnHeaderData(3, 26, "(F)"));
+    	header.add(rtnHeaderData(3, 27, ""));
+    	header.add(rtnHeaderData(3, 28, ""));
+    	header.add(rtnHeaderData(3, 29, ""));
+    	header.add(rtnHeaderData(3, 30, ""));
+    	header.add(rtnHeaderData(3, 31, ""));
+    	header.add(rtnHeaderData(3, 32, ""));
+    	header.add(rtnHeaderData(3, 33, ""));
+    	header.add(rtnHeaderData(3, 34, ""));
+    	header.add(rtnHeaderData(3, 35, ""));
+    	header.add(rtnHeaderData(3, 36, ""));
+    	header.add(rtnHeaderData(3, 37, ""));
+    	header.add(rtnHeaderData(3, 38, ""));
+    	header.add(rtnHeaderData(3, 39, ""));
+    	header.add(rtnHeaderData(3, 40, ""));
+    	header.add(rtnHeaderData(3, 41, ""));
+    	header.add(rtnHeaderData(3, 42, ""));
+    	header.add(rtnHeaderData(3, 43, ""));
+    	header.add(rtnHeaderData(3, 44, "소계"));
+    	header.add(rtnHeaderData(3, 45, "기본수용비"));
+    	header.add(rtnHeaderData(3, 46, "급량비"));
+    	header.add(rtnHeaderData(3, 47, "당직수당"));
+    	header.add(rtnHeaderData(3, 48, "출장여비"));
+    	header.add(rtnHeaderData(3, 49, "월액여비"));
+    	header.add(rtnHeaderData(3, 50, "시책업추비"));
+    	header.add(rtnHeaderData(3, 51, "기간제근로자"));
+    	header.add(rtnHeaderData(3, 52, "위원회수당"));
+    	header.add(rtnHeaderData(3, 53, "워크숍경비"));
+    	header.add(rtnHeaderData(3, 54, "국외여비"));
+    	header.add(rtnHeaderData(3, 55, "국제화여비"));
+    	header.add(rtnHeaderData(3, 56, "사회복무요원"));
+    	header.add(rtnHeaderData(3, 57, "포상금"));
+    	header.add(rtnHeaderData(3, 58, ""));
+    	header.add(rtnHeaderData(3, 59, ""));
+    	header.add(rtnHeaderData(3, 60, ""));
+    	header.add(rtnHeaderData(3, 61, ""));
+    	header.add(rtnHeaderData(3, 62, ""));
+    	header.add(rtnHeaderData(3, 63, ""));
+    	
+    	
+    	header.add(rtnHeaderData(4, 0, ""));
+    	header.add(rtnHeaderData(4, 1, ""));
+    	header.add(rtnHeaderData(4, 2, ""));
+    	header.add(rtnHeaderData(4, 3, ""));
+    	header.add(rtnHeaderData(4, 4, "(101-01,02)"));
+    	header.add(rtnHeaderData(4, 5, "(101-03)"));
+    	header.add(rtnHeaderData(4, 6, "(101-02)"));
+    	header.add(rtnHeaderData(4, 7, ""));
+    	header.add(rtnHeaderData(4, 8, ""));
+    	header.add(rtnHeaderData(4, 9, ""));
+    	header.add(rtnHeaderData(4, 10, "705"));
+    	header.add(rtnHeaderData(4, 11, ""));
+    	header.add(rtnHeaderData(4, 12, ""));
+    	header.add(rtnHeaderData(4, 13, ""));
+    	header.add(rtnHeaderData(4, 14, "(308-02)"));
+    	header.add(rtnHeaderData(4, 15, "(308-03)"));
+    	header.add(rtnHeaderData(4, 16, "(308-04)"));
+    	header.add(rtnHeaderData(4, 17, ""));
+    	header.add(rtnHeaderData(4, 18, "출연금"));
+    	header.add(rtnHeaderData(4, 19, "701"));
+    	header.add(rtnHeaderData(4, 20, "702"));
+    	header.add(rtnHeaderData(4, 21, "703"));
+    	header.add(rtnHeaderData(4, 22, ""));
+    	header.add(rtnHeaderData(4, 23, ""));
+    	header.add(rtnHeaderData(4, 24, ""));
+    	header.add(rtnHeaderData(4, 25, ""));
+    	header.add(rtnHeaderData(4, 26, "(F=G+H)"));
+    	header.add(rtnHeaderData(4, 27, ""));
+    	header.add(rtnHeaderData(4, 28, ""));
+    	header.add(rtnHeaderData(4, 29, ""));
+    	header.add(rtnHeaderData(4, 30, ""));
+    	header.add(rtnHeaderData(4, 31, ""));
+    	header.add(rtnHeaderData(4, 32, ""));
+    	header.add(rtnHeaderData(4, 33, ""));
+    	header.add(rtnHeaderData(4, 34, ""));
+    	header.add(rtnHeaderData(4, 35, ""));
+    	header.add(rtnHeaderData(4, 36, ""));
+    	header.add(rtnHeaderData(4, 37, ""));
+    	header.add(rtnHeaderData(4, 38, ""));
+    	header.add(rtnHeaderData(4, 39, ""));
+    	header.add(rtnHeaderData(4, 40, ""));
+    	header.add(rtnHeaderData(4, 41, ""));
+    	header.add(rtnHeaderData(4, 42, ""));
+    	header.add(rtnHeaderData(4, 43, ""));
+    	header.add(rtnHeaderData(4, 44, "②"));
+    	header.add(rtnHeaderData(4, 45, "(201-01)"));
+    	header.add(rtnHeaderData(4, 46, "(201-01)"));
+    	header.add(rtnHeaderData(4, 47, "(201-01)"));
+    	header.add(rtnHeaderData(4, 48, "(202-01)"));
+    	header.add(rtnHeaderData(4, 49, "(202-02)"));
+    	header.add(rtnHeaderData(4, 50, "(203-03)"));
+    	header.add(rtnHeaderData(4, 51, "(101-04)"));
+    	header.add(rtnHeaderData(4, 52, "(201-01)"));
+    	header.add(rtnHeaderData(4, 53, "(201-01)"));
+    	header.add(rtnHeaderData(4, 54, "(202-03)"));
+    	header.add(rtnHeaderData(4, 55, "(202-04)"));
+    	header.add(rtnHeaderData(4, 56, "(303-09)"));
+    	header.add(rtnHeaderData(4, 57, "(303-01)"));
+    	header.add(rtnHeaderData(4, 58, ""));
+    	header.add(rtnHeaderData(4, 59, ""));
+    	header.add(rtnHeaderData(4, 60, ""));
+    	header.add(rtnHeaderData(4, 61, ""));
+    	header.add(rtnHeaderData(4, 62, ""));
+    	header.add(rtnHeaderData(4, 63, ""));
+    	
+    	return header;
+    }
+    
+    
+    public Map rtnHeaderData(int rowSeq, int cellSeq, String headerCont){
+    	Map map = new HashMap<String, String>();
+    	
+    	map.put("rowSeq", rowSeq);
+    	map.put("cellSeq", cellSeq);
+    	map.put("headerCont", headerCont);
+    	
+    	return map;
+    }
+    
+    public List getMergeData(){
+    	List merge = new ArrayList();
+    	Map map = new HashMap<String, String>();
+    	merge.add(rtnMergeData("$A$3:$B$7"));
+    	merge.add(rtnMergeData("$C$5:$C$7"));
+    	merge.add(rtnMergeData("$D$3:$G$3"));
+    	merge.add(rtnMergeData("$D$4:$D$7"));
+    	//merge.add(rtnMergeData("$E$4:$E$7"));
+    	//merge.add(rtnMergeData("$F$4:$F$7"));
+    	//merge.add(rtnMergeData("$G$4:$G$7"));
+    	merge.add(rtnMergeData("$H$3:$K$3"));
+    	merge.add(rtnMergeData("$H$4:$H$7"));
+    	//merge.add(rtnMergeData("$I$4:$I$7"));
+    	//merge.add(rtnMergeData("$J$4:$J$7"));
+    	//merge.add(rtnMergeData("$K$4:$K$7"));
+    	//merge.add(rtnMergeData("$L$3:$L$7"));
+    	merge.add(rtnMergeData("$L$3:$L$4"));
+    	merge.add(rtnMergeData("$M$3:$V$3"));
+    	merge.add(rtnMergeData("$M$4:$M$7"));
+    	merge.add(rtnMergeData("$N$4:$Q$4"));
+    	merge.add(rtnMergeData("$N$5:$N$7"));
+    	//merge.add(rtnMergeData("$N$5:$N$7"));
+    	//merge.add(rtnMergeData("$O$5:$O$7"));
+    	//merge.add(rtnMergeData("$P$5:$P$7"));
+    	//merge.add(rtnMergeData("$Q$5:$Q$7"));
+    	merge.add(rtnMergeData("$R$4:$U$4"));
+    	merge.add(rtnMergeData("$R$5:$R$7"));
+    	//merge.add(rtnMergeData("$S$5:$S$7"));
+    	//merge.add(rtnMergeData("$T$5:$T$7"));
+    	merge.add(rtnMergeData("$U$5:$U$6"));
+    	//merge.add(rtnMergeData("$V$4:$V$7"));
+    	merge.add(rtnMergeData("$W$3:$Z$3"));
+    	merge.add(rtnMergeData("$W$4:$W$7"));
+    	merge.add(rtnMergeData("$X$4:$X$7"));
+    	merge.add(rtnMergeData("$Y$4:$Y$7"));
+    	merge.add(rtnMergeData("$Z$4:$Z$7"));
+    	merge.add(rtnMergeData("$AA$3:$AA$4"));
+    	merge.add(rtnMergeData("$AB$3:$AM$3"));
+    	merge.add(rtnMergeData("$AB$4:$AB$7"));
+    	merge.add(rtnMergeData("$AC$4:$AC$5"));
+    	merge.add(rtnMergeData("$AD$4:$AD$5"));
+    	merge.add(rtnMergeData("$AE$4:$AG$4"));
+    	merge.add(rtnMergeData("$AE$5:$AE$7"));
+    	merge.add(rtnMergeData("$AF$5:$AF$7"));
+    	merge.add(rtnMergeData("$AG$5:$AG$7"));
+    	merge.add(rtnMergeData("$AH$4:$AJ$4"));
+    	merge.add(rtnMergeData("$AH$5:$AH$7"));
+    	merge.add(rtnMergeData("$AI$5:$AI$7"));
+    	merge.add(rtnMergeData("$AJ$5:$AJ$7"));
+    	merge.add(rtnMergeData("$AK$4:$AM$4"));
+    	merge.add(rtnMergeData("$AK$5:$AK$7"));
+    	merge.add(rtnMergeData("$AL$5:$AL$7"));
+    	merge.add(rtnMergeData("$AM$5:$AM$7"));
+    	merge.add(rtnMergeData("$AN$3:$AN$7"));
+    	merge.add(rtnMergeData("$AO$3:$BG$3"));
+    	merge.add(rtnMergeData("$AO$4:$AO$7"));
+    	merge.add(rtnMergeData("$AP$4:$AP$7"));
+    	merge.add(rtnMergeData("$AQ$4:$BG$4"));
+    	merge.add(rtnMergeData("$AQ$5:$AQ$7"));
+    	merge.add(rtnMergeData("$AR$5:$AR$7"));
+    	merge.add(rtnMergeData("$AS$5:$BF$5"));
+    	merge.add(rtnMergeData("$BG$5:$BG$7"));
+    	merge.add(rtnMergeData("$BH$3:$BL$3"));
+    	merge.add(rtnMergeData("$BH$4:$BH$7"));
+    	merge.add(rtnMergeData("$BI$4:$BI$7"));
+    	merge.add(rtnMergeData("$BJ$4:$BJ$7"));
+    	merge.add(rtnMergeData("$BK$4:$BK$7"));
+    	merge.add(rtnMergeData("$BL$4:$BL$7"));
+    	
+    	return merge;
+    }
+    
+    public List getMergeData2(){
+    	List merge = new ArrayList();
+    	Map map = new HashMap<String, String>();
+    	merge.add(rtnMergeData("$A$3:$B$7"));
+    	merge.add(rtnMergeData("$C$5:$C$7"));
+    	//merge.add(rtnMergeData("$D$3:$G$3"));
+    	merge.add(rtnMergeData("$D$4:$D$7"));
+    	//merge.add(rtnMergeData("$E$4:$E$7"));
+    	//merge.add(rtnMergeData("$F$4:$F$7"));
+    	//merge.add(rtnMergeData("$G$4:$G$7"));
+    	//merge.add(rtnMergeData("$H$3:$K$3"));
+    	merge.add(rtnMergeData("$H$4:$H$7"));
+    	//merge.add(rtnMergeData("$I$4:$I$7"));
+    	//merge.add(rtnMergeData("$J$4:$J$7"));
+    	//merge.add(rtnMergeData("$K$4:$K$7"));
+    	//merge.add(rtnMergeData("$L$3:$L$7"));
+    	merge.add(rtnMergeData("$L$3:$L$4"));
+    	//merge.add(rtnMergeData("$M$3:$V$3"));
+    	merge.add(rtnMergeData("$M$4:$M$7"));
+    	//merge.add(rtnMergeData("$N$4:$Q$4"));
+    	merge.add(rtnMergeData("$N$5:$N$7"));
+    	//merge.add(rtnMergeData("$N$5:$N$7"));
+    	//merge.add(rtnMergeData("$O$5:$O$7"));
+    	//merge.add(rtnMergeData("$P$5:$P$7"));
+    	//merge.add(rtnMergeData("$Q$5:$Q$7"));
+    	//merge.add(rtnMergeData("$R$4:$U$4"));
+    	merge.add(rtnMergeData("$R$5:$R$7"));
+    	//merge.add(rtnMergeData("$S$5:$S$7"));
+    	//merge.add(rtnMergeData("$T$5:$T$7"));
+    	merge.add(rtnMergeData("$U$5:$U$6"));
+    	//merge.add(rtnMergeData("$V$4:$V$7"));
+    	//merge.add(rtnMergeData("$W$3:$Z$3"));
+    	merge.add(rtnMergeData("$W$4:$W$7"));
+    	merge.add(rtnMergeData("$X$4:$X$7"));
+    	merge.add(rtnMergeData("$Y$4:$Y$7"));
+    	merge.add(rtnMergeData("$Z$4:$Z$7"));
+    	merge.add(rtnMergeData("$AA$3:$AA$4"));
+    	merge.add(rtnMergeData("$AB$3:$AD$3"));
+    	merge.add(rtnMergeData("$AB$4:$AB$7"));
+    	merge.add(rtnMergeData("$AC$4:$AC$5"));
+    	merge.add(rtnMergeData("$AD$4:$AD$5"));
+    	//merge.add(rtnMergeData("$AE$4:$AG$4"));
+    	merge.add(rtnMergeData("$AE$5:$AE$7"));
+    	merge.add(rtnMergeData("$AF$5:$AF$7"));
+    	merge.add(rtnMergeData("$AG$5:$AG$7"));
+    	//merge.add(rtnMergeData("$AH$4:$AJ$4"));
+    	merge.add(rtnMergeData("$AH$5:$AH$7"));
+    	merge.add(rtnMergeData("$AI$5:$AI$7"));
+    	merge.add(rtnMergeData("$AJ$5:$AJ$7"));
+    	//merge.add(rtnMergeData("$AK$4:$AM$4"));
+    	merge.add(rtnMergeData("$AK$5:$AK$7"));
+    	merge.add(rtnMergeData("$AL$5:$AL$7"));
+    	merge.add(rtnMergeData("$AM$5:$AM$7"));
+    	merge.add(rtnMergeData("$AN$3:$AN$7"));
+    	merge.add(rtnMergeData("$AO$3:$AQ$3"));
+    	merge.add(rtnMergeData("$AO$4:$AO$7"));
+    	merge.add(rtnMergeData("$AP$4:$AP$7"));
+    	//merge.add(rtnMergeData("$AQ$4:$BG$4"));
+    	merge.add(rtnMergeData("$AQ$4:$AQ$7"));
+    	merge.add(rtnMergeData("$AR$5:$AR$7"));
+    	//merge.add(rtnMergeData("$AS$5:$BF$5"));
+    	merge.add(rtnMergeData("$BG$5:$BG$7"));
+    	merge.add(rtnMergeData("$BH$3:$BL$3"));
+    	merge.add(rtnMergeData("$BH$4:$BH$7"));
+    	merge.add(rtnMergeData("$BI$4:$BI$7"));
+    	merge.add(rtnMergeData("$BJ$4:$BJ$7"));
+    	merge.add(rtnMergeData("$BK$4:$BK$7"));
+    	merge.add(rtnMergeData("$BL$4:$BL$7"));
+    	
+    	return merge;
+    }
+    
+    public Map rtnMergeData(String mergeVal){
+    	Map map = new HashMap<String, String>();
+    	
+    	map.put("mergeVal", mergeVal);
+    	
+    	return map;
+    }
+    
+}

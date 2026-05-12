@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BudgetComm">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+    
+    <delete id="BudgetComm.deleteDgrcompo" parameterClass="Map" >
+        /*BudgetComm.deleteDgrcompo*/
+        DELETE
+          FROM TB_DGRCOMPO
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <insert id="BudgetComm.insertDgrcompofrsc" parameterClass="Map" >
+        /*BudgetComm.insertDgrcompofrsc*/
+        INSERT
+          INTO TB_DGRCOMPOFRSC(
+               FIS_YEAR 
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , FRSC_FG_CD
+             , DMN_DEF_FRSC_AMT
+             , ADJ_DEF_FRSC_AMT
+             , PRE_DEF_FRSC_AMT
+             , PRE_FRSC_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #frscFgCd#
+             , (SELECT NVL(#dmnDefFrscAmt#, 0) * NVL(#amtUnit#, 1) AS DMN_DEF_FRSC_AMT)
+             , (SELECT NVL(#adjDefFrscAmt#, 0) * NVL(#amtUnit#, 1) AS ADJ_DEF_FRSC_AMT)
+             , (SELECT NVL(#preDefFrscAmt#, 0) * NVL(#amtUnit#, 1) AS PRE_DEF_FRSC_AMT)
+             , (SELECT NVL(#preFrscAmt#, 0) * NVL(#amtUnit#, 1) AS PRE_FRSC_AMT)
+             , #teBgtCompoSeq#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <update id="BudgetComm.updateDgrcompofrsc" parameterClass="Map" >
+        /*BudgetComm.updateDgrcompofrsc*/
+        UPDATE TB_DGRCOMPOFRSC
+           SET DMN_DEF_FRSC_AMT = NVL(#dmnDefFrscAmt#, 0) * NVL(#amtUnit#, 1)
+             , ADJ_DEF_FRSC_AMT = NVL(#adjDefFrscAmt#, 0) * NVL(#amtUnit#, 1)
+             , PRE_DEF_FRSC_AMT = NVL(#preDefFrscAmt#, 0) * NVL(#amtUnit#, 1)
+             , PRE_FRSC_AMT = NVL(#preFrscAmt#, 0) * NVL(#amtUnit#, 1)
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND FRSC_FG_CD = #frscFgCd#
+    </update>
+    
+    <delete id="BudgetComm.deleteDgrcompofrsc" parameterClass="Map" >
+        /*BudgetComm.deleteDgrcompofrsc*/
+        DELETE
+          FROM TB_DGRCOMPOFRSC
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <insert id="BudgetComm.insertDgrcompochar" parameterClass="Map" >
+        /*BudgetComm.insertDgrcompochar*/
+        INSERT
+          INTO TB_DGRCOMPOCHAR(
+               FIS_YEAR 
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , CHAR_FG_CD
+             , DMN_DEF_CHAR_AMT
+             , ADJ_DEF_CHAR_AMT
+             , PRE_DEF_CHAR_AMT
+             , PRE_CHAR_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #charFgCd#
+             , (SELECT NVL(#dmnDefCharAmt#, 0) * NVL(#amtUnit#, 1) AS DMN_DEF_CHAR_AMT)
+             , (SELECT NVL(#adjDefCharAmt#, 0) * NVL(#amtUnit#, 1) AS ADJ_DEF_CHAR_AMT)
+             , (SELECT NVL(#preDefCharAmt#, 0) * NVL(#amtUnit#, 1) AS PRE_DEF_CHAR_AMT)
+             , (SELECT NVL(#preCharAmt#, 0) * NVL(#amtUnit#, 1) AS PRE_CHAR_AMT)
+             , #teBgtCompoSeq#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <update id="BudgetComm.updateDgrcompochar" parameterClass="Map" >
+        /*BudgetComm.updateDgrcompochar*/
+        UPDATE TB_DGRCOMPOCHAR
+           SET DMN_DEF_CHAR_AMT = NVL(#dmnDefCharAmt#, 0) * NVL(#amtUnit#, 1)
+             , ADJ_DEF_CHAR_AMT = NVL(#adjDefCharAmt#, 0) * NVL(#amtUnit#, 1)
+             , PRE_DEF_CHAR_AMT = NVL(#preDefCharAmt#, 0) * NVL(#amtUnit#, 1)
+             , PRE_CHAR_AMT = NVL(#preCharAmt#, 0) * NVL(#amtUnit#, 1)
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND CHAR_FG_CD = #charFgCd#
+    </update>
+    
+    <delete id="BudgetComm.deleteDgrcompochar" parameterClass="Map" >
+        /*BudgetComm.deleteDgrcompochar*/
+        DELETE
+          FROM TB_DGRCOMPOCHAR
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <select id="BudgetComm.selectUpDgrcompoInfo" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetComm.selectUpDgrcompoInfo*/
+        SELECT FIS_YEAR AS FIS_YEAR
+             , BGT_DGR AS BGT_DGR
+             , UP_TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , UP_TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+          FROM TB_DGRCOMPO
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <update id="BudgetComm.updateUpDgrcompoAmtAll" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompoAmtAll*/
+        UPDATE TB_DGRCOMPO A 
+           SET (DEMAND_BGT_AMT, DEMAND_DIFF_AMT, BGT_AMT, PRE_AMT, DIFF_AMT, PRE_BGT_AMT) 
+               = (SELECT NVL(SUM(Z.DEMAND_BGT_AMT), 0)
+                       , NVL(SUM(Z.DEMAND_DIFF_AMT), 0) 
+                       , NVL(SUM(Z.BGT_AMT), 0) 
+                       , NVL(SUM(Z.PRE_AMT), 0) 
+                       , NVL(SUM(Z.DIFF_AMT), 0) 
+                       , NVL(SUM(Z.PRE_BGT_AMT), 0) 
+                    FROM TB_DGRCOMPO Z 
+                   WHERE 1 = 1 
+                     AND Z.FIS_YEAR = A.FIS_YEAR 
+                     AND Z.BGT_DGR = A.BGT_DGR 
+                     AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID 
+                 ) 
+         WHERE 1 = 1 
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND EXISTS (SELECT 1
+                         FROM TB_DGRCOMPO Z 
+                        WHERE 1 = 1
+                          AND Z.FIS_YEAR = A.FIS_YEAR
+                          AND Z.BGT_DGR = A.BGT_DGR
+                          AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                          AND Z.COMPO_LEVEL = #compoLevel#
+                      )
+    </update>
+    
+    <update id="BudgetComm.updateUpDgrcompofrscAmtAll" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompofrscAmtAll*/
+        UPDATE TB_DGRCOMPOFRSC A 
+           SET (DMN_DEF_FRSC_AMT, ADJ_DEF_FRSC_AMT, PRE_DEF_FRSC_AMT, PRE_FRSC_AMT) 
+               = (SELECT NVL(SUM(Z2.DMN_DEF_FRSC_AMT), 0)
+                       , NVL(SUM(Z2.ADJ_DEF_FRSC_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_DEF_FRSC_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_FRSC_AMT), 0) 
+                    FROM TB_DGRCOMPO Z1
+                       , TB_DGRCOMPOFRSC Z2
+                   WHERE 1 = 1 
+                     AND Z2.FIS_YEAR = Z1.FIS_YEAR 
+                     AND Z2.BGT_DGR = Z1.BGT_DGR 
+                     AND Z2.TE_BGT_COMPO_ID = Z1.TE_BGT_COMPO_ID 
+                     AND Z2.FRSC_FG_CD = A.FRSC_FG_CD
+                     AND Z1.FIS_YEAR = A.FIS_YEAR 
+                     AND Z1.BGT_DGR = A.BGT_DGR 
+                     AND Z1.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID 
+                 ) 
+         WHERE 1 = 1 
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND EXISTS (SELECT 1
+                         FROM TB_DGRCOMPO Z 
+                        WHERE 1 = 1
+                          AND Z.FIS_YEAR = A.FIS_YEAR
+                          AND Z.BGT_DGR = A.BGT_DGR
+                          AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                          AND Z.COMPO_LEVEL = #compoLevel#
+                      )
+    </update>
+    
+    <update id="BudgetComm.updateUpDgrcompocharAmtAll" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompocharAmtAll*/
+        UPDATE TB_DGRCOMPOCHAR A 
+           SET (DMN_DEF_CHAR_AMT, ADJ_DEF_CHAR_AMT, PRE_DEF_CHAR_AMT, PRE_CHAR_AMT) 
+               = (SELECT NVL(SUM(Z2.DMN_DEF_CHAR_AMT), 0)
+                       , NVL(SUM(Z2.ADJ_DEF_CHAR_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_DEF_CHAR_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_CHAR_AMT), 0) 
+                    FROM TB_DGRCOMPO Z1
+                       , TB_DGRCOMPOCHAR Z2
+                   WHERE 1 = 1 
+                     AND Z2.FIS_YEAR = Z1.FIS_YEAR 
+                     AND Z2.BGT_DGR = Z1.BGT_DGR 
+                     AND Z2.TE_BGT_COMPO_ID = Z1.TE_BGT_COMPO_ID 
+                     AND Z2.CHAR_FG_CD = A.CHAR_FG_CD
+                     AND Z1.FIS_YEAR = A.FIS_YEAR 
+                     AND Z1.BGT_DGR = A.BGT_DGR 
+                     AND Z1.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID 
+                 ) 
+         WHERE 1 = 1 
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND EXISTS (SELECT 1
+                         FROM TB_DGRCOMPO Z 
+                        WHERE 1 = 1
+                          AND Z.FIS_YEAR = A.FIS_YEAR
+                          AND Z.BGT_DGR = A.BGT_DGR
+                          AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                          AND Z.COMPO_LEVEL = #compoLevel#
+                      )
+    </update>
+    
+    <update id="BudgetComm.updateUpDgrcompoAmt" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompoAmt*/
+        UPDATE TB_DGRCOMPO A
+           SET (DEMAND_BGT_AMT, DEMAND_DIFF_AMT, BGT_AMT, PRE_AMT, DIFF_AMT, PRE_BGT_AMT)
+               = (SELECT NVL(SUM(Z.PRE_AMT), 0) + NVL(SUM(Z.DEMAND_DIFF_AMT), 0)
+                       , NVL(SUM(Z.DEMAND_DIFF_AMT), 0)
+                       , NVL(SUM(Z.PRE_AMT), 0) + NVL(SUM(Z.DIFF_AMT), 0)
+                       , NVL(SUM(Z.PRE_AMT), 0)
+                       , NVL(SUM(Z.DIFF_AMT), 0)
+                       , NVL(SUM(Z.PRE_BGT_AMT), 0)
+                    FROM TB_DGRCOMPO Z
+                   WHERE 1 = 1
+                     AND Z.FIS_YEAR = #fisYear#
+                     AND Z.BGT_DGR = #bgtDgr#
+                     AND Z.UP_TE_BGT_COMPO_ID = #teBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.updateUpDgrcompofrscAmt" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompofrscAmt*/
+        UPDATE TB_DGRCOMPOFRSC A
+           SET (DMN_DEF_FRSC_AMT, ADJ_DEF_FRSC_AMT, PRE_DEF_FRSC_AMT, PRE_FRSC_AMT)
+               = (SELECT NVL(SUM(Z2.DMN_DEF_FRSC_AMT), 0)
+                       , NVL(SUM(Z2.ADJ_DEF_FRSC_AMT), 0)
+                       , NVL(SUM(Z2.PRE_DEF_FRSC_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_FRSC_AMT), 0) 
+                    FROM TB_DGRCOMPO Z1
+                       , TB_DGRCOMPOFRSC Z2
+                   WHERE 1 = 1
+                     AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                     AND Z2.BGT_DGR = Z1.BGT_DGR
+                     AND Z2.TE_BGT_COMPO_ID = Z1.TE_BGT_COMPO_ID
+                     AND Z2.FRSC_FG_CD = A.FRSC_FG_CD
+                     AND Z1.FIS_YEAR = #fisYear#
+                     AND Z1.BGT_DGR = #bgtDgr#
+                     AND Z1.UP_TE_BGT_COMPO_ID = #teBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.updateUpDgrcompocharAmt" parameterClass="Map" >
+        /*BudgetComm.updateUpDgrcompocharAmt*/
+        UPDATE TB_DGRCOMPOCHAR A
+           SET (DMN_DEF_CHAR_AMT, ADJ_DEF_CHAR_AMT, PRE_DEF_CHAR_AMT, PRE_CHAR_AMT)
+               = (SELECT NVL(SUM(Z2.DMN_DEF_CHAR_AMT), 0)
+                       , NVL(SUM(Z2.ADJ_DEF_CHAR_AMT), 0)
+                       , NVL(SUM(Z2.PRE_DEF_CHAR_AMT), 0) 
+                       , NVL(SUM(Z2.PRE_CHAR_AMT), 0) 
+                    FROM TB_DGRCOMPO Z1
+                       , TB_DGRCOMPOCHAR Z2
+                   WHERE 1 = 1
+                     AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                     AND Z2.BGT_DGR = Z1.BGT_DGR
+                     AND Z2.TE_BGT_COMPO_ID = Z1.TE_BGT_COMPO_ID
+                     AND Z2.CHAR_FG_CD = A.CHAR_FG_CD
+                     AND Z1.FIS_YEAR = #fisYear#
+                     AND Z1.BGT_DGR = #bgtDgr#
+                     AND Z1.UP_TE_BGT_COMPO_ID = #teBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompoPreBgtAmt" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompoPreBgtAmt*/
+        UPDATE TB_DGRCOMPO A
+           SET (PRE_BGT_AMT, PRE_COMP_FORMULAR)
+             = (SELECT NVL(Z.BGT_AMT, 0), NVL(Z.COMP_FORMULAR, '')
+                  FROM TB_DGRCOMPO Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompofrscPreFrscAmt" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompofrscPreFrscAmt*/
+        UPDATE TB_DGRCOMPOFRSC A
+           SET PRE_FRSC_AMT
+             = (SELECT NVL(Z.PRE_DEF_FRSC_AMT, 0) + NVL(Z.ADJ_DEF_FRSC_AMT, 0)
+                  FROM TB_DGRCOMPOFRSC Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                   AND Z.FRSC_FG_CD = A.FRSC_FG_CD
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompocharPreCharAmt" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompocharPreCharAmt*/
+        UPDATE TB_DGRCOMPOCHAR A
+           SET PRE_CHAR_AMT
+             = (SELECT NVL(Z.PRE_DEF_CHAR_AMT, 0) + NVL(Z.ADJ_DEF_CHAR_AMT, 0)
+                  FROM TB_DGRCOMPOCHAR Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                   AND Z.CHAR_FG_CD = A.CHAR_FG_CD
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompoPreBgtAmtAdd" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompoPreBgtAmtAdd*/
+        UPDATE TB_DGRCOMPO A
+           SET (PRE_AMT, PRE_FORMULAR, PRE_BGT_AMT, PRE_COMP_FORMULAR)
+             = (SELECT NVL(Z.BGT_AMT, 0), NVL(Z.COMP_FORMULAR, ''), NVL(Z.PRE_BGT_AMT, 0), NVL(Z.PRE_COMP_FORMULAR , '')
+                  FROM TB_DGRCOMPO Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompofrscPreFrscAmtAdd" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompofrscPreFrscAmtAdd*/
+        UPDATE TB_DGRCOMPOFRSC A
+           SET (PRE_DEF_FRSC_AMT, PRE_FRSC_AMT)
+             = (SELECT (NVL(Z.PRE_DEF_FRSC_AMT, 0) + NVL(Z.ADJ_DEF_FRSC_AMT, 0)), PRE_FRSC_AMT
+                  FROM TB_DGRCOMPOFRSC Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                   AND Z.FRSC_FG_CD = A.FRSC_FG_CD
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.copyDgrcompocharPreCharAmtAdd" parameterClass="Map" >
+        /*BudgetComm.copyDgrcompocharPreCharAmtAdd*/
+        UPDATE TB_DGRCOMPOCHAR A
+           SET (PRE_DEF_CHAR_AMT, PRE_CHAR_AMT)
+             = (SELECT (NVL(Z.PRE_DEF_CHAR_AMT, 0) + NVL(Z.ADJ_DEF_CHAR_AMT, 0)), PRE_CHAR_AMT
+                  FROM TB_DGRCOMPOCHAR Z
+                 WHERE 1 = 1
+                   AND Z.FIS_YEAR = #srcFisYear#
+                   AND Z.BGT_DGR = #srcBgtDgr#
+                   AND Z.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                   AND Z.CHAR_FG_CD = A.CHAR_FG_CD
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.updateDgrcompoDiffAmt" parameterClass="Map" >
+        /*BudgetComm.updateDgrcompoDiffAmt*/
+        UPDATE TB_DGRCOMPO
+           SET DIFF_AMT = 0
+             , BGT_AMT = PRE_AMT
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.updateDgrcompofrscDiffAmt" parameterClass="Map" >
+        /*BudgetComm.updateDgrcompofrscDiffAmt*/
+        UPDATE TB_DGRCOMPOFRSC
+           SET ADJ_DEF_FRSC_AMT = 0
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="BudgetComm.updateDgrcompocharDiffAmt" parameterClass="Map" >
+        /*BudgetComm.updateDgrcompocharDiffAmt*/
+        UPDATE TB_DGRCOMPOCHAR
+           SET ADJ_DEF_CHAR_AMT = 0
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+</sqlMap>

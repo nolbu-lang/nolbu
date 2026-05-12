@@ -1,0 +1,61 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.springframework.stereotype.Service;
+
+import com.cs.bcjis.budget.service.impl.BudgetCommDAO;
+import com.cs.bcjis.report.service.ReportWrite0F0Service;
+
+
+@Service("reportWrite0F0Service")
+public class ReportWrite0F0ServiceImpl  implements ReportWrite0F0Service {
+    @Resource(name="budgetCommDAO")
+    private BudgetCommDAO budgetCommDAO;
+    
+    @Resource(name="reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+    
+    @Resource(name="reportWrite0F0DAO")
+    private ReportWrite0F0DAO reportWrite0F0DAO;
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0List(Map map) throws Exception {
+        return reportWrite0F0DAO.selectReport0F0List(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public int selectReport0F0ListCnt(Map map) throws Exception {
+        return reportWrite0F0DAO.selectReport0F0ListCnt(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void saveReport0F0(JSONObject jsonParam) throws Exception {
+        List saveDatas = jsonParam.getJSONArray("saveDatas");
+        JSONObject tempParam = null;
+
+        for (int i = 0; i < saveDatas.size(); i++) {
+            tempParam = (JSONObject) saveDatas.get(i);
+            tempParam.put("userId", jsonParam.get("userId"));
+            tempParam.put("amtUnit", jsonParam.get("amtUnit"));
+            
+            int cnt = reportWrite0F0DAO.selectReportAttrCnt(tempParam);
+            
+            if(cnt > 0){
+            	reportWrite0F0DAO.updateReportAttr(tempParam);
+            }else{
+            	reportWrite0F0DAO.insertReportAttr(tempParam);
+            } 
+        }
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport0F0ExcelList(Map map) throws Exception {
+        return reportWrite0F0DAO.selectReport0F0ExcelList(map);
+    }
+}

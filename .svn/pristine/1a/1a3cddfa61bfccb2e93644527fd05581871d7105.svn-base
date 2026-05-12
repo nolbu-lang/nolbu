@@ -1,0 +1,1127 @@
+package com.cs.bcjis.report.util;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.poi.hssf.usermodel.HSSFPrintSetup;
+import org.apache.poi.hssf.usermodel.HeaderFooter;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Footer;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheetView;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STSheetViewType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.report.service.impl.ReportCommDAO;
+import com.cs.bcjis.report.service.impl.ReportWrite0F0DAO;
+
+@Component("report0F0SaveFile")
+public class Report0F0SaveFile {
+
+    @Autowired
+    @Qualifier("config")
+    private Properties config;
+
+    @Resource(name = "reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+    
+    @Resource(name="reportWrite0F0DAO")
+    private ReportWrite0F0DAO reportWrite0F0DAO;
+    
+    private Map<String, CellStyle> dataStyles = null;
+    
+    int lineNum = 1;
+    int lineNumData = 1;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void buildExcelDocument(Map model, String KeyStr, String storePath) throws Exception {
+
+        String fileNm = String.valueOf(model.get("fileNm"));
+        if (BcjisCommUtil.isNullString(fileNm) == true) {
+            fileNm = config.getProperty("Globals.SystemName");
+        }
+
+        lineNum = 1;
+        lineNumData = 1;
+        
+        XSSFWorkbook wb = new XSSFWorkbook();
+        model.put("reportCd", "0F0");
+        dataList(model, wb, (List<Object>) model.get("dataList"));
+        //data012List(model, wb, (List<Object>) model.get("data012List"), "백만원", 1000);
+
+        data(model, wb, (List<Object>) model.get("dataList"));
+
+        if (wb.getNumberOfSheets() < 1) {
+            wb.createSheet("Sheet1");
+        }
+
+        String storePathString = ReportSaveUtil.getStorePathString(config, storePath, KeyStr);
+        model.put("fileName", fileNm + ".xlsx");
+        model.put("realFileName", ReportSaveUtil.writeExcelFile(wb, storePathString));
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void data(Map model, XSSFWorkbook wb, List<Object> categories) throws Exception {
+        int rowNum = 0;
+        XSSFSheet sheet = null;
+
+        model.put("reportDetlCd", "0F0");
+
+        Map reportInfo = reportCommDAO.selectReportInfo(model);
+        Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(model, wb);
+
+        sheet = wb.createSheet(ReportSaveUtil.getStringValue(reportInfo.get("sheetNm")));
+        ReportFormulaUtil reportFormulaUtil = new ReportFormulaUtil(sheet);
+        boolean bgtCompoFlag = true;
+        		
+        String indiAttrNm = ReportSaveUtil.getStringValue(model.get("indiAttrNm"));
+        String title = ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(ReportSaveUtil.getIntValue(model.get("fisYear")), 0));
+        if(!"".equals(indiAttrNm)){
+        	title = title.replace("보고항목 심사조서", "\"" + indiAttrNm + "\" 심사조서");
+        }
+        rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, title, 8);
+
+        JSONObject category = null;
+        for(int i = 0; i < categories.size() ; i++){
+        	category = (JSONObject)categories.get(i);
+        	if(!category.isEmpty()){
+        		rowNum = writeData(sheet, rowNum, categories, i, styles, bgtCompoFlag, reportFormulaUtil);
+        	}
+        }
+        
+        if (sheet != null) {
+            ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 8);
+            reportFormulaUtil.writeCellFormula();
+
+            sheet = null;
+            wb.setPrintArea(1, 0, 8, 0, rowNum);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeHeader(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title, int unitPos) throws Exception {
+        Row row = null;
+        Cell cell = null;
+
+        List list = null;
+        Map map = null;
+
+        int repeatingStartRow = 0;
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(32.25f); 
+
+        Cell titleCell = row.createCell(0);
+        titleCell.setCellValue(title);
+        titleCell.setCellStyle(styles.get("title"));
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(28);
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(28);
+
+        cell = row.createCell(unitPos);
+        cell.setCellStyle(styles.get("unit"));
+        cell.setCellValue("(단위 : 천원)");
+        repeatingStartRow = rowNum;
+
+        int preRowSeq = -1;
+        int rowSeq = -1;
+        int cellSeq = -1;
+        int fisYear = 0;
+        String headerCont = "";
+
+        list = reportCommDAO.selectReportHeaderList(model);
+        while (!list.isEmpty()) {
+            map = (Map) list.remove(0);
+
+            fisYear = ReportSaveUtil.getIntValue(model.get("fisYear"));
+            rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+            cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+            headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+            if (rowSeq < 0) {
+                throw new Exception("보고서 Header 정보 오류입니다.");
+            }
+
+            if (preRowSeq == -1 || preRowSeq != rowSeq) {
+                row = sheet.createRow(rowNum);
+                rowNum++;
+                row.setHeightInPoints(28f);
+            }
+
+            preRowSeq = rowSeq;
+
+            cell = row.createCell(cellSeq);
+            cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+            if (BcjisCommUtil.isNullString(headerCont) == false) {
+            	headerCont = headerCont.replace("§toYear§", rtnYear(fisYear, 0));	//해당년도
+            	headerCont = headerCont.replace("§preYear§", rtnYear(fisYear, -1)); //해당년도 -1
+            	headerCont = headerCont.replace("§prePreYear§", rtnYear(fisYear, -2)); //해당년도 -2
+                cell.setCellValue(headerCont);
+            }
+        }
+
+        ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+
+        sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + rowNum));
+        sheet.createFreezePane(0, 5);
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+
+        Footer footer = sheet.getFooter();
+
+        footer.setCenter("" + HeaderFooter.page());
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+
+        return rowNum;
+    }
+
+    public int writeData(XSSFSheet sheet, int rowNum, List<Object> categories, int iRow, Map<String, CellStyle> styles, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) throws Exception {
+    	
+    	JSONObject category = (JSONObject)categories.get(iRow);
+    	
+    	//첫행일 경우(부서가 같음) 부서 표시
+    	String deptNm = ReportSaveUtil.getStringValue(category.get("deptNm"));
+    	boolean startRowFlag = true;  //첫행여부
+    	int startRow = 0;  //첫행 열순번
+    	long totFrscAmtSum = 0L;	//총사업비 부서별 합계
+    	long preInvFrscAmtSum = 0L;	//기투자 부서별 합계
+    	long preBgtAmtSum = 0L;		//본예산 부서별 합계
+    	long preAmtSum = 0L;		//본예산 부서별 합계
+    	long demandDiffAmtSum = 0L;	//요구액 부서별 합계
+    	long diffAmtSum = 0L;	//조정액 부서별 합계
+    	
+    	for(int k = 0 ; k<categories.size() ; k++){
+    		JSONObject categoryTmp = (JSONObject)categories.get(k);
+    		String deptNmTmp = ReportSaveUtil.getStringValue(categoryTmp.get("deptNm"));
+    		if(!deptNm.equals(deptNmTmp) && k <= iRow){
+    			if(iRow != 0){
+    				startRow = k + 1;
+    			}
+    		} 
+    	}
+    	/*
+    	for(int k = 0 ; k<categories.size() ; k++){
+    		JSONObject categoryTmp = (JSONObject)categories.get(k);
+    		String deptNmTmp = ReportSaveUtil.getStringValue(categoryTmp.get("deptNm"));
+    		
+    		if(deptNm.equals(deptNmTmp)){
+    			if(startRowFlag){
+    				startRow = k;
+    				startRowFlag = false;
+    			}
+    			totFrscAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("totFrscAmt0")); 
+    			preInvFrscAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("preInvFrscAmt0")); 
+    			preBgtAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("preBgtAmt")); 
+    			preAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("preAmt")); 
+    			demandDiffAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("demandDiffAmt")); 
+    			diffAmtSum += ReportSaveUtil.getAmtValue(categoryTmp.get("diffAmt")); 
+    		} 
+    	}*/
+    	
+        float rowHeight = 21.7f;
+        Row row = null;
+        Cell cell = null;
+
+        int dgrLevel = 0;
+
+        dgrLevel = 2;
+        String bgtDgr = ReportSaveUtil.getStringValue(category.get("bgtDgr"));
+        String dgrcompoId = ReportSaveUtil.getStringValue(category.get("dgrcompoId"));
+        String upDgrcompoId = ReportSaveUtil.getStringValue(category.get("upDgrcompoId"));
+
+        boolean formulaFlag = false;
+        
+        String preStyleNm = "";
+        
+        //현재 열과 첫행열이 같을 경우 부서 삽입
+    	if(startRow == iRow){
+    		preStyleNm = "dept";
+    		row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("deptNm")));
+            
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$B$" + rowNum)); //총사업비 병합
+            
+            cell = row.createCell(2);
+            cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+            
+            cell = row.createCell(3);
+            cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+            sheet.addMergedRegion(CellRangeAddress.valueOf("$C$" + rowNum + ":$D$" + rowNum)); //총사업비 병합
+            
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+            
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+            
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+            
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+            
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+            addBizDataFormulaCell(reportFormulaUtil, "sum" + startRow, rowNum, bgtCompoFlag); //기준 합계row 등록
+    	}
+    	
+    	preStyleNm = "deptNm";
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+        cell.setCellValue(lineNumData);
+        lineNumData++;
+
+        cell = row.createCell(1);
+        cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+
+        cell = row.createCell(2);
+        cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+        //cell.setCellValue("계");
+        
+        cell = row.createCell(3);
+        cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+        cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("totFrscAmt0")));
+
+        cell = row.createCell(4);
+        cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+        cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt0")));
+        
+        cell = row.createCell(5);
+        cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+        if("1".equals(bgtDgr)){
+        	cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preBgtAmt")));
+    	}else{
+    		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preAmt")));
+    	}
+
+        cell = row.createCell(6);
+        cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+        cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("demandDiffAmt")));
+        
+        cell = row.createCell(7);
+        cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+        cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("diffAmt")));
+
+        // 추가
+        String examCont = ReportSaveUtil.getStringValue(category.get("examCont"));
+        String[] examContArrayTemp = examCont.split("\n");
+        String[] examContArray = null;
+        //
+
+        cell = row.createCell(8);
+        cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+        if (dgrLevel >= 4) {
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("reflectFgNm")));
+        }
+        
+        // /추가
+        String reflectFgNm = "";
+
+        if (dgrLevel > 1) {
+        	reflectFgNm = ReportSaveUtil.getStringValue(category.get("reflectFgNm"));
+
+        	cell.setCellValue(reflectFgNm);
+            examContArray = Arrays.copyOfRange(examContArrayTemp, 0, examContArrayTemp.length);
+            
+        } else {
+            examContArray = Arrays.copyOfRange(examContArrayTemp, 0, examContArrayTemp.length);
+        }
+        // //
+
+        cell = row.createCell(9);
+        cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("teMngMokCdNm")));
+
+        cell = row.createCell(10);
+        cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+        
+        addBizDataFormulaValue(reportFormulaUtil, "sum" + startRow, rowNum, bgtCompoFlag); //부서별 합계에 컬럼명 더하기
+
+        String demandCont = ReportSaveUtil.getStringValue(category.get("demandCont"));
+
+        List<Report0F0SaveFrscAmtsVO> frscAmts = new ArrayList<Report0F0SaveFrscAmtsVO>();
+        frscAmts = getFrscAmts(category, bgtCompoFlag);
+
+        String[] demandContArray = demandCont.split("\n");
+        int maxLength = demandContArray.length;
+        if (maxLength < examContArray.length) {
+            maxLength = examContArray.length;
+        }
+        if (maxLength < frscAmts.size()) {
+            maxLength = frscAmts.size();
+        }
+
+        if (maxLength < 1) {
+            return rowNum;
+        }
+
+        String frscNm = "";
+        long totFrscAmt = 0l;
+        long preInvFrscAmt = 0l;
+
+        long dmnFrscAmt = 0l;
+        long preFrscAmt = 0l;
+        long preDefFrscAmt = 0l;
+        long frscAmt = 0l;
+
+        maxLength = 11;
+        preStyleNm = "dataCont";
+        for (int i = 0; i < maxLength; i++) {
+            row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(19f);
+            //row.setHeightInPoints(rowHeight);
+
+            Report0F0SaveFrscAmtsVO report0F0SaveFrscAmtsVO = null;
+            if (!frscAmts.isEmpty()) {
+            	report0F0SaveFrscAmtsVO = frscAmts.remove(0);
+                frscNm = report0F0SaveFrscAmtsVO.getFrscNm();
+                totFrscAmt = report0F0SaveFrscAmtsVO.getTotFrscAmt();
+                preInvFrscAmt = report0F0SaveFrscAmtsVO.getPreInvFrscAmt();
+                dmnFrscAmt = report0F0SaveFrscAmtsVO.getDmnFrscAmt();
+                preFrscAmt = report0F0SaveFrscAmtsVO.getPreFrscAmt();
+                preDefFrscAmt = report0F0SaveFrscAmtsVO.getPreDefFrscAmt();
+                frscAmt = report0F0SaveFrscAmtsVO.getFrscAmt();
+            } else {
+                frscNm = "";
+                totFrscAmt = 0l;
+                preInvFrscAmt = 0l;
+                dmnFrscAmt = 0l;
+                preFrscAmt = 0l;
+                preDefFrscAmt = 0l;
+                frscAmt = 0l;
+            }
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            if (i < demandContArray.length) {
+                cell.setCellValue(demandContArray[i]);
+            }
+
+            cell = row.createCell(2);
+            cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+            cell.setCellValue(frscNm);
+
+            cell = row.createCell(3);
+            cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+            cell.setCellValue(totFrscAmt);
+            //cell.setCellValue(0L);
+
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+            cell.setCellValue(preInvFrscAmt);
+            //cell.setCellValue(0L);
+
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+            if("1".equals(bgtDgr)){
+            	cell.setCellValue(preFrscAmt);
+        	}else{
+        		cell.setCellValue(preDefFrscAmt);
+        	}
+ 
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+            cell.setCellValue(dmnFrscAmt);
+            
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellValue(frscAmt);
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            if (i < examContArray.length) {
+                cell.setCellValue(examContArray[i]);
+            }
+
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+            
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+        }
+
+        return rowNum;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void dataList(Map model, XSSFWorkbook wb, List<Object> categories) throws Exception {
+
+    	//List<Object> categories = JSONArray.fromObject(reportWrite0F0DAO.selectReport0F0ExcelList(model));
+        int rowNum = 0;
+        XSSFSheet sheet = null;
+        ReportFormulaUtil reportFormulaUtil = null;
+
+        JSONObject category = null;
+
+        int totDataCnt = 0;
+
+        Map param = new HashMap();
+        param.put("reportCd", "0F0");
+        param.put("reportDetlCd", "0F1");
+        param.put("fisYear", model.get("fisYear"));
+        param.put("bgtDgr", model.get("bgtDgr"));
+
+        Map reportInfo = reportCommDAO.selectReportInfo(param);
+        //boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
+
+        boolean bgtCompoFlag = false;
+        
+        Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+
+        String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm"));
+        if (BcjisCommUtil.isNullString(sheetName) == true) {
+            sheetName = "new sheet(biz)";
+        }
+
+        sheet = wb.createSheet(sheetName);
+        reportFormulaUtil = new ReportFormulaUtil(sheet);
+
+        String indiAttrNm = ReportSaveUtil.getStringValue(model.get("indiAttrNm"));
+        String title = ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(ReportSaveUtil.getIntValue(model.get("fisYear")), 0));
+        if(!"".equals(indiAttrNm)){
+        	title = title.replace("보고항목", "\"" + indiAttrNm + "\" 보고항목");
+        }
+        
+        rowNum = writeDataListHeader(param, sheet, rowNum, styles, reportInfo, title);
+
+        for (int i = 0; i < categories.size(); i++) {
+            category = (JSONObject) categories.get(i);
+
+            totDataCnt++;
+            rowNum = writeDataListData(sheet, rowNum, categories, i, styles, totDataCnt, bgtCompoFlag, reportFormulaUtil);
+            
+        }
+
+        if (sheet != null) {
+            ReportSaveUtil.writeLastSheet(reportCommDAO, param, wb, sheet, rowNum, styles, reportInfo, 13, 6);
+            reportFormulaUtil.writeCellFormula();
+            sheet = null;
+            wb.setPrintArea(0, 0, 7, 0, rowNum);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public int writeDataListHeader(Map model, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, String title) throws Exception {
+        Row row = null;
+        Cell cell = null;
+
+        List list = null;
+        Map map = null;
+
+        int repeatingStartRow = 0;
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(34.50f);
+
+        Cell titleCell = row.createCell(0);
+        titleCell.setCellStyle(styles.get("title"));
+        titleCell.setCellValue(title);
+        sheet.addMergedRegion(CellRangeAddress.valueOf("$A$1:$H$1")); //총사업비 병합
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(33.75f);
+
+        cell = row.createCell(7);
+        cell.setCellValue("※ 시비 금액\n(단위 : 백만원)");
+        cell.setCellStyle(styles.get("unit"));
+
+        repeatingStartRow = rowNum;
+
+        float rowHeight = 29.75f;
+        int preRowSeq = -1;
+        int rowSeq = -1;
+        int cellSeq = -1;
+        int fisYear = 0;
+        String headerCont = "";
+
+        list = reportCommDAO.selectReportHeaderList(model);
+        while (!list.isEmpty()) {
+            map = (Map) list.remove(0);
+
+            fisYear = ReportSaveUtil.getIntValue(model.get("fisYear"));
+            rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
+            cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
+            headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+            if (rowSeq < 0) {
+                throw new Exception("보고서 Header 정보 오류입니다.");
+            }
+
+            if (preRowSeq == -1 || preRowSeq != rowSeq) {
+                row = sheet.createRow(rowNum);
+                rowNum++;
+                row.setHeightInPoints(rowHeight);
+            }
+
+            preRowSeq = rowSeq;
+
+            cell = row.createCell(cellSeq);
+            cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+            
+            
+            if (BcjisCommUtil.isNullString(headerCont) == false) {
+            	headerCont = headerCont.replace("§toYear§", rtnYear(fisYear, 0));	//해당년도
+            	headerCont = headerCont.replace("§preYear§", rtnYear(fisYear, -1)); //해당년도 -1
+            	headerCont = headerCont.replace("§prePreYear§", rtnYear(fisYear, -2)); //해당년도 -2
+                cell.setCellValue(headerCont);
+            }
+        }
+
+        XSSFPrintSetup printSetup = sheet.getPrintSetup();
+        printSetup.setPaperSize(BcjisCommUtil.getShortValue(reportInfo.get("printPaperSize")));
+        printSetup.setScale(BcjisCommUtil.getShortValue(reportInfo.get("printScale")));
+
+        sheet.setMargin(XSSFSheet.LeftMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("leftMargin")));
+        sheet.setMargin(XSSFSheet.RightMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("rightMargin")));
+        sheet.setMargin(XSSFSheet.TopMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("topMargin")));
+        sheet.setMargin(XSSFSheet.BottomMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("bottomMargin")));
+        sheet.setMargin(XSSFSheet.HeaderMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("headerMargin")));
+        sheet.setMargin(XSSFSheet.FooterMargin, BcjisCommUtil.getDoubleValue(reportInfo.get("footerMargin")));
+
+        sheet.setRepeatingRows(CellRangeAddress.valueOf(repeatingStartRow + ":" + rowNum));
+        sheet.createFreezePane(0, 4);
+        sheet.setZoom(BcjisCommUtil.getIntValue(reportInfo.get("zoom")));
+        sheet.setDisplayGridlines(true);
+
+        CTSheetView view = sheet.getCTWorksheet().getSheetViews().getSheetViewArray(0);
+        view.setView(STSheetViewType.PAGE_BREAK_PREVIEW);
+
+        ReportSaveUtil.reportMerge(reportCommDAO, model, sheet);
+
+        return rowNum;
+    }
+
+    private String rtnYear(int toYear, int type){
+    	String rtnYear = ReportSaveUtil.getStringValue((toYear + type));
+    	
+    	int len = rtnYear.length();
+    	if(len == 4){
+    		
+    		rtnYear = rtnYear.substring(2, 4);
+    	}else{
+    		rtnYear = "";
+    	}
+    	
+    	return rtnYear;
+    }
+    
+    public int writeDataListData(XSSFSheet sheet, int rowNum, List<Object> categories, int iRow, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) {
+    	
+    	JSONObject category = (JSONObject)categories.get(iRow);
+    	
+    	//첫행일 경우(부서가 같음) 부서 표시
+    	String deptNm = ReportSaveUtil.getStringValue(category.get("deptNm"));
+    	int startRow = 0;  //첫행 열순번
+    	
+    	for(int k = 0 ; k<categories.size() ; k++){
+    		JSONObject categoryTmp = (JSONObject)categories.get(k);
+    		String deptNmTmp = ReportSaveUtil.getStringValue(categoryTmp.get("deptNm"));
+    		if(!deptNm.equals(deptNmTmp) && k <= iRow){
+    			if(iRow != 0){
+    				startRow = k + 1;
+    			}
+    		} 
+    	}
+    	
+    	int unit = 1000;
+        float rowHeight = 34.5f;
+        Row row = null;
+        Cell cell = null;
+
+
+        String bgtDgr = ReportSaveUtil.getStringValue(category.get("bgtDgr"));
+
+        boolean formulaFlag = true;
+        String preStyleNm = "";
+        /*
+        if (dgrLevel == 0) {
+            preStyleNm = "tot";
+            rowHeight = 34.5f;
+        } else if (dgrLevel == 2) {
+            preStyleNm = "dept";
+            rowHeight = 34.5f;
+        } else if (dgrLevel == 4) {
+            preStyleNm = "data0";
+            rowHeight = 34.5f;
+            formulaFlag = false;
+        } */
+        
+        //첫행 합계 삽입
+        if(iRow == 0){
+    		preStyleNm = "tot";
+    		row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            cell.setCellValue("합계");
+
+    	    cell = row.createCell(2);
+    	    cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+    	
+    	    cell = row.createCell(3);
+    	    cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            cell.setCellFormula("J" + rowNum + "+" + "K" + rowNum + "+" + "L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum);
+            
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+
+            cell = row.createCell(11);
+            cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+
+            cell = row.createCell(12);
+            cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+
+            cell = row.createCell(13);
+            cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+            
+            cell = row.createCell(14);
+            cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+            
+            cell = row.createCell(15);
+            cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+            addListDataFormulaCell(reportFormulaUtil, "tot", rowNum, bgtCompoFlag);//기준 총합계row 등록
+    	}
+        //현재 열과 첫행열이 같을 경우 부서 삽입
+    	if(startRow == iRow){
+    		preStyleNm = "dept";
+    		row = sheet.createRow(rowNum);
+            rowNum++;
+            row.setHeightInPoints(rowHeight);
+
+            cell = row.createCell(0);
+            cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+
+            cell = row.createCell(1);
+            cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+            cell.setCellValue(ReportSaveUtil.getStringValue(category.get("deptNm")));
+
+    	    cell = row.createCell(2);
+    	    cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+    	
+    	    cell = row.createCell(3);
+    	    cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+
+            cell = row.createCell(4);
+            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+
+            cell = row.createCell(5);
+            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+
+            cell = row.createCell(6);
+            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+
+            cell = row.createCell(7);
+            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+
+            cell = row.createCell(8);
+            cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+            cell.setCellFormula("J" + rowNum + "+" + "K" + rowNum + "+" + "L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum);
+            
+            cell = row.createCell(9);
+            cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+
+            cell = row.createCell(10);
+            cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+
+            cell = row.createCell(11);
+            cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+
+            cell = row.createCell(12);
+            cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+
+            cell = row.createCell(13);
+            cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+            
+            cell = row.createCell(14);
+            cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+            
+            cell = row.createCell(15);
+            cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+            addListDataFormulaCell(reportFormulaUtil, "sum" + startRow, rowNum, bgtCompoFlag); //기준 합계row 등록
+            addListDataFormulaValue(reportFormulaUtil, "tot", rowNum, bgtCompoFlag);	//총합계 컬럼 더하기
+    	}
+    	
+    	preStyleNm = "data0";
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setHeightInPoints(rowHeight);
+
+        cell = row.createCell(0);
+        cell.setCellStyle(styles.get(preStyleNm + "Col0"));
+        cell.setCellValue(lineNum);
+        lineNum++;
+
+        cell = row.createCell(1);
+        cell.setCellStyle(styles.get(preStyleNm + "Col1"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
+
+	    cell = row.createCell(2);
+	    cell.setCellStyle(styles.get(preStyleNm + "Col2"));
+	    cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt0")) + "/" + unit);
+	
+	    cell = row.createCell(3);
+	    cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+	    cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt0")) + "/" + unit);
+
+        cell = row.createCell(4);
+        cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+    	if("1".equals(bgtDgr)){
+    		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preBgtAmt")) + "/" + unit);
+    	}else{
+    		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preAmt")) + "/" + unit);
+    	}
+
+        cell = row.createCell(5);
+        cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("demandDiffAmt")) + "/" + unit);
+
+        cell = row.createCell(6);
+        cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("diffAmt")) + "/" + unit);
+
+        cell = row.createCell(7);
+        cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+        cell.setCellValue(getBizListRemarkList(category, unit));
+
+        cell = row.createCell(8);
+        cell.setCellStyle(styles.get(preStyleNm + "Col8"));
+        cell.setCellFormula("J" + rowNum + "+" + "K" + rowNum + "+" + "L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum);
+        
+        cell = row.createCell(9);
+        cell.setCellStyle(styles.get(preStyleNm + "Col9"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt1")) + "/" + unit);
+
+        cell = row.createCell(10);
+        cell.setCellStyle(styles.get(preStyleNm + "Col10"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt2")) + "/" + unit);
+
+        cell = row.createCell(11);
+        cell.setCellStyle(styles.get(preStyleNm + "Col11"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt3")) + "/" + unit);
+
+        cell = row.createCell(12);
+        cell.setCellStyle(styles.get(preStyleNm + "Col12"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt4")) + "/" + unit);
+
+        cell = row.createCell(13);
+        cell.setCellStyle(styles.get(preStyleNm + "Col13"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt5")) + "/" + unit);
+        
+        cell = row.createCell(14);
+        cell.setCellStyle(styles.get(preStyleNm + "Col14"));
+        cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("totFrscAmt6")) + "/" + unit);
+        
+        cell = row.createCell(15);
+        cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+        cell.setCellValue(ReportSaveUtil.getStringValue(category.get("srchVal")));
+
+        addListDataFormulaValue(reportFormulaUtil, "sum" + startRow, rowNum, bgtCompoFlag); //부서별 합계에 컬럼명 더하기
+        
+        return rowNum;
+    }
+
+    public void addListDataFormulaValue(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum, boolean bgtCompoFlag) {
+        reportFormulaUtil.addFormulaValue(keyStr + "_C", "C" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_D", "D" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_E", "E" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_F", "F" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_G", "G" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_J", "J" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_K", "K" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_L", "L" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_M", "M" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_N", "N" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_O", "O" + rowNum);
+    }
+
+    public void addListDataFormulaCell(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum, boolean bgtCompoFlag) {
+        reportFormulaUtil.addFormulaCell(keyStr + "_C", rowNum - 1, 2);
+        reportFormulaUtil.addFormulaCell(keyStr + "_D", rowNum - 1, 3);
+        reportFormulaUtil.addFormulaCell(keyStr + "_E", rowNum - 1, 4);
+        reportFormulaUtil.addFormulaCell(keyStr + "_F", rowNum - 1, 5);
+        reportFormulaUtil.addFormulaCell(keyStr + "_G", rowNum - 1, 6);
+        reportFormulaUtil.addFormulaCell(keyStr + "_J", rowNum - 1, 9);
+        reportFormulaUtil.addFormulaCell(keyStr + "_K", rowNum - 1, 10);
+        reportFormulaUtil.addFormulaCell(keyStr + "_L", rowNum - 1, 11);
+        reportFormulaUtil.addFormulaCell(keyStr + "_M", rowNum - 1, 12);
+        reportFormulaUtil.addFormulaCell(keyStr + "_N", rowNum - 1, 13);
+        reportFormulaUtil.addFormulaCell(keyStr + "_O", rowNum - 1, 14);
+    }
+    
+    public void addBizDataFormulaValue(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum, boolean bgtCompoFlag) {
+        reportFormulaUtil.addFormulaValue(keyStr + "_D", "D" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_E", "E" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_F", "F" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_G", "G" + rowNum);
+        reportFormulaUtil.addFormulaValue(keyStr + "_H", "H" + rowNum);
+    }
+
+    public void addBizDataFormulaCell(ReportFormulaUtil reportFormulaUtil, String keyStr, int rowNum, boolean bgtCompoFlag) {
+        reportFormulaUtil.addFormulaCell(keyStr + "_D", rowNum - 1, 3);
+        reportFormulaUtil.addFormulaCell(keyStr + "_E", rowNum - 1, 4);
+        reportFormulaUtil.addFormulaCell(keyStr + "_F", rowNum - 1, 5);
+        reportFormulaUtil.addFormulaCell(keyStr + "_G", rowNum - 1, 6);
+        reportFormulaUtil.addFormulaCell(keyStr + "_H", rowNum - 1, 7);
+    }
+
+    public List<Report0F0SaveFrscAmtsVO> getFrscAmts(JSONObject category, boolean bgtCompoFlag) {
+        List<Report0F0SaveFrscAmtsVO> list = new ArrayList<Report0F0SaveFrscAmtsVO>();
+
+        //최종예산, 증감액, 요구액, 조정액
+        long dmnFrscAmt1 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt1")); //최종예산
+        long preFrscAmt1 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt1")); //증감액
+        long preDefFrscAmt1 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt1")); //요구액
+        long frscAmt1 = ReportSaveUtil.getAmtValue(category.get("frscAmt1")); //조정액
+
+        long dmnFrscAmt2 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt2"));
+        long preFrscAmt2 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt2"));
+        long preDefFrscAmt2 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt2"));
+        long frscAmt2 = ReportSaveUtil.getAmtValue(category.get("frscAmt2"));
+
+        long dmnFrscAmt3 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt3"));
+        long preFrscAmt3 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt3"));
+        long preDefFrscAmt3 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt3"));
+        long frscAmt3 = ReportSaveUtil.getAmtValue(category.get("frscAmt3"));
+
+        long dmnFrscAmt4 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt4"));
+        long preFrscAmt4 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt4"));
+        long preDefFrscAmt4 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt4"));
+        long frscAmt4 = ReportSaveUtil.getAmtValue(category.get("frscAmt4"));
+
+        long dmnFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt6"));
+        long preFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt6"));
+        long preDefFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt6"));
+        long frscAmt6 = ReportSaveUtil.getAmtValue(category.get("frscAmt6"));
+        
+        long dmnFrscAmt7 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt7"));
+        long preFrscAmt7 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt7"));
+        long preDefFrscAmt7 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt7"));
+        long frscAmt7 = ReportSaveUtil.getAmtValue(category.get("frscAmt7"));
+        
+        dmnFrscAmt6 = dmnFrscAmt6 + dmnFrscAmt7;
+        preFrscAmt6 = preFrscAmt6 + preFrscAmt7;
+        preDefFrscAmt6 = preDefFrscAmt6 + preDefFrscAmt7;
+        frscAmt6 = frscAmt6 + frscAmt7;
+        
+        //총사업비, 기투자
+        long totFrscAmt1 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt1"));
+        long preInvFrscAmt1 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt1"));
+        
+        long totFrscAmt2 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt2"));
+        long preInvFrscAmt2 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt2"));
+        
+        long totFrscAmt3 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt3"));
+        long preInvFrscAmt3 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt3"));
+        
+        long totFrscAmt4 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt4"));
+        long preInvFrscAmt4 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt4"));
+        
+        long totFrscAmt5 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt5"));
+        long preInvFrscAmt5 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt5"));
+        
+        long totFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("totFrscAmt6"));
+        long preInvFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt6"));
+        
+        long totCharAmt1 = ReportSaveUtil.getAmtValue(category.get("totCharAmt1"));
+        long preInvCharAmt1 = ReportSaveUtil.getAmtValue(category.get("preInvCharAmt1"));
+        
+        long totCharAmt2 = ReportSaveUtil.getAmtValue(category.get("totCharAmt2"));
+        long preInvCharAmt2 = ReportSaveUtil.getAmtValue(category.get("preInvCharAmt2"));
+        
+        long totCharAmt3 = ReportSaveUtil.getAmtValue(category.get("totCharAmt3"));
+        long preInvCharAmt3 = ReportSaveUtil.getAmtValue(category.get("preInvCharAmt3"));
+        /*
+        System.out.println("시 : " + totFrscAmt1 + "  " + preInvFrscAmt1);
+        System.out.println("국 : " + totFrscAmt2 + "  " + preInvFrscAmt2);
+        System.out.println("교 : " + totFrscAmt3 + "  " + preInvFrscAmt3);
+        System.out.println("지 : " + totFrscAmt4 + "  " + preInvFrscAmt4);
+        System.out.println("채 : " + totFrscAmt5 + "  " + preInvFrscAmt5);
+        System.out.println("기 : " + totFrscAmt6 + "  " + preInvFrscAmt6);
+        */
+        
+        if (totFrscAmt1 == 0 && preInvFrscAmt1 == 0 && totFrscAmt2 == 0 && preInvFrscAmt2 == 0 && totFrscAmt3 == 0 && preInvFrscAmt3 == 0 && totFrscAmt4 == 0 && preInvFrscAmt4 == 0 && totFrscAmt5 == 0 && preInvFrscAmt5 == 0 && totFrscAmt6 == 0 && preInvFrscAmt6 == 0 && totCharAmt1 == 0 && preInvCharAmt1 == 0 && totCharAmt2 == 0 && preInvCharAmt2 == 0 && totCharAmt3 == 0 && preInvCharAmt3 == 0
+        		&& dmnFrscAmt1 == 0 && preFrscAmt1 == 0 && preDefFrscAmt1 == 0 && frscAmt1 == 0 
+        		&& dmnFrscAmt2 == 0 && preFrscAmt2 == 0 && preDefFrscAmt2 == 0 && frscAmt2 == 0 
+        		&& dmnFrscAmt3 == 0 && preFrscAmt3 == 0 && preDefFrscAmt3 == 0 && frscAmt3 == 0 
+        		&& dmnFrscAmt4 == 0 && preFrscAmt4 == 0 && preDefFrscAmt4 == 0 && frscAmt4 == 0 
+        		&& dmnFrscAmt6 == 0 && preFrscAmt6 == 0 && preDefFrscAmt6 == 0 && frscAmt6 == 0 
+        		) {
+            return list;
+        }
+
+        //if (dmnFrscAmt1 != 0 || preFrscAmt1 != 0 || preDefFrscAmt1 != 0 || frscAmt1 != 0) {
+        if (totFrscAmt1 != 0 || preInvFrscAmt1 != 0 || dmnFrscAmt1 != 0 || preFrscAmt1 != 0 || preDefFrscAmt1 != 0 || frscAmt1 != 0) {
+            list.add(new Report0F0SaveFrscAmtsVO("시", totFrscAmt1, preInvFrscAmt1, dmnFrscAmt1, preFrscAmt1, preDefFrscAmt1, frscAmt1));
+        }
+        
+        //if (dmnFrscAmt2 != 0 || preFrscAmt2 != 0 || preDefFrscAmt2 != 0 || frscAmt2 != 0) {
+        if (totFrscAmt2 != 0 || preInvFrscAmt2 != 0 || dmnFrscAmt2 != 0 || preFrscAmt2 != 0 || preDefFrscAmt2 != 0 || frscAmt2 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("국", totFrscAmt2, preInvFrscAmt2, dmnFrscAmt2, preFrscAmt2, preDefFrscAmt2, frscAmt2));
+        }
+        
+        //if (dmnFrscAmt3 != 0 || preFrscAmt3 != 0 || preDefFrscAmt3 != 0 || frscAmt3 != 0) {
+        if (totFrscAmt3 != 0 || preInvFrscAmt3 != 0 || dmnFrscAmt3 != 0 || preFrscAmt3 != 0 || preDefFrscAmt3 != 0 || frscAmt3 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("교", totFrscAmt3, preInvFrscAmt3, dmnFrscAmt3, preFrscAmt3, preDefFrscAmt3, frscAmt3));
+        }
+        
+        //if (dmnFrscAmt4 != 0 || preFrscAmt4 != 0 || preDefFrscAmt4 != 0 || frscAmt4 != 0) {
+        if (totFrscAmt4 != 0 || preInvFrscAmt4 != 0 || dmnFrscAmt4 != 0 || preFrscAmt4 != 0 || preDefFrscAmt4 != 0 || frscAmt4 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("지", totFrscAmt4, preInvFrscAmt4, dmnFrscAmt4, preFrscAmt4, preDefFrscAmt4, frscAmt4));
+        }
+        
+        if (totFrscAmt5 != 0 || preInvFrscAmt5 != 0) {
+        	//list.add(new Report0F0SaveFrscAmtsVO("채", totFrscAmt5, preInvFrscAmt5, 0L, 0L, 0L, 0L));
+        }
+        
+        //if (dmnFrscAmt6 != 0 || preFrscAmt6 != 0 || preDefFrscAmt6 != 0 || frscAmt6 != 0) {
+        if (totFrscAmt6 != 0 || preInvFrscAmt6 != 0 || dmnFrscAmt6 != 0 || preFrscAmt6 != 0 || preDefFrscAmt6 != 0 || frscAmt6 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("기", totFrscAmt6, preInvFrscAmt6, dmnFrscAmt6, preFrscAmt6, preDefFrscAmt6, frscAmt6));
+        }
+        
+        if (totCharAmt1 != 0 || preInvCharAmt1 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("공", totCharAmt1, preInvCharAmt1, 0L, 0L, 0L, 0L));
+        }
+        
+        if (totCharAmt2 != 0 || preInvCharAmt2 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("보", totCharAmt2, preInvCharAmt2, 0L, 0L, 0L, 0L));
+        }
+        
+        if (totCharAmt3 != 0 || preInvCharAmt3 != 0) {
+        	list.add(new Report0F0SaveFrscAmtsVO("기", totCharAmt3, preInvCharAmt3, 0L, 0L, 0L, 0L));
+        }
+
+        return list;
+    }
+    
+    public static String getBizListRemarkList(JSONObject category, int unit) {
+        StringBuffer sBuf = new StringBuffer();
+
+        Long amtL = ReportSaveUtil.getAmtValue(category.get("totFrscAmt2"));
+        if(amtL != 0){
+        	amtL = amtL / unit;
+        }
+        String amt = ReportSaveUtil.getAmtStrValue(amtL);
+        String preStr = "";
+
+        if ("0".equals(amt) == false) {
+            sBuf.append("· 국비 " + amt);
+            preStr = "\n";
+        }
+
+        amtL = ReportSaveUtil.getAmtValue(category.get("totFrscAmt3"));
+        if(amtL != 0){
+        	amtL = amtL / unit;
+        }
+        amt = ReportSaveUtil.getAmtStrValue(amtL);
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 교부세 " + amt);
+            preStr = "\n";
+        }
+
+        amtL = ReportSaveUtil.getAmtValue(category.get("totFrscAmt5"));
+        if(amtL != 0){
+        	amtL = amtL / unit;
+        }
+        amt = ReportSaveUtil.getAmtStrValue(amtL);
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 채무 " + amt + " 별도");
+            preStr = "\n";
+        }
+
+        amtL = ReportSaveUtil.getAmtValue(category.get("totFrscAmt6"));
+        if(amtL != 0){
+        	amtL = amtL / unit;
+        }
+        amt = ReportSaveUtil.getAmtStrValue(amtL);
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 기타 " + amt + " 별도");
+            preStr = "\n";
+        }
+
+        return sBuf.toString();
+    }
+}

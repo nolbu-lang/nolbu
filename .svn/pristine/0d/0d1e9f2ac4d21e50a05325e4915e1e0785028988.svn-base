@@ -1,0 +1,114 @@
+$(document).ready(function() {
+    
+    var colNames = ['', 'menuCd', 'url'];
+    var colModel = [ 
+                        {name : 'menuNm', index : 'menuNm', width : 250, sortable : false, resizable: false, align : 'left'},
+                        {name : 'menuCd', index : 'menuCd', width : 0, hidden : true, key:true },
+                        {name : 'url', index : 'url', width : 0, hidden : true }
+                    ];
+    
+    var leftMenuTreeData = $.csAjaxCall({
+        url : "/comm/ajaxCommLeftMenuTreeList.do"
+      , data: {}
+    });
+    
+    var maintab =jQuery('#mainTabs01','#mainPane').tabs({
+        activate: function(event, ui){
+            try{
+                var oldPanelId = ui.oldPanel.attr('id');
+                var newPanelId = ui.newPanel.attr('id');
+                
+                if(isEmpty(oldPanelId) == true || isEmpty(newPanelId) == true){
+                    return;
+                }
+                
+                var oldPanelObj = $("#"+oldPanelId);
+                var newPanelObj = $("#"+newPanelId);
+    
+                if(isEmpty(oldPanelObj) == true || isEmpty(newPanelObj) == true){
+                    return;
+                }
+                
+                var oldWidth = $("#mainCenter", oldPanelObj).width();
+                var newWidth = $("#mainCenter", newPanelObj).width();
+    
+                if(isEmpty(oldWidth) == true || isEmpty(newWidth) == true || oldWidth === newWidth){
+                    return;
+                }
+                
+                $("#mainCenter", newPanelObj).width($("#mainCenter", oldPanelObj).width());
+                
+                if(isEmpty(bcjisCommMainObj["mainBodyResize_"+newPanelId]) == false){
+                    bcjisCommMainObj["mainBodyResize_"+newPanelId]();
+                }
+            }catch(e){
+                
+            }
+        }
+    });
+   
+    var addTab = function(id, label, url) {
+        if(isEmpty(url) == true || url == "#"){
+            return;
+        }
+        
+        var tabTemplate = "<li><a href='#{href}'>#{label}</a> <span class='ui-icon ui-icon-close' role='presentation'>Remove Tab</span></li>";
+        var li = $(tabTemplate.replace(/#\{href\}/g, "#" + id).replace(/#\{label\}/g, label));
+
+        maintab.find(".ui-tabs-nav").append(li);
+        maintab.append('<div id="' + id + '" style="height:100%;"></div>');
+        $.ajax({
+            url: ctx + url + "?tabId="+id,
+            type: "GET",
+            dataType: "html",
+            complete : function (req, err) {
+                //$("#" + id, "#mainTabs01").append(req.responseText);
+                //호출 액션 명 추가
+                $("#" + id, "#mainTabs01").append("<p>"+ctx + url+"</p>" + req.responseText);
+            }
+        });
+        
+        maintab.tabs("refresh");
+        
+    };
+    
+
+    maintab.delegate("span.ui-icon-close", "click", function() {
+        var panelId = $(this).closest("li").remove().attr("aria-controls");
+        $("#" + panelId).remove();
+        maintab.tabs("refresh");
+    });
+
+    maintab.bind("keyup", function(event) {
+        if (event.altKey && event.keyCode === $.ui.keyCode.BACKSPACE) {
+            var panelId = maintab.find(".ui-tabs-active").remove().attr("aria-controls");
+            $("#" + panelId).remove();
+            maintab.tabs("refresh");
+        }
+    });
+
+    var leftMenuGrid = $("#BCJIS_LEFT_MENU001_GRD");
+    leftMenuGrid.csTreeGrid({
+        datastr : leftMenuTreeData,
+        colNames : colNames,
+        colModel : colModel,
+        ExpandColumn : "menuNm",
+        jsonReader : {
+            repeatitems : false,
+            root : "dataList"
+        },
+        onSelectRow: function(rowId){
+            var leftMenuData = leftMenuGrid.getRowData(rowId);
+            if(leftMenuData.isLeaf=="true") {
+                var tabId = "mainTabs01-"+leftMenuData.menuCd;
+                if($("#"+tabId).html() != null ) {
+                    $("[href='#"+tabId+"']", "#mainTabs01").trigger("click");
+                }else{
+                    addTab(tabId, leftMenuData.menuNm, leftMenuData.url);
+                    $("[href='#"+tabId+"']", "#mainTabs01").trigger("click");
+                }
+            }
+        }
+    });
+
+});

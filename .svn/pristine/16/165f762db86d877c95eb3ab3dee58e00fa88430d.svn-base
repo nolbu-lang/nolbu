@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BudgetCommCd">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+	<select id="BudgetCommCd.selectList" parameterClass="Map" resultClass="egovMap">
+        /*BudgetCommCd.selectList*/
+        SELECT B.GROUP_ID AS GROUP_ID
+             , B.DETL_CD 
+             , B.DETL_CD_NM
+             , B.LINE_UP_ORD
+          FROM TB_COMMCD A
+             , TB_COMMCDDETL B
+         WHERE 1 = 1
+           AND B.CL_CD = A.CL_CD
+           AND B.USE_YN = 'Y'
+         <isNotEmpty property="code" prepend="">
+           AND B.DETL_CD = #code#
+         </isNotEmpty>
+         <isNotEmpty property="notCode" prepend="">
+           AND B.DETL_CD <![CDATA[<>]]> #notCode#
+         </isNotEmpty>
+           AND A.CL_CD = #codeId#
+           AND A.USE_YN = 'Y'
+         ORDER BY DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+    </select>
+    
+    <select id="BudgetCommCd.selectMaxCd" parameterClass="Map" resultClass="java.lang.String">
+        /*BudgetCommCd.selectMaxCd*/
+        SELECT IFNULL(MAX(CAST(detl_cd   AS NUMERIC(19, 0))), 0) FROM tb_commcddetl WHERE CL_CD = #codeId#
+    </select>
+    
+    <select id="BudgetCommCd.selectCnt" parameterClass="Map" resultClass="java.lang.Integer">
+        /*BudgetCommCd.selectCnt*/
+        SELECT COUNT(*) FROM tb_commcddetl WHERE CL_CD = #clCd# AND DETL_CD = #detlCd#
+    </select>
+    
+    <insert id="BudgetCommCd.insertCommCd" parameterClass="Map" >
+        /*BudgetCommCd.insertCommCd*/
+        INSERT INTO
+		tb_commcddetl (
+			cl_cd,
+			detl_cd,
+			group_id,
+			detl_cd_nm,
+			default_val_yn,
+			line_up_ord,
+			mng_item_val,
+			use_yn,
+			regi_id,
+			regi_date
+		)
+		VALUES
+		(
+			#clCd#,
+			#detlCd#,
+			#groupId#,
+			#detlCdNm#,
+			#defaultValYn#,
+			#lineUpOrd#,
+			#mngItemVal#,
+			#useYn#,
+			#userId#,
+			SYSTIMESTAMP
+		);
+    </insert>
+    
+    <update id="BudgetCommCd.updateCommCd" parameterClass="Map" >
+        /*BudgetCommCd.updateCommCd*/
+        UPDATE
+			tb_commcddetl
+		SET detl_cd_nm = #detlCdNm#,
+			line_up_ord = #lineUpOrd#,
+			use_yn = #useYn#,
+			modi_id = #userId#,
+			modi_date = SYSTIMESTAMP
+		WHERE CL_CD = #clCd#
+		  AND DETL_CD = #detlCd#
+    </update>
+    
+    <update id="BudgetCommCd.updateCommCdUseYn" parameterClass="Map" >
+        /*BudgetCommCd.updateCommCdUseYn*/
+        UPDATE
+			tb_commcddetl
+		SET use_yn = #useYn#,
+			modi_id = #userId#,
+			modi_date = SYSTIMESTAMP
+		WHERE CL_CD = #clCd#
+		  AND DETL_CD = #detlCd#
+    </update>
+    
+</sqlMap>

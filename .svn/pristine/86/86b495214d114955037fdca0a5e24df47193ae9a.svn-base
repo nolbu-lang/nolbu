@@ -1,0 +1,1191 @@
+$(document).ready(function() {
+    var tabId = _reportWrite0F0PageTabId;
+    var tabObj = $("#"+tabId);
+    
+    var myCellattr = function (rowId, tv, rowObject, cm, rdata) {
+        return ' style="vertical-align: top;"';
+    };
+    
+    reportWirte0F0DialogDgrcompoModifyCallBackFunction = function(param){
+        var rowId = param.dgrcompoId;
+        if(isEmpty(rowId) == true){
+            return;
+        }
+        
+        reportWrite0F0PageGrid.jqGrid('setRowData', rowId, param);
+       
+        var dgrcompoNmView = param.dgrcompoNmView;
+        if(isEmpty(dgrcompoNmView) == true){
+            dgrcompoNmView = "";
+        }
+        
+        $("#dgrcompoNmView_" + rowId, tabObj).html(dgrcompoNmView);
+    };
+    
+    //수정버튼
+    reportWirte0F0OpenDialogDgrcompoModify = function(rowId){  
+        var rowData = reportWrite0F0PageGrid.getRowData(rowId);
+        
+        $("#dialogDgrcompoModifyCallBackFunction", $("#dialogDgrcompoModifyDiv")).val("reportWirte0F0DialogDgrcompoModifyCallBackFunction");
+        $("#dialogDgrcompoModifyDgrcompoId", $("#dialogDgrcompoModifyDiv")).val(rowData.dgrcompoId);
+        $("#dialogDgrcompoModifyFisYear", $("#dialogDgrcompoModifyDiv")).val(rowData.fisYear);
+        $("#dialogDgrcompoModifyBgtDgr", $("#dialogDgrcompoModifyDiv")).val(rowData.bgtDgr);
+        $("#dialogDgrcompoModifyTeBgtCompoId", $("#dialogDgrcompoModifyDiv")).val(rowData.teBgtCompoId);
+        $("#dialogDgrcompoModifyIsLeaf", $("#dialogDgrcompoModifyDiv")).val(rowData.isLeaf);
+        $("#dialogDgrcompoModifyAmtUnit", $("#dialogDgrcompoModifyDiv")).val($("#condAmtUnit", tabObj).val());
+        
+        $("#dialogDgrcompoModiDgrcompoNm", $("#dialogDgrcompoModifyDiv")).val(rowData.dbizNm);
+        $("#dialogDgrcompoModiTeMngMokCdNm", $("#dialogDgrcompoModifyDiv")).val(rowData.teMngMokCdNm);
+        $("#dialogDgrcompoModiTeMngMokNm", $("#dialogDgrcompoModifyDiv")).val(rowData.teMngMokNm);
+        
+        $("#dialogDgrcompoModifyDiv").dialog('open');
+    };
+    
+    //수정
+    var editFormatter = function(cellValue, options, rowObject){
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        if(_mainNorthPowGrCd == "BC002"){
+            return cellValue;
+        }
+        
+        if(rowObject.teBgtCompoId == "00000000000"){
+            return cellValue;
+        }
+        
+        var demandCont = rowObject.demandCont; 
+        if(isEmpty(demandCont) == true){
+            demandCont = "";
+        }
+        
+        var rVal = '<a href="javascript:reportWirte0F0OpenDialogDgrcompoModify(\''+options.rowId+'\');"><span class="ui-icon ui-icon-pencil"></span></a>';
+        
+        return rVal;
+    };
+    
+    //[실국-부서-조서-세부]
+    var upDgrcompoNmFormatter = function(cellValue, options, rowObject){
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+
+        var officeNm = isEmpty(rowObject.officeNm) == true ? "" : rowObject.officeNm;
+        var deptNm = isEmpty(rowObject.deptNm) == true ? "" : rowObject.deptNm;
+        var reportDetlNm = isEmpty(rowObject.reportDetlNm) == true ? "" : rowObject.reportDetlNm;
+        var dbizNm = isEmpty(rowObject.dbizNm) == true ? "" : rowObject.dbizNm;
+        
+        return "실국: "+officeNm+"<br>"+"부서: "+deptNm+"<br>"+"세부: "+dbizNm;
+    };
+    
+    //구분
+    var dgrcompoNmFormatter = function(cellValue, options, rowObject){
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        if(rowObject.teBgtCompoId == "00000000000"){
+            return cellValue;
+        }
+        
+        var demandCont = rowObject.demandCont; 
+        if(isEmpty(demandCont) == true){
+            demandCont = "";
+        }
+        
+        var rVal = '<span id="dgrcompoNmView_'+rowObject.dgrcompoId+'" >' + cellValue + '</span><br>'
+                 + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" style="width:220px;ime-mode:active;height:218px;">'+demandCont+'</textarea>';
+        
+        return rVal;
+    };
+    
+    //검토내용
+    var examContFormatter = function(cellValue, options, rowObject){
+        if(rowObject.teBgtCompoId == "00000000000"){
+            return cellValue;
+        }
+        
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        var styleStr = "";
+        if(rowObject.compoLevel != 1){
+            styleStr = 'style="display:none;width:240px;"';
+        }else{
+            styleStr = 'style="width:240px;"';
+        }
+        
+        var investPlan = "";
+        if(isEmpty(rowObject.investPlan) == false){
+            investPlan = rowObject.investPlan;
+        }
+        
+        var rVal = '<div>'
+                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:90px;">'
+                 + reflectFgCreateCombo('RP003', rowObject.reflectFg)
+                 + '</select>'
+                 + '<br />'
+                 //+ '&nbsp;<input id="investPlan_'+rowObject.dgrcompoId+'" value="'+investPlan+'" maxlength="500" class="ui-state-enabled" '+styleStr +' />'+'<br>'
+                 + '<textarea id="examCont_'+rowObject.dgrcompoId+'" style="width:245px;ime-mode:active;height:218px;">'+cellValue+'</textarea>'
+                 + '</div>';
+
+        return rVal;
+    };
+    
+    
+    //정렬순서
+    var reportSortSeqFormatter = function(cellValue, options, rowObject){
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        var styleStr = "";
+        var styleChkStr = "";
+        if(rowObject.compoLevel != 1){
+            styleStr = 'style="display:none;width:15px;"';
+            styleChkStr = 'style="display:none;"';
+        }else{
+            styleStr = 'style="width:40px;"';
+            styleChkStr = 'style="margin-top: 5px;"';
+        }
+        
+        var rVal = '<div>'
+                 + '<input id="reportSortSeq_'+rowObject.dgrcompoId+'" value="'+cellValue+'" maxlength="10" class="amtInput020 ui-state-enabled" '+styleStr +' /><br>'
+                 //+ '<input type="checkbox" id="mayorReportYn_'+rowObject.dgrcompoId+'" value="Y" class="chkReport020" '+styleChkStr +' '+(rowObject.mayorReportYn == 'Y' ? 'checked' : '')+' />보고'
+                 + '</div>';
+
+        return rVal;
+    };
+    
+    //총사업비
+    var totFrscAmtFormatter = function(cellValue, options, rowObject){
+        var readOnlyStr = "";
+        var classStr = '';
+        if(rowObject.teBgtCompoId == "00000000000"){
+            readOnlyStr = "readonly";
+            classStr = 'class="amtInput020 ui-state-disabled"';
+        }else{
+            classStr = 'class="amtInput020 ui-state-enabled"';
+        }
+
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        var rVal = '<table class="jqgridSubTable">'
+                 + '  <colgroup>'
+                 + '    <col width="20px"/>'
+                 + '    <col width="70px"/>'
+                 + '    <col width="70px"/>'
+                 + '  </colgroup>'
+                 + '  <tbody>'
+                 + '    <tr>'
+                 + '      <td colspan="2">계</td>'
+                 + '      <td><input id="totFrscAmt0_'+rowObject.dgrcompoId+'" value="'+addCommaStr(cellValue)+'" class="amtInput020 ui-state-disabled" readonly /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td rowspan="6">재<br>원<br>별<br></td>'
+                 + '      <td>시비</td>'
+                 + '      <td><input id="totFrscAmt1_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt1)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>국비</td>'
+                 + '      <td><input id="totFrscAmt2_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt2)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>교부세</td>'
+                 + '      <td><input id="totFrscAmt3_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt3)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>지방채</td>'
+                 + '      <td><input id="totFrscAmt4_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt4)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>채무</td>'
+                 + '      <td><input id="totFrscAmt5_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt5)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>기타</td>'
+                 + '      <td><input id="totFrscAmt6_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totFrscAmt6)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td rowspan="6">성<br>격<br>별<br></td>'
+                 + '      <td>공사</td>'
+                 + '      <td><input id="totCharAmt1_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totCharAmt1)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>보상</td>'
+                 + '      <td><input id="totCharAmt2_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totCharAmt2)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td>기타</td>'
+                 + '      <td><input id="totCharAmt3_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.totCharAmt3)+'" class="amtInput020 ui-state-disabled" readonly /></td>'
+                 + '    </tr>'
+                 + '  </tbody>'
+                 + '</table>';
+
+        return rVal;
+    };
+    
+    var preInvFrscAmtFormatter = function(cellValue, options, rowObject){
+        var readOnlyStr = "";
+        var classStr = '';
+        if(rowObject.teBgtCompoId == "00000000000"){
+            readOnlyStr = "readonly";
+            classStr = 'class="amtInput020 ui-state-disabled"';
+        }else{
+            classStr = 'class="amtInput020 ui-state-enabled"';
+        }
+
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        var rVal = '<table class="jqgridSubTable">'
+                 + '  <colgroup>'
+                 + '    <col width="70px"/>'
+                 + '  </colgroup>'
+                 + '  <tbody>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt0_'+rowObject.dgrcompoId+'" value="'+addCommaStr(cellValue)+'" class="amtInput020 ui-state-disabled" readonly /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt1_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt1)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt2_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt2)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt3_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt3)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt4_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt4)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt5_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt5)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvFrscAmt6_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvFrscAmt6)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvCharAmt1_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvCharAmt1)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvCharAmt2_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvCharAmt2)+'" '+classStr+' '+readOnlyStr+' /></td>'
+                 + '    </tr>'
+                 + '    <tr>'
+                 + '      <td><input id="preInvCharAmt3_'+rowObject.dgrcompoId+'" value="'+addCommaStr(rowObject.preInvCharAmt3)+'" class="amtInput020 ui-state-disabled" readonly /></td>'
+                 + '    </tr>'
+                 + '  </tbody>'
+                 + '</table>';
+    
+       return rVal;
+    };
+    
+  //대분류 그리드fomatter
+    var reportMstrFormatter = function(cellValue, options, rowObject){
+    	
+        if(isEmpty(cellValue) == true){
+            cellValue = "";
+        }
+        
+        if(rowObject.teBgtCompoId == "00000000000" ){
+            return cellValue;
+        }
+        var itemList = comboData['reportMstr'];
+        
+        if(cellValue == "" && isEmpty(rowObject.reportMstr) != true){
+        	cellValue = rowObject.reportMstr;
+        }
+        
+        var rVal = '<div>';
+        for(var i=0 ; i<itemList.length ; i++){
+        	var data = itemList[i];
+        	if(cellValue.includes(data.code)){
+    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    		}
+        }
+        
+        rVal += '</div>';
+
+        return rVal;
+    };
+    
+  //중분류 그리드fomatter
+    var reportCdFormatter = function(cellValue, options, rowObject){
+    	
+    	if(isEmpty(cellValue) == true){
+    		cellValue = "";
+    	}
+    	
+    	if(rowObject.teBgtCompoId == "00000000000" ){
+    		return cellValue;
+    	}
+    	var itemList = comboData['reportCd'];
+
+    	if(cellValue == "" && isEmpty(rowObject.reportCd) != true){
+        	cellValue = rowObject.reportCd;
+        }
+    	
+    	var rVal = '<div>';
+    	for(var i=0 ; i<itemList.length ; i++){
+    		var data = itemList[i];
+    		if(cellValue.includes(data.code)){
+    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    		}
+    	}
+    	
+    	rVal += '</div>';
+    	
+    	return rVal;
+    };
+    
+  //소분류 그리드fomatter
+    var reportDetlCdFormatter = function(cellValue, options, rowObject){
+    	
+    	if(isEmpty(cellValue) == true){
+    		cellValue = "";
+    	}
+    	
+    	if(rowObject.teBgtCompoId == "00000000000" ){
+    		return cellValue;
+    	}
+    	var itemList = comboData['reportDetlCd'];
+
+    	if(cellValue == "" && isEmpty(rowObject.reportDetlCd) != true){
+        	cellValue = rowObject.reportDetlCd;
+        }
+    	
+    	var rVal = '<div>';
+    	for(var i=0 ; i<itemList.length ; i++){
+    		var data = itemList[i];
+    		if(cellValue.includes(data.code)){
+    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    		}
+    	}
+    	
+    	rVal += '</div>';
+    	
+    	return rVal;
+    };
+    
+    
+    var colNames = ['', '[실국-부서-조서-세부]', '구분', '정렬순서', '총사업비', '기투자', '본예산', '본예산2', '요구액', '조정액', '검토내용','재원정보',
+                    '대분류', '중분류', '소분류',
+                    'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'reportSortSeq',
+                    'mayorReportYn', 'dbizNm', 'teMngMokCdNm', 'teMngMokNm',
+                    'totFrscAmt1', 'totFrscAmt2', 'totFrscAmt3', 'totFrscAmt4', 'totFrscAmt5', 'totFrscAmt6', 'totCharAmt1', 'totCharAmt2', 'totCharAmt3',
+                    'preInvFrscAmt1', 'preInvFrscAmt2', 'preInvFrscAmt3', 'preInvFrscAmt4', 'preInvFrscAmt5', 'preInvFrscAmt6', 'preInvCharAmt1', 'preInvCharAmt2', 'preInvCharAmt3','indiAttr',
+                    'reportMstr','reportCd','reportDetlCd'
+                   ];
+    
+    var colModel = [ {name : 'edit', index : 'edit', width : 20, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
+                            formatter:editFormatter
+                        },
+                        {name : 'upDgrcompoNm', index : 'upDgrcompoNm', width : 150, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
+                            formatter:upDgrcompoNmFormatter
+                        },
+                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 267, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
+                            formatter:dgrcompoNmFormatter
+                        },
+                        {name : 'reportSortSeqView', index : 'reportSortSeqView', width : 70, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
+                            formatter : reportSortSeqFormatter
+                        },
+                        {name : 'totFrscAmt0', index : 'totFrscAmt0', width : 200, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
+                            formatter : totFrscAmtFormatter
+                        },
+                        {name : 'preInvFrscAmt0', index : 'preInvFrscAmt0', width : 100, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
+                            formatter : preInvFrscAmtFormatter
+                        },
+                        {name : 'preAmt', index : 'preAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'preBgtAmt', index : 'preBgtAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'demandDiffAmt', index : 'demandDiffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'diffAmt', index : 'diffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'examContView', index : 'examContView', width : 267, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
+                            formatter:examContFormatter
+                        },
+                        {name : 'frsces', index : 'frsces', width : 250, sortable : false, fixed : true, align : 'left'},
+                        {name : 'reportMstrNm', index : 'reportMstr', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        	formatter:reportMstrFormatter
+                        },
+                        {name : 'reportCdNm', index : 'reportCd', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        	formatter:reportCdFormatter
+                        },
+                        {name : 'reportDetlCdNm', index : 'reportDetlCd', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        	formatter:reportDetlCdFormatter
+                        },
+                        {name : 'dgrcompoId', index : 'dgrcompoId', width : 0, sortable : false, hidden : true, key: true},
+                        {name : 'upDgrcompoId', index : 'upDgrcompoId', width : 0, sortable : false, hidden : true},
+                        {name : 'fisYear', index : 'fisYear', width : 0, sortable : false, hidden : true},
+                        {name : 'bgtDgr', index : 'bgtDgr', width : 0, sortable : false, hidden : true},
+                        {name : 'reportCd', index : 'reportCd', width : 0, sortable : false, hidden : true},
+                        {name : 'reportDetlCd', index : 'reportDetlCd', width : 0, sortable : false, hidden : true},
+                        {name : 'dgrLevel', index : 'dgrLevel', width : 0, sortable : false, hidden : true},
+                        {name : 'teBgtCompoId', index : 'teBgtCompoId', width : 0, sortable : false, hidden : true},
+                        {name : 'teBgtCompoSeq', index : 'teBgtCompoSeq', width : 0, sortable : false, hidden : true},
+                        {name : 'compoLevel', index : 'compoLevel', width : 0, sortable : false, hidden : true},
+                        {name : 'demandCont', index : 'demandCont', width : 0, sortable : false, hidden : true},
+                        {name : 'examCont', index : 'examCont', width : 0, sortable : false, hidden : true},
+                        {name : 'reflectFg', index : 'reflectFg', width : 0, sortable : false, hidden : true},
+                        {name : 'reportSortSeq', index : 'reportSortSeq', width : 0, sortable : false, hidden : true},
+                        {name : 'mayorReportYn', index : 'mayorReportYn', width : 0, sortable : false, hidden : true},
+                        {name : 'dbizNm', index : 'dbizNm', width : 0, sortable : false, hidden : true},
+                        {name : 'teMngMokCdNm', index : 'teMngMokCdNm', width : 0, sortable : false, hidden : true},
+                        {name : 'teMngMokNm', index : 'teMngMokNm', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt1', index : 'totFrscAmt1', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt2', index : 'totFrscAmt2', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt3', index : 'totFrscAmt3', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt4', index : 'totFrscAmt4', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt5', index : 'totFrscAmt5', width : 0, sortable : false, hidden : true},
+                        {name : 'totFrscAmt6', index : 'totFrscAmt6', width : 0, sortable : false, hidden : true},
+                        {name : 'totCharAmt1', index : 'totCharAmt1', width : 0, sortable : false, hidden : true},
+                        {name : 'totCharAmt2', index : 'totCharAmt2', width : 0, sortable : false, hidden : true},
+                        {name : 'totCharAmt3', index : 'totCharAmt3', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt1', index : 'preInvFrscAmt1', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt2', index : 'preInvFrscAmt2', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt3', index : 'preInvFrscAmt3', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt4', index : 'preInvFrscAmt4', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt5', index : 'preInvFrscAmt5', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvFrscAmt6', index : 'preInvFrscAmt6', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvCharAmt1', index : 'preInvCharAmt1', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvCharAmt2', index : 'preInvCharAmt2', width : 0, sortable : false, hidden : true},
+                        {name : 'preInvCharAmt3', index : 'preInvCharAmt3', width : 0, sortable : false, hidden : true},
+                        {name : 'indiAttr', index : 'indiAttr', width : 0, sortable : false, hidden : true},
+                        {name : 'reportMstr', index : 'reportMstr', width : 0, sortable : false, hidden : true},
+                        {name : 'reportCd', index : 'reportCd', width : 0, sortable : false, hidden : true},
+                        {name : 'reportDetlCd', index : 'reportDetlCd', width : 0, sortable : false, hidden : true},
+                    ];
+
+    /*var getGridHeight = function (){
+        return $("#mainCenter", tabObj).height() - 125 > 200 ? $("#mainCenter", tabObj).height() - 125 : 200;
+    };*/
+    
+    var getGridHeight = function (){
+    	var height = $("#mainCenter", tabObj).height() - 125 > 200 ? $("#mainCenter", tabObj).height() - 125 : 200; 
+    	$("#REPORT_WRITE0F0PAGE_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", height - 5);
+        return height;
+    };
+    
+    var mainBodyResize = function(){
+        if(isEmpty($("#REPORT_WRITE0F0PAGE_GRD", $("#"+tabId))) == false){
+            $("#REPORT_WRITE0F0PAGE_GRD", $("#"+tabId)).setGridHeight(getGridHeight());
+            $("#REPORT_WRITE0F0PAGE_GRD", $("#"+tabId)).setGridWidth($("#mainCenter", tabObj).width()-20);
+        }
+    };
+    
+    bcjisCommMainObj["mainBodyResize_"+tabId] = mainBodyResize;
+    
+    $("#mainBody", tabObj).layout({
+        north__size : 175,
+        center__onresize: mainBodyResize
+    });
+    
+    var setSumAmt = function(amtObj){
+        var objId = amtObj.attr("id");
+        
+        if(isEmpty(objId) == true){
+            return;
+        }
+        
+        if(objId.indexOf("Frsc") > 0){
+            setSumFrscAmt(objId);
+        }else if(objId.indexOf("Char") > 0){
+            setSumCharAmt(objId);
+        }
+    };
+    
+    var setSumFrscAmt = function(objId){
+        var idIndex = objId.indexOf("_");
+        if(idIndex < 1){
+            return;
+        }
+        
+        var preFrscId = objId.substring(0, idIndex - 1);
+        var dgrcompoId = objId.substring(idIndex + 1);
+        
+        if(isEmpty(preFrscId) == true || isEmpty(dgrcompoId) == true){
+            return;
+        }
+        
+        var preCharId = preFrscId.replaceAll("Frsc", "Char");
+        
+        var sumFrscAmt = Number($("#"+preFrscId+"1"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preFrscId+"2"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preFrscId+"3"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preFrscId+"4"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preFrscId+"5"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preFrscId+"6"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""));
+        
+        var sumCharAmt = Number($("#"+preCharId+"1"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preCharId+"2"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""));
+        
+        $("#"+preFrscId+"0"+"_"+dgrcompoId, tabObj).val(addCommaStr(sumFrscAmt));
+        $("#"+preCharId+"3"+"_"+dgrcompoId, tabObj).val(addCommaStr((sumFrscAmt - sumCharAmt)));
+    };
+    
+    var setSumCharAmt = function(objId){
+        var idIndex = objId.indexOf("_");
+        if(idIndex < 1){
+            return;
+        }
+        
+        var preCharId = objId.substring(0, idIndex - 1);
+        var dgrcompoId = objId.substring(idIndex + 1);
+        
+        if(isEmpty(preCharId) == true || isEmpty(dgrcompoId) == true){
+            return;
+        }
+
+        var preFrscId = preCharId.replaceAll("Char", "Frsc");
+        
+        var sumFrscAmt = Number($("#"+preFrscId+"0"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""));
+
+        var sumCharAmt = Number($("#"+preCharId+"1"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""))
+                       + Number($("#"+preCharId+"2"+"_"+dgrcompoId, tabObj).val().replaceAll(",", ""));
+        
+        $("#"+preCharId+"3"+"_"+dgrcompoId, tabObj).val(addCommaStr((sumFrscAmt - sumCharAmt)));
+    };
+    
+    var reportWrite0F0PageGrid = $("#REPORT_WRITE0F0PAGE_GRD", tabObj);
+    
+    var doSearchCallBack = function(data){
+        if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
+            $.csAlert({
+                msg : data.bcjisMessage
+            });
+            
+            return;
+        }
+
+        var fisYear = parseInt($("#condFisYear option:selected", tabObj).val());			//회계년도
+        var fisYearTxt = fisYear - 2000;
+        
+        var groupHeaders = [];
+        if(data.data.bgtDgr == "1"){
+            colModel[6].hidden = true;
+            colModel[7].hidden = false;
+            groupHeaders = [{startColumnName : 'demandDiffAmt',numberOfColumns : 2, titleText : '\'' + fisYearTxt + '년 예산액'}, {startColumnName : 'reportMstr', numberOfColumns : 3, titleText : '분류'}];
+        }else{
+            colModel[6].hidden = false;
+            colModel[7].hidden = true;
+            groupHeaders = [{startColumnName : 'demandDiffAmt',numberOfColumns : 2, titleText : '\'' + fisYearTxt + '년 추경예산액'}, {startColumnName : 'reportMstr', numberOfColumns : 3, titleText : '분류'}];
+        }
+        
+        $("#REPORT_WRITE0F0PAGE_GRD", tabObj).jqGrid('GridUnload');
+        reportWrite0F0PageGrid = $("#REPORT_WRITE0F0PAGE_GRD", tabObj);
+        reportWrite0F0PageGrid.csTreeGrid({
+            datastr : data,
+            height : getGridHeight(),
+            colNames : colNames,
+            colModel : colModel,
+            ExpandColumn : "dgrcompoNm",
+            ExpandColClick: false,
+            hoverrows: false,
+            jsonReader : {
+                repeatitems : false,
+                root : "dataList"
+            },
+            onSelectRow: function(rowId){
+            },
+            loadComplete: function() {
+                $(".amtInput020.ui-state-enabled", tabObj).autoNumeric({aPad: false, vMax:'99999999999999999'});
+                $(".amtInput020.ui-state-enabled", tabObj).click(function () {
+                    //$(this).select();
+                });
+                $(".amtInput020.ui-state-enabled", tabObj).focusout(function(){
+                    setSumAmt($(this));
+                });
+                $('textarea').maxlength({max: 1000, showFeedback: false});
+            }
+        });
+        
+        $("#REPORT_WRITE0F0PAGE_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", getGridHeight() - 5);
+
+        if(data.data.bgtDgr == "1"){	//본예산
+            $("#REPORT_WRITE0F0PAGE_GRD", tabObj).jqGrid("setLabel", colModel[7]['name'], '\'' + (fisYearTxt - 1) + '최종예산');
+        }else{	//추경예산
+            $("#REPORT_WRITE0F0PAGE_GRD", tabObj).jqGrid("setLabel", colModel[6]['name'], '\'' + fisYearTxt + '기정액');
+        }
+
+        reportWrite0F0PageGrid.jqGrid('setGroupHeaders', {
+            useColSpanStyle : true,
+            groupHeaders : groupHeaders
+        });
+
+        $("#REPORT_WRITE0F0PAGE_PGR").addPagingData(data, "reportWrite0F0PageDoPageSearch");
+        $("#REPORT_WRITE0F0PAGE_TOT").html("세부사업 총건수 : " + addCommaStr(data.totalCount) + "건");
+        
+        $("#saveBtn", $("#"+tabId)).btnChangeState(true);
+
+        data = null;
+    };
+    
+    reportWrite0F0PageDoPageSearch = function(page) {
+        var saveDatas = getSaveDatas(reportWrite0F0PageGrid, $("#REPORT_WRITE0F0PAGE_GRD", tabObj)[0].rows);
+        if(saveDatas != null && saveDatas != undefined && saveDatas.length > 0){
+            var data = $.csAjaxCall({
+                url : "/report/ajaxReportWrite0F0SaveReport0F0.do",
+                data : {saveDatas: saveDatas,
+                        amtUnit:$("#condAmtUnit", tabObj).val()
+                }
+            });
+
+            if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
+                $.csAlert({
+                    msg : data.bcjisMessage
+                });
+                
+                return;
+            }
+        }
+        
+        defaultSearchParam.page = page;
+        doSearch();
+    };
+
+    var defaultSearchParam = {
+        page : 1,
+        rowNum : 3
+    };
+    
+    //조회 데이터 가공
+    var getSearchParam = function(){
+        var indiAttr = $("#condIndiAttr option:selected", tabObj).val();		//보고항목
+        var fisYear = $("#condFisYear option:selected", tabObj).val();			//회계년도
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();			//예산차수
+        var fisFgMstCd = $("#condFisFgMstCd option:selected", tabObj).val();	//회계구분마스터
+        var fisFgCd = $("#condFisFgCd option:selected", tabObj).val();			//회계구분서브
+        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
+        var deptRankFr = $("#condDeptRankFr", tabObj).val();
+        var deptRankTo = $("#condDeptRankTo", tabObj).val();
+        var amtUnit = $("#condAmtUnit", tabObj).val();
+        
+        var param = {
+                indiAttr : indiAttr,
+                fisYear : fisYear,
+                bgtDgr : bgtDgr,
+                fisFgMstCd : fisFgMstCd,
+                fisFgCd : fisFgCd,
+                officeCd : officeCd,
+                deptRankFr : deptRankFr,
+                deptRankTo : deptRankTo,
+                amtUnit : amtUnit
+         };
+        
+        $.extend(defaultSearchParam, param);
+        
+        return defaultSearchParam;
+    };
+    
+    //조회
+    var doSearch = function(){
+        
+    	var condIndiAttr = $("#condIndiAttr option:selected", tabObj).val();
+        if(isEmpty(condIndiAttr) == true){
+            $.csAlert({
+                msg : "보고항목을 선택하셔야 합니다.",
+                callBack : function() {
+                    $("#condIndiAttr", tabObj).focus();
+                }
+            });
+            
+            return;
+        }
+    	
+        var param = getSearchParam();
+        param["mayorReportYn"] = "N";
+        $.csAjaxCall({
+            url : "/report/ajaxReportWrite0F0Report0F0List.do",
+            data: param,
+            async : true,
+            callBack : doSearchCallBack
+        });
+    };
+    
+    //조회
+    $("#searchBtn", tabObj).click(function() {
+        defaultSearchParam.page = 1;
+        doSearch();
+    });
+
+    //초기화
+    var doCondInit = function(){
+        condIndiAttrCreateCombo('', '');
+        
+        $("#condFisYear", tabObj).csCreatCombo(comboData, {
+            id : 'fisYear',
+            groupId : 'ALL',
+            selectedValue : '',
+            comboType : '',
+            comboTypeValue : ''
+        });
+       
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        condBgtDgrCreateCombo(fisYear, '');
+        condFisFgMstCdCreateCombo(fisYear, 'T00');
+        
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        condOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
+        
+        var fisFgMstCd = $("#condFisFgMstCd option:selected", tabObj).val();
+        condFisFgCdCreateCombo(fisYear + '_' + fisFgMstCd, '');
+        
+        $("#condDeptCdFr", tabObj).val("");
+        $("#condDeptNmFr", tabObj).val("");
+        $("#condDeptRankFr", tabObj).val("");
+        $("#condDeptCdTo", tabObj).val("");
+        $("#condDeptNmTo", tabObj).val("");
+        $("#condDeptRankTo", tabObj).val("");
+        
+    };
+    
+    //조건초기화
+    $("#condInitBtn", tabObj).click(function() {
+        doCondInit();
+    });
+    
+    //저장할 데이터 가공
+    var getSaveDatas = function(gridObject, gridRows){
+        var saveDatas = [];
+        var saveData = {};
+        var rowId;
+        var rowData;
+        var demandCont = "";
+        var reflectFg = "";
+        var examCont = "";
+        var totFrscAmt1 = "";
+        var totFrscAmt2 = "";
+        var totFrscAmt3 = "";
+        var totFrscAmt4 = "";
+        var totFrscAmt5 = "";
+        var totFrscAmt6 = "";
+        var totCharAmt1 = "";
+        var totCharAmt2 = "";
+        var totCharAmt3 = "";
+        var preInvFrscAmt1 = "";
+        var preInvFrscAmt2 = "";
+        var preInvFrscAmt3 = "";
+        var preInvFrscAmt4 = "";
+        var preInvFrscAmt5 = "";
+        var preInvFrscAmt6 = "";
+        var preInvCharAmt1 = "";
+        var preInvCharAmt2 = "";
+        var preInvCharAmt3 = "";
+        var srchVal = "";
+        var reportSortSeq = "";
+        var mayorReportYn = "";
+        
+        for(var i = 0; i < gridRows.length; i++) {
+            rowId = gridRows[i].id;
+            rowData = gridObject.getRowData(rowId);
+            if(isEmpty(rowData.dgrcompoId) == false && rowData.teBgtCompoId != "00000000000"){
+                demandCont = $('#demandCont_'+rowId, tabObj).val().trim();
+                reportSortSeq = $('#reportSortSeq_'+rowId, tabObj).val().trim();
+                reflectFg = $('#reflectFg_'+rowId, tabObj).val();
+                examCont = $('#examCont_'+rowId, tabObj).val().trim();
+                
+                totFrscAmt1 = $('#totFrscAmt1_'+rowId, tabObj).val().replaceAll(",", "");
+                totFrscAmt2 = $('#totFrscAmt2_'+rowId, tabObj).val().replaceAll(",", "");
+                totFrscAmt3 = $('#totFrscAmt3_'+rowId, tabObj).val().replaceAll(",", "");
+                totFrscAmt4 = $('#totFrscAmt4_'+rowId, tabObj).val().replaceAll(",", "");
+                totFrscAmt5 = $('#totFrscAmt5_'+rowId, tabObj).val().replaceAll(",", "");
+                totFrscAmt6 = $('#totFrscAmt6_'+rowId, tabObj).val().replaceAll(",", "");
+                totCharAmt1 = $('#totCharAmt1_'+rowId, tabObj).val().replaceAll(",", "");
+                totCharAmt2 = $('#totCharAmt2_'+rowId, tabObj).val().replaceAll(",", "");
+                totCharAmt3 = $('#totCharAmt3_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt1 = $('#preInvFrscAmt1_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt2 = $('#preInvFrscAmt2_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt3 = $('#preInvFrscAmt3_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt4 = $('#preInvFrscAmt4_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt5 = $('#preInvFrscAmt5_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvFrscAmt6 = $('#preInvFrscAmt6_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvCharAmt1 = $('#preInvCharAmt1_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvCharAmt2 = $('#preInvCharAmt2_'+rowId, tabObj).val().replaceAll(",", "");
+                preInvCharAmt3 = $('#preInvCharAmt3_'+rowId, tabObj).val().replaceAll(",", "");
+                mayorReportYn = $('#mayorReportYn_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
+                
+                
+                if(rowData.demandCont != demandCont
+                        || rowData.reportSortSeq != reportSortSeq
+                        || rowData.reflectFg != reflectFg
+                        || rowData.examCont != examCont
+                        || rowData.mayorReportYn != mayorReportYn
+                        || rowData.totFrscAmt1 != totFrscAmt1
+                        || rowData.totFrscAmt2 != totFrscAmt2
+                        || rowData.totFrscAmt3 != totFrscAmt3
+                        || rowData.totFrscAmt4 != totFrscAmt4
+                        || rowData.totFrscAmt5 != totFrscAmt5
+                        || rowData.totFrscAmt6 != totFrscAmt6
+                        || rowData.totCharAmt1 != totCharAmt1
+                        || rowData.totCharAmt2 != totCharAmt2
+                        || rowData.totCharAmt3 != totCharAmt3
+                        || rowData.preInvFrscAmt1 != preInvFrscAmt1
+                        || rowData.preInvFrscAmt2 != preInvFrscAmt2
+                        || rowData.preInvFrscAmt3 != preInvFrscAmt3
+                        || rowData.preInvFrscAmt4 != preInvFrscAmt4
+                        || rowData.preInvFrscAmt5 != preInvFrscAmt5
+                        || rowData.preInvFrscAmt6 != preInvFrscAmt6
+                        || rowData.preInvCharAmt1 != preInvCharAmt1
+                        || rowData.preInvCharAmt2 != preInvCharAmt2
+                        || rowData.preInvCharAmt3 != preInvCharAmt3
+                        ){
+                    
+                    saveData = {};
+                    saveData["fisYear"] = rowData.fisYear;
+                    saveData["bgtDgr"] = rowData.bgtDgr;
+                    saveData["reportCd"] = rowData.reportCd;
+                    saveData["reportDetlCd"] = rowData.reportDetlCd;
+                    saveData["teBgtCompoId"] = rowData.teBgtCompoId;
+                    saveData["teBgtCompoSeq"] = rowData.teBgtCompoSeq;
+                    saveData["indiAttr"] = rowData.indiAttr;
+                    saveData["demandCont"] = demandCont;
+                    saveData["reportSortSeq"] = reportSortSeq;
+                    saveData["reflectFg"] = reflectFg;
+                    saveData["examCont"] = examCont;
+                    
+                    saveData["mayorReportYn"] = mayorReportYn;
+                    
+                    saveData["totFrscAmt1"] = totFrscAmt1;
+                    saveData["totFrscAmt2"] = totFrscAmt2;
+                    saveData["totFrscAmt3"] = totFrscAmt3;
+                    saveData["totFrscAmt4"] = totFrscAmt4;
+                    saveData["totFrscAmt5"] = totFrscAmt5;
+                    saveData["totFrscAmt6"] = totFrscAmt6;
+                    saveData["totCharAmt1"] = totCharAmt1;
+                    saveData["totCharAmt2"] = totCharAmt2;
+                    saveData["totCharAmt3"] = totCharAmt3;
+                    saveData["preInvFrscAmt1"] = preInvFrscAmt1;
+                    saveData["preInvFrscAmt2"] = preInvFrscAmt2;
+                    saveData["preInvFrscAmt3"] = preInvFrscAmt3;
+                    saveData["preInvFrscAmt4"] = preInvFrscAmt4;
+                    saveData["preInvFrscAmt5"] = preInvFrscAmt5;
+                    saveData["preInvFrscAmt6"] = preInvFrscAmt6;
+                    saveData["preInvCharAmt1"] = preInvCharAmt1;
+                    saveData["preInvCharAmt2"] = preInvCharAmt2;
+                    saveData["preInvCharAmt3"] = preInvCharAmt3; 
+                    
+                    saveDatas.push(saveData);
+                }
+            }
+        }
+        
+        return saveDatas;
+    };
+
+    //저장후
+    var doSaveCallBack = function(data){
+        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+            $.csAlert({
+                msg : data.bcjisMessage
+            });
+            
+            return;
+        }
+        
+        $.csAlert({
+            msg : data.bcjisMessage,
+            callBack : function() {
+                doSearch();
+            }
+        });
+    };
+    
+    //저장
+    var doSave = function(params){
+        if(params.confirmData != "Y"){
+            return;
+        }
+        
+        var saveDatas = getSaveDatas(reportWrite0F0PageGrid, $("#REPORT_WRITE0F0PAGE_GRD", tabObj)[0].rows);
+        if(isEmpty(saveDatas) == true || saveDatas.length < 1){
+            $.csAlert({
+                msg : "변경된 자료가 존재하지 않습니다."
+            });
+            
+            return;
+        }
+        
+        $.csAjaxCall({
+            url : "/report/ajaxReportWrite0F0SaveReport0F0.do",
+            data : {saveDatas: saveDatas,
+                    amtUnit:$("#condAmtUnit", tabObj).val()
+            },
+            async : true,
+            callBack : doSaveCallBack
+        });
+    };
+    
+    //저장버튼
+    $("#saveBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+        
+        $.csConfirm({
+            msg : "저장하시겠습니까?",
+            callBack : doSave
+        });
+    });
+    
+    //파일저장버튼
+    $("#saveFileBtn", tabObj).click(function() {
+        
+    	var condIndiAttr = $("#condIndiAttr option:selected", tabObj).val();
+    	var condIndiAttrNm = $("#condIndiAttr option:selected", tabObj).text();
+        if(isEmpty(condIndiAttr) == true){
+            $.csAlert({
+                msg : "보고항목을 선택하셔야 합니다.",
+                callBack : function() {
+                    $("#condIndiAttr", tabObj).focus();
+                }
+            });
+            
+            return;
+        }
+    	
+    	var param = getSearchParam();
+        param["mayorReportYn"] = "N";
+        param["fileNm"] = "보고항목";
+        param["indiAttrNm"] = condIndiAttrNm;
+        param["amtUnit"] = "1000000";
+        
+        $.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite0F0SaveFile.do"
+          , data: param
+        });
+    });
+    
+  //파일저장버튼
+    $("#saveFileBtn2", tabObj).click(function() {
+        
+    	var condIndiAttr = $("#condIndiAttr option:selected", tabObj).val();
+    	var condIndiAttrNm = $("#condIndiAttr option:selected", tabObj).text();
+        if(isEmpty(condIndiAttr) == true){
+            $.csAlert({
+                msg : "보고항목을 선택하셔야 합니다.",
+                callBack : function() {
+                    $("#condIndiAttr", tabObj).focus();
+                }
+            });
+            
+            return;
+        }
+    	
+    	var param = getSearchParam();
+        param["mayorReportYn"] = "Y";
+        param["fileNm"] = "보고항목";
+        param["indiAttrNm"] = condIndiAttrNm;
+        param["amtUnit"] = "1000000";
+        
+        $.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite0F0SaveFile.do"
+          , data: param
+        });
+    });
+    
+    
+    //회계구분 수정이벤트
+    var doChageCondFisFgMstCd = function(){
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var fisFgMstCd = $("#condFisFgMstCd option:selected", tabObj).val();
+        condFisFgCdCreateCombo(fisYear + '_' + fisFgMstCd, '');	//회계구분 재구성
+    };
+    
+    //회계년도 변경
+    var doChangeCondFisYear = function(){
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        condBgtDgrCreateCombo(fisYear, '');
+        doChageCondBgtDgr();
+    };
+    
+    //예산차수 변경
+    var doChageCondBgtDgr = function(){
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        condOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
+        doChangeCondOfficeCd();
+    };
+    
+    //실국 변경
+    var doChangeCondOfficeCd = function(){
+        $("#condDeptCdFr", tabObj).val("");
+        $("#condDeptNmFr", tabObj).val("");
+        $("#condDeptRankFr", tabObj).val("");
+        $("#condDeptCdTo", tabObj).val("");
+        $("#condDeptNmTo", tabObj).val("");
+        $("#condDeptRankTo", tabObj).val("");
+    };
+    
+    //회계년도 변경이벤트
+    $("#condFisYear", tabObj).change(function(){
+        doChangeCondFisYear();
+    });
+    
+    //예산차수 변경 이벤트
+    $("#condBgtDgr", tabObj).change(function(){
+        doChageCondBgtDgr();
+    });
+        
+    //실국 변경 이벤트
+    $("#condOfficeCd", tabObj).change(function(){
+        doChangeCondOfficeCd();
+    });
+    
+  //회계구분 변경 이벤트
+    $("#condFisFgMstCd", tabObj).change(function(){
+        doChageCondFisFgMstCd();
+    });
+    
+  //부서 dialog
+    var openDialogBgtDeptSelt = function(seltFg){
+
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
+        
+        $("#dialogDgrDeptSeltCallBackFunction", $("#dialogDgrDeptSeltDiv")).val("reportWrite020PageDialogDgrDeptSeltCallBack");
+        $("#dialogDgrDeptSeltFisYear", $("#dialogDgrDeptSeltDiv")).val(fisYear);
+        $("#dialogDgrDeptSeltBgtDgr", $("#dialogDgrDeptSeltDiv")).val(bgtDgr);
+        $("#dialogDgrDeptSeltOfficeCd", $("#dialogDgrDeptSeltDiv")).val(officeCd);
+        $("#dialogDgrDeptSeltSeltFg", $("#dialogDgrDeptSeltDiv")).val(seltFg);
+        $("#dialogDgrDeptSeltReportCd", $("#dialogDgrDeptSeltDiv")).val("020");
+        $("#dialogDgrDeptSeltUserDeptYn", $("#dialogDgrDeptSeltDiv")).val("");
+        
+        $("#dialogDgrDeptSeltDiv").dialog('open');
+    };
+    
+    //부서 dialog
+    reportWrite020PageDialogDgrDeptSeltCallBack = function(param){
+        if($("#dialogDgrDeptSeltSeltFg", $("#dialogDgrDeptSeltDiv")).val() == 1){
+            $("#condDeptCdFr", tabObj).val(param.deptCd);
+            $("#condDeptNmFr", tabObj).val(param.deptNm);
+            $("#condDeptRankFr", tabObj).val(param.deptRank);
+            $("#condDeptCdTo", tabObj).val(param.deptCd);
+            $("#condDeptNmTo", tabObj).val(param.deptNm);
+            $("#condDeptRankTo", tabObj).val(param.deptRank);
+        }else{
+            $("#condDeptCdTo", tabObj).val(param.deptCd);
+            $("#condDeptNmTo", tabObj).val(param.deptNm);
+            $("#condDeptRankTo", tabObj).val(param.deptRank);
+        }
+    };
+    
+    //부서 조회 선택
+    $("#openDialogBgtDeptBtnFr", tabObj).click(function(){
+        openDialogBgtDeptSelt(1);
+    });
+    
+    $("#openDialogBgtDeptBtnTo", tabObj).click(function(){
+        openDialogBgtDeptSelt(2);
+    });
+
+    //통계목 건수 변경 이벤트
+    $("#condRowNum", tabObj).change(function() {
+        defaultSearchParam.rowNum = $("#condRowNum option:selected", tabObj).val();
+        defaultSearchParam.page = 1;
+        
+        $("#searchBtn", tabObj).click();
+    });
+
+    var comboParam = [
+					  {id : "reportCd", codeId : "RP011"},			//중분류
+					  {id : "reportMstr", codeId : "RP010"},		//대분류
+					  {id : "reportDetlCd", codeId : "RP012"},		//소분류
+					  {id : "indiAttr", codeId : "RP014"},			//보고항목
+                      {id : "fisYear", subQueryId : "FisYear"},		//회계년도
+                      {id : "bgtDgr", subQueryId : "BgtDgr"},		//예산차수
+                      {id : "officeCd", subQueryId : "OfficeCd", reportCd: "020"},	//실국
+                      {id : "reflectFg", codeId : "RP003"},			//반영, 미반영
+                      {id : "rowNum", codeId : "CC001"},			//통계목건수
+                      {id : "frscFgCd", subQueryId : "FrscFgCd"},		//재원구분
+                      {id : "fisFgMstCd", subQueryId : "FisFgMstCd"},	//회계구분 마스터
+                      {id : "fisFgCd", subQueryId : "FisFgCd"}			//회계구분 서브
+                    ];
+
+    var comboData = jQuery.csComboAjaxCall(comboParam);
+        
+    //보고항목
+    var condIndiAttrCreateCombo = function(groupId, selectedValue){
+        $("#condIndiAttr", tabObj).csCreatCombo(comboData
+                , {id: 'indiAttr'
+                  , groupId: 'ALL'
+                  , selectedValue: selectedValue
+                  , comboType: 'S'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    //예산차수
+    var condBgtDgrCreateCombo = function(groupId, selectedValue){
+        $("#condBgtDgr", tabObj).csCreatCombo(comboData
+                , {id: 'bgtDgr'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: ''
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    //회계구분 마스터
+    var condFisFgMstCdCreateCombo = function(groupId, selectedValue){
+    	 $("#condFisFgMstCd", tabObj).csCreatCombo(comboData
+                 , {id: 'fisFgMstCd'
+                   , groupId: groupId
+                   , selectedValue: selectedValue
+                   , comboType: 'A'
+                   , comboTypeValue: ''
+                   , beforeAdd : [{groupId: groupId, code: 'T00', codeNm: "전체(기금제외)"}]
+                   }
+         );
+    };
+    
+    //회계구분 서브
+    var condFisFgCdCreateCombo = function(groupId, selectedValue){
+        $("#condFisFgCd", tabObj).csCreatCombo(comboData
+                , {id: 'fisFgCd'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: 'A'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    //실국
+    var condOfficeCdCreateCombo = function(groupId, selectedValue){
+        $("#condOfficeCd", tabObj).csCreatCombo(comboData
+                , {id: 'officeCd'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: 'A'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    //반영, 미반영, 조정반영
+    var reflectFgCreateCombo = function(groupId, selectedValue){
+        return getCsComboStr(comboData
+                , {id: 'reflectFg'
+                    , groupId: groupId
+                    , selectedValue: selectedValue
+                    , comboType: 'S'
+                    , comboTypeValue: ''
+                    });
+    };
+    
+    //통계목 건수
+    $("#condRowNum", tabObj).csCreatCombo(comboData, {
+        id : 'rowNum',
+        groupId : 'ALL',
+        selectedValue : '3',
+        comboType : '',
+        comboTypeValue : ''
+    });
+    
+    doCondInit();
+});

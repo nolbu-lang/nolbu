@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ReportWrite002">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="ReportWrite002.selectReport002SheetList" parameterClass="Map" resultClass="egovMap" >        
+        /*ReportWrite002.selectReport002SheetList*/
+        SELECT T.*
+             , NVL(T.REPORT_NAMES, '') || DECODE(NVL(T.SHEET_NAMES, ''), '', '', DECODE(NVL(T.REPORT_NAMES, ''), '', NVL(T.SHEET_NAMES, ''), ', ' || NVL(T.SHEET_NAMES, ''))) AS COL73
+             , NVL(T.SRCH_VALES010, '') || DECODE(NVL(T.SRCH_VALES020, ''), '', '', DECODE(NVL(T.SRCH_VALES010, ''), '', NVL(T.SRCH_VALES020, ''), ' ' || NVL(T.SRCH_VALES020, ''))) AS COL74
+             , DECODE(T.E00, 0, 'E00,', '') 
+               || DECODE(T.E10, 0, 'E10,', '') 
+               || DECODE(T.E11, 1, '', 'E11,') 
+               || DECODE(T.E12, 0, 'E12,', '')
+               || CASE WHEN T.RE13 = 0 OR T.SE13 = 0 THEN 'E13,' ELSE '' END 
+               || CASE WHEN V110 > 0 AND FIS_FG_MST_CD = '100' AND R031 = 'N' THEN 'E20,' ELSE '' END 
+               || CASE WHEN V120 > 0 AND FIS_FG_MST_CD = '100' AND R032 = 'N' THEN 'E21,' ELSE '' END 
+               || CASE WHEN V130 > 0 AND FIS_FG_MST_CD = '100' AND R033 = 'N' THEN 'E22,' ELSE '' END 
+               || CASE WHEN V110 > 0 AND FIS_FG_MST_CD = '200' AND R034 = 'N' THEN 'E23,' ELSE '' END 
+               || CASE WHEN V120 > 0 AND FIS_FG_MST_CD = '200' AND R034 = 'N' THEN 'E24,' ELSE '' END 
+               || CASE WHEN V130 > 0 AND FIS_FG_MST_CD = '200' AND R034 = 'N' THEN 'E25,' ELSE '' END 
+               || CASE WHEN V140 > 0 AND STA3 = 'N' THEN 'E26,' ELSE '' END 
+               || CASE WHEN V150 > 0 AND STA5 = 'N' THEN 'E27,' ELSE '' END 
+               || CASE WHEN R031 = 'Y'AND FIS_FG_MST_CD = '100' AND V110 = 0 THEN 'E30,' ELSE '' END 
+               || CASE WHEN R032 = 'Y'AND FIS_FG_MST_CD = '100' AND V120 = 0 THEN 'E31,' ELSE '' END 
+               || CASE WHEN R033 = 'Y'AND FIS_FG_MST_CD = '100' AND V130 = 0 THEN 'E32,' ELSE '' END 
+               || CASE WHEN R034 = 'Y'AND FIS_FG_MST_CD = '200' AND V110 = 0 THEN 'E33,' ELSE '' END 
+               || CASE WHEN R034 = 'Y'AND FIS_FG_MST_CD = '200' AND V120 = 0 THEN 'E34,' ELSE '' END 
+               || CASE WHEN R034 = 'Y'AND FIS_FG_MST_CD = '200' AND V130 = 0 THEN 'E35,' ELSE '' END 
+               || CASE WHEN STA3 = 'Y' AND V140 = 0 THEN 'E36,' ELSE '' END 
+               || CASE WHEN STA5 = 'Y' AND V150 = 0 THEN 'E37,' ELSE '' END 
+                AS COL79
+          FROM (
+                SELECT A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , C.FIS_FG_CD AS FIS_FG_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , E.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.OFFICE_CD FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS OFFICE_CD
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                     , NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') AS DBIZ_NM
+                     , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS COL0
+                     , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS COL1
+                     , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = C.FIS_YEAR AND Z.FIS_FG_CD = C.FIS_FG_CD AND ROWNUM = 1), '') AS COL2
+                     , NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') AS COL3
+                     , DECODE(A.TE_MNG_MOK_CD, NULL, '', '00000', '', SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4)) AS COL4
+                     , NVL((SELECT Z.TE_MNG_MOK_NM FROM TB_DGRTEMNGMOK Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD AND ROWNUM = 1), '') AS COL5
+                     , NVL((SELECT Z.SYMBOL FROM TB_DGRCOMPOSYMBOL Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.COMPO_LEVEL = A.COMPO_LEVEL AND SYMBOL_LENGTH > 0), '')
+                       || A.COMP_GROUND AS COL6
+                     , NVL((SELECT Z.SECT_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') AS COL7
+                     , NVL((SELECT Z.FLD_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') AS COL8
+                     , CAST((A.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL9
+                     , CAST((NVL(Z.COL10, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL10
+                     , CAST((NVL(Z.COL11, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL11
+                     , CAST((NVL(Z.COL12, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL12
+                     , CAST((NVL(Z.COL13, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL13
+                     , CAST((NVL(Z.COL14, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL14
+                     , CAST((NVL(Z.COL15, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL15
+                     , CAST((NVL(Z.COL16, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL16
+                     , CAST((NVL(Z.COL17, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL17
+                     , CAST((A.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL18
+                     , CAST((NVL(Z.COL19, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL19
+                     , CAST((NVL(Z.COL20, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL20
+                     , CAST((NVL(Z.COL21, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL21
+                     , CAST((NVL(Z.COL22, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL22
+                     , CAST((NVL(Z.COL23, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL23
+                     , CAST((NVL(Z.COL24, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL24
+                     , CAST((NVL(Z.COL25, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL25
+                     , CAST((NVL(Z.COL26, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL26
+                     , A.DEMAND_COMP_FORMULAR AS COL27
+                     , CAST((A.DEMAND_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL28
+                     , CAST((A.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL29
+                     , CAST((NVL(Z.COL30, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL30
+                     , CAST((NVL(Z.COL31, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL31
+                     , CAST((NVL(Z.COL32, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL32
+                     , CAST((NVL(Z.COL33, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL33
+                     , CAST((NVL(Z.COL34, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL34
+                     , CAST((NVL(Z.COL35, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL35
+                     , CAST((NVL(Z.COL36, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL36
+                     , CAST((NVL(Z.COL37, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL37
+                     , CAST((NVL(Z.COL38, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL38
+                     , A.COMP_FORMULAR AS COL39
+                     , CAST((A.BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL40
+                     , CAST((A.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL41
+                     , CAST((NVL(Z.COL42, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL42
+                     , CAST((NVL(Z.COL43, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL43
+                     , CAST((NVL(Z.COL44, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL44
+                     , CAST((NVL(Z.COL45, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL45
+                     , CAST((NVL(Z.COL46, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL46
+                     , CAST((NVL(Z.COL47, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL47
+                     , CAST((NVL(Z.COL48, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL48
+                     , CAST((NVL(Z.COL49, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL49
+                     , CAST((NVL(Z.COL50, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL50
+                     , CAST(((NVL(D.TOT_FRSC_AMT1, 0) + NVL(D.TOT_FRSC_AMT2, 0) + NVL(D.TOT_FRSC_AMT3, 0) + NVL(D.TOT_FRSC_AMT4, 0) + NVL(D.TOT_FRSC_AMT5, 0) + NVL(D.TOT_FRSC_AMT6, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL51
+                     , CAST((NVL(D.TOT_FRSC_AMT1, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL52
+                     , CAST((NVL(D.TOT_FRSC_AMT2, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL53
+                     , CAST((NVL(D.TOT_FRSC_AMT3, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL54
+                     , CAST((NVL(D.TOT_FRSC_AMT4, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL55
+                     , CAST((NVL(D.TOT_FRSC_AMT5, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL56
+                     , CAST((NVL(D.TOT_FRSC_AMT6, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL57
+                     , CAST(((NVL(D.PRE_INV_FRSC_AMT1, 0) + NVL(D.PRE_INV_FRSC_AMT2, 0) + NVL(D.PRE_INV_FRSC_AMT3, 0) + NVL(D.PRE_INV_FRSC_AMT4, 0) + NVL(D.PRE_INV_FRSC_AMT5, 0) + NVL(D.PRE_INV_FRSC_AMT6, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL58
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT1, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL59
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT2, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL60
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT3, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL61
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT4, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL62
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT5, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL63
+                     , CAST((NVL(D.PRE_INV_FRSC_AMT6, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL64
+                     , CAST(((Z.COL66 + Z.COL67 + Z.COL68 + Z.COL69 + Z.COL70 + Z.COL71)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL65
+                     , CAST((NVL(Z.COL66, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL66
+                     , CAST((NVL(Z.COL67, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL67
+                     , CAST((NVL(Z.COL68, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL68
+                     , CAST((NVL(Z.COL69, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL69
+                     , CAST((NVL(Z.COL70, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL70
+                     , CAST((NVL(Z.COL71, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS COL71
+                     , DECODE(D.REPORT_SORT_SEQ, NULL, '', TO_CHAR(D.REPORT_SORT_SEQ)) AS COL72
+                     , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ', ') AS SHEET_NAMES
+                             FROM TB_REPORT Z1
+                                , TB_COMMCDDETL Z2
+                            WHERE 1 = 1
+                              AND Z2.DETL_CD = Z1.REPORT_DETL_CD
+                              AND Z2.CL_CD = 'RP002'
+                              AND Z1.FIS_YEAR = A.FIS_YEAR 
+                              AND Z1.BGT_DGR = A.BGT_DGR 
+                              AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                            ORDER BY Z2.LINE_UP_ORD 
+                           )
+                       , '') AS REPORT_NAMES
+                     , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ', ') AS SHEET_NAMES
+                             FROM TB_SHEET Z1
+                                , TB_COMMCDDETL Z2
+                            WHERE 1 = 1
+                              AND Z2.DETL_CD = Z1.SHEET_DETL_CD
+                              AND Z2.CL_CD = 'RT002'
+                              AND Z1.FIS_YEAR = A.FIS_YEAR 
+                              AND Z1.BGT_DGR = A.BGT_DGR 
+                              AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                            ORDER BY Z2.LINE_UP_ORD 
+                           )
+                       , '') AS SHEET_NAMES
+                     , NVL((SELECT GROUP_CONCAT(Z.SRCH_VAL SEPARATOR ', ') AS SHEET_NAMES
+                             FROM TB_REPORT010 Z
+                            WHERE 1 = 1
+                              AND Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR 
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                           )
+                       , '') AS SRCH_VALES010
+                     , NVL((SELECT GROUP_CONCAT(Z.SRCH_VAL SEPARATOR ', ') AS SHEET_NAMES
+                             FROM TB_REPORT020 Z
+                            WHERE 1 = 1
+                              AND Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR 
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                           )
+                       , '') AS SRCH_VALES020
+                     , A.COMPO_LEVEL AS COL75
+                     , NVL((SELECT Z2.DETL_CD_NM 
+                              FROM TB_REPORT010 Z1 
+                                 , TB_COMMCDDETL Z2 
+                             WHERE Z2.CL_CD = 'RP003' 
+                               AND Z2.DETL_CD = Z1.REFLECT_FG
+                               AND Z1.FIS_YEAR = A.FIS_YEAR 
+                               AND Z1.BGT_DGR = A.BGT_DGR 
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND ROWNUM = 1), '') AS COL76
+                     , NVL((SELECT Z2.DETL_CD_NM 
+                              FROM TB_REPORT020 Z1 
+                                 , TB_COMMCDDETL Z2 
+                             WHERE Z2.CL_CD = 'RP003' 
+                               AND Z2.DETL_CD = Z1.REFLECT_FG
+                               AND Z1.FIS_YEAR = A.FIS_YEAR 
+                               AND Z1.BGT_DGR = A.BGT_DGR 
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND ROWNUM = 1), '') AS COL77
+                     , NVL((SELECT GROUP_CONCAT(Z4.PLEDGE_BIZ_FG || '-' || Z3.PLEDGE_BIZ_FG || '-' || Z2.PLEDGE_BIZ_FG SEPARATOR ', ') AS PLEDGE_FGS
+                             FROM TB_PLEDGE Z1
+                                , TB_PLEDGEBIZ Z2
+                                , TB_PLEDGEBIZ Z3
+                                , TB_PLEDGEBIZ Z4
+                            WHERE 1 = 1
+                              AND Z4.PLEDGE_BIZ_ID = Z3.UP_PLEDGE_BIZ_ID
+                              AND Z3.PLEDGE_BIZ_ID = Z2.UP_PLEDGE_BIZ_ID
+                              AND Z2.PLEDGE_BIZ_ID = Z1.PLEDGE_BIZ_ID
+                              AND Z1.FIS_YEAR = A.FIS_YEAR 
+                              AND Z1.BGT_DGR = A.BGT_DGR 
+                              AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                            ORDER BY Z4.PLEDGE_BIZ_SEQ, Z3.PLEDGE_BIZ_SEQ, Z2.PLEDGE_BIZ_SEQ
+                           )
+                       , '') AS COL78
+                     , NVL((SELECT COUNT(1) 
+                              FROM TB_REPORT Z1 
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR 
+                               AND Z1.BGT_DGR = A.BGT_DGR 
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                       ), 0)
+                       + NVL((SELECT COUNT(1) 
+                                FROM TB_SHEET Z1 
+                               WHERE 1 = 1
+                                 AND Z1.FIS_YEAR = A.FIS_YEAR 
+                                 AND Z1.BGT_DGR = A.BGT_DGR 
+                                 AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                       ), 0) AS E00
+                     , NVL((SELECT SUM(DECODE(Z1.VERI_CL_CD, 'RP002', DECODE(Z2.FIS_YEAR, NULL, 0, 1), DECODE(Z3.FIS_YEAR, NULL, 0, 1))) 
+                              FROM TB_DGRTEMNGMOKVERI Z1
+                                 , (SELECT ZZ2.FIS_YEAR
+                                         , ZZ2.BGT_DGR
+                                         , ZZ2.REPORT_DETL_CD
+                                      FROM TB_REPORT ZZ2
+                                     WHERE 1 = 1
+                                       AND ZZ2.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ2.BGT_DGR = A.BGT_DGR
+                                       AND ZZ2.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z2
+                                 , (SELECT ZZ3.FIS_YEAR
+                                         , ZZ3.BGT_DGR
+                                         , ZZ3.SHEET_DETL_CD
+                                      FROM TB_SHEET ZZ3
+                                     WHERE 1 = 1
+                                       AND ZZ3.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ3.BGT_DGR = A.BGT_DGR
+                                       AND ZZ3.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z3
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = Z2.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z2.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z2.REPORT_DETL_CD(+)
+                               AND Z1.FIS_YEAR = Z3.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z3.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z3.SHEET_DETL_CD(+)
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD
+                               AND Z1.VERI_FG = '010'
+                       ), 1) AS E10
+                     , NVL((SELECT SUM(DECODE(Z1.VERI_CL_CD, 'RP002', DECODE(Z2.FIS_YEAR, NULL, 0, 1), DECODE(Z3.FIS_YEAR, NULL, 0, 1))) 
+                              FROM TB_DGRTEMNGMOKVERI Z1
+                                 , (SELECT ZZ2.FIS_YEAR
+                                         , ZZ2.BGT_DGR
+                                         , ZZ2.REPORT_DETL_CD
+                                      FROM TB_REPORT ZZ2
+                                     WHERE 1 = 1
+                                       AND ZZ2.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ2.BGT_DGR = A.BGT_DGR
+                                       AND ZZ2.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z2
+                                 , (SELECT ZZ3.FIS_YEAR
+                                         , ZZ3.BGT_DGR
+                                         , ZZ3.SHEET_DETL_CD
+                                      FROM TB_SHEET ZZ3
+                                     WHERE 1 = 1
+                                       AND ZZ3.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ3.BGT_DGR = A.BGT_DGR
+                                       AND ZZ3.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z3
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = Z2.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z2.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z2.REPORT_DETL_CD(+)
+                               AND Z1.FIS_YEAR = Z3.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z3.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z3.SHEET_DETL_CD(+)
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD
+                               AND Z1.VERI_FG = '020'
+                       ), 1) AS E11
+                     , NVL((SELECT SUM(DECODE(Z1.VERI_CL_CD, 'RP002', DECODE(Z2.FIS_YEAR, NULL, 0, 1), DECODE(Z3.FIS_YEAR, NULL, 0, 1))) 
+                              FROM TB_DGRTEMNGMOKVERI Z1
+                                 , (SELECT ZZ2.FIS_YEAR
+                                         , ZZ2.BGT_DGR
+                                         , ZZ2.REPORT_DETL_CD
+                                      FROM TB_REPORT ZZ2
+                                     WHERE 1 = 1
+                                       AND ZZ2.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ2.BGT_DGR = A.BGT_DGR
+                                       AND ZZ2.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z2
+                                 , (SELECT ZZ3.FIS_YEAR
+                                         , ZZ3.BGT_DGR
+                                         , ZZ3.SHEET_DETL_CD
+                                      FROM TB_SHEET ZZ3
+                                     WHERE 1 = 1
+                                       AND ZZ3.FIS_YEAR = A.FIS_YEAR
+                                       AND ZZ3.BGT_DGR = A.BGT_DGR
+                                       AND ZZ3.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                   ) Z3
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = Z2.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z2.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z2.REPORT_DETL_CD(+)
+                               AND Z1.FIS_YEAR = Z3.FIS_YEAR(+)
+                               AND Z1.BGT_DGR = Z3.BGT_DGR(+)
+                               AND Z1.VERI_DETL_CD = Z3.SHEET_DETL_CD(+)
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD
+                               AND Z1.VERI_FG = '030'
+                       ), 1) AS E12
+                     , NVL((SELECT SUM(DECODE(A.TE_MNG_MOK_CD, Z1.TE_MNG_MOK_CD, 1, 0))
+                              FROM TB_DGRTEMNGMOKVERI Z1
+                                 , TB_REPORT Z2
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = Z2.FIS_YEAR
+                               AND Z1.BGT_DGR = Z2.BGT_DGR
+                               AND Z1.VERI_DETL_CD = Z2.REPORT_DETL_CD
+                               AND Z1.VERI_FG = '040'
+                               AND Z2.FIS_YEAR = A.FIS_YEAR
+                               AND Z2.BGT_DGR = A.BGT_DGR
+                               AND Z2.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                       ), 1) AS RE13
+                     , NVL((SELECT SUM(DECODE(A.TE_MNG_MOK_CD, Z1.TE_MNG_MOK_CD, 1, 0))
+                              FROM TB_DGRTEMNGMOKVERI Z1
+                                 , TB_SHEET Z2
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = Z2.FIS_YEAR
+                               AND Z1.BGT_DGR = Z2.BGT_DGR
+                               AND Z1.VERI_DETL_CD = Z2.SHEET_DETL_CD
+                               AND Z1.VERI_FG = '040'
+                               AND Z2.FIS_YEAR = A.FIS_YEAR
+                               AND Z2.BGT_DGR = A.BGT_DGR
+                               AND Z2.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                       ), 1) AS SE13
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD = '030'
+                               AND Z1.REPORT_DETL_CD = '031'
+                       ), 'N') AS R031
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD = '030'
+                               AND Z1.REPORT_DETL_CD = '032'
+                       ), 'N') AS R032
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD = '030'
+                               AND Z1.REPORT_DETL_CD = '033'
+                       ), 'N') AS R033
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD = '030'
+                               AND Z1.REPORT_DETL_CD = '034'
+                       ), 'N') AS R034
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_SHEET Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.SHEET_CD = 'TA0'
+                               AND Z1.SHEET_DETL_CD = 'TA3'
+                       ), 'N') AS STA3
+                     , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                              FROM TB_SHEET Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.SHEET_CD = 'TA0'
+                               AND Z1.SHEET_DETL_CD = 'TA5'
+                       ), 'N') AS STA5
+                     , V110 AS V110
+                     , V120 AS V120
+                     , V130 AS V130
+                     , V140 AS V140
+                     , V150 AS V150
+                  FROM TB_DGRCOMPO A
+                     , TB_DGRBIZ C
+                     , TB_REPORT020 D
+                     , TB_DGRBIZ E
+                     , TB_YEARFISFG F
+                     , (
+                        SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , A.TE_BGT_COMPO_ID
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL10
+                             , SUM(DECODE(C.STAND_FRSC_CD, '120', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL11
+                             , SUM(DECODE(C.STAND_FRSC_CD, '130', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL12
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL13
+                             , SUM(DECODE(C.STAND_FRSC_CD, '150', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL14
+                             , SUM(DECODE(C.STAND_FRSC_CD, '160', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL15
+                             , SUM(DECODE(C.STAND_FRSC_CD, '180', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL16
+                             , SUM(DECODE(C.STAND_FRSC_CD, '210', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL17
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL19
+                             , SUM(DECODE(C.STAND_FRSC_CD, '120', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL20
+                             , SUM(DECODE(C.STAND_FRSC_CD, '130', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL21
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL22
+                             , SUM(DECODE(C.STAND_FRSC_CD, '150', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL23
+                             , SUM(DECODE(C.STAND_FRSC_CD, '160', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL24
+                             , SUM(DECODE(C.STAND_FRSC_CD, '180', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL25
+                             , SUM(DECODE(C.STAND_FRSC_CD, '210', NVL(B.PRE_DEF_FRSC_AMT, 0), 0)) AS COL26
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL30
+                             , SUM(DECODE(C.STAND_FRSC_CD, '120', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL31
+                             , SUM(DECODE(C.STAND_FRSC_CD, '130', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL32
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL33
+                             , SUM(DECODE(C.STAND_FRSC_CD, '150', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL34
+                             , SUM(DECODE(C.STAND_FRSC_CD, '160', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL35
+                             , SUM(DECODE(C.STAND_FRSC_CD, '180', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL36
+                             , SUM(DECODE(C.STAND_FRSC_CD, '210', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL37
+                             , SUM(DECODE(C.STAND_FRSC_CD, '190', NVL(B.DMN_DEF_FRSC_AMT, 0), 0)) AS COL38
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL42
+                             , SUM(DECODE(C.STAND_FRSC_CD, '120', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL43
+                             , SUM(DECODE(C.STAND_FRSC_CD, '130', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL44
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL45
+                             , SUM(DECODE(C.STAND_FRSC_CD, '150', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL46
+                             , SUM(DECODE(C.STAND_FRSC_CD, '160', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL47
+                             , SUM(DECODE(C.STAND_FRSC_CD, '180', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL48
+                             , SUM(DECODE(C.STAND_FRSC_CD, '210', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL49
+                             , SUM(DECODE(C.STAND_FRSC_CD, '190', NVL(B.ADJ_DEF_FRSC_AMT, 0), 0)) AS COL50
+                             , SUM(DECODE(C.STAND_FRSC_CD, '160', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL66
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', NVL(B.PRE_FRSC_AMT, 0), '120', NVL(B.PRE_FRSC_AMT, 0), '130', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL67
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', NVL(B.PRE_FRSC_AMT, 0), '150', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL68
+                             , SUM(DECODE(C.STAND_FRSC_CD, '180', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL69
+                             , SUM(DECODE(C.STAND_FRSC_CD, '190', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL70
+                             , SUM(DECODE(C.STAND_FRSC_CD, '170', NVL(B.PRE_FRSC_AMT, 0), '200', NVL(B.PRE_FRSC_AMT, 0), '210', NVL(B.PRE_FRSC_AMT, 0), 0)) AS COL71
+                             , SUM(DECODE(C.STAND_FRSC_CD, '110', DECODE(NVL(B.PRE_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '110', DECODE(NVL(B.PRE_DEF_FRSC_AMT, 0), 0, 0, 1), 0)) 
+                               + SUM(DECODE(C.STAND_FRSC_CD, '110', DECODE(NVL(B.DMN_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '110', DECODE(NVL(B.ADJ_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               AS V110
+                             , SUM(DECODE(C.STAND_FRSC_CD, '120', DECODE(NVL(B.PRE_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '120', DECODE(NVL(B.PRE_DEF_FRSC_AMT, 0), 0, 0, 1), 0)) 
+                               + SUM(DECODE(C.STAND_FRSC_CD, '120', DECODE(NVL(B.DMN_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '120', DECODE(NVL(B.ADJ_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               AS V120
+                             , SUM(DECODE(C.STAND_FRSC_CD, '130', DECODE(NVL(B.PRE_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '130', DECODE(NVL(B.PRE_DEF_FRSC_AMT, 0), 0, 0, 1), 0)) 
+                               + SUM(DECODE(C.STAND_FRSC_CD, '130', DECODE(NVL(B.DMN_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '130', DECODE(NVL(B.ADJ_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               AS V130
+                             , SUM(DECODE(C.STAND_FRSC_CD, '140', DECODE(NVL(B.PRE_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '140', DECODE(NVL(B.PRE_DEF_FRSC_AMT, 0), 0, 0, 1), 0)) 
+                               + SUM(DECODE(C.STAND_FRSC_CD, '140', DECODE(NVL(B.DMN_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '140', DECODE(NVL(B.ADJ_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               AS V140
+                             , SUM(DECODE(C.STAND_FRSC_CD, '150', DECODE(NVL(B.PRE_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '150', DECODE(NVL(B.PRE_DEF_FRSC_AMT, 0), 0, 0, 1), 0)) 
+                               + SUM(DECODE(C.STAND_FRSC_CD, '150', DECODE(NVL(B.DMN_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               + SUM(DECODE(C.STAND_FRSC_CD, '150', DECODE(NVL(B.ADJ_DEF_FRSC_AMT, 0), 0, 0, 1), 0))
+                               AS V150
+                          FROM TB_DGRCOMPO A
+                             , TB_DGRCOMPOFRSC B
+                             , TB_YEARFRSC C
+                             , TB_DGRDEPT D
+                         WHERE 1 = 1
+                           AND C.FIS_YEAR = B.FIS_YEAR
+                           AND C.FRSC_FG_CD = B.FRSC_FG_CD
+                           AND D.FIS_YEAR = A.FIS_YEAR
+                           AND D.BGT_DGR = A.BGT_DGR
+                           AND D.DEPT_CD = A.DEPT_CD
+                           AND B.FIS_YEAR = A.FIS_YEAR
+                           AND B.BGT_DGR = A.BGT_DGR
+                           AND B.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                           AND A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                         <isNotEmpty prepend="" property="officeCd">
+                           AND D.OFFICE_CD = #officeCd#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="deptRankFr">
+                           AND D.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="deptRankTo">
+                           AND D.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                         </isNotEmpty>
+                         GROUP BY A.FIS_YEAR
+                                , A.BGT_DGR
+                                , A.TE_BGT_COMPO_ID
+                       ) Z
+                 WHERE 1 = 1
+                   AND A.FIS_YEAR = D.FIS_YEAR(+)
+                   AND A.BGT_DGR = D.BGT_DGR(+)
+                   AND A.TE_BGT_COMPO_ID = D.TE_BGT_COMPO_ID(+)
+                   AND F.FIS_YEAR = E.FIS_YEAR
+                   AND F.FIS_FG_CD = E.FIS_FG_CD
+                   AND E.FIS_YEAR = A.FIS_YEAR
+                   AND E.BGT_DGR = A.BGT_DGR
+                   AND E.DBIZ_CD = A.DBIZ_CD
+                   AND C.FIS_YEAR = A.FIS_YEAR
+                   AND C.BGT_DGR = A.BGT_DGR
+                   AND C.DBIZ_CD = A.DBIZ_CD
+                   AND A.FIS_YEAR = Z.FIS_YEAR
+                   AND A.BGT_DGR = Z.BGT_DGR
+                   AND A.TE_BGT_COMPO_ID = Z.TE_BGT_COMPO_ID
+                 <isNotEmpty prepend="" property="condReportCd">
+                   AND EXISTS (SELECT 1
+                                 FROM TB_REPORT ZZ
+                                WHERE 1 = 1
+                                  AND ZZ.FIS_YEAR = A.FIS_YEAR
+                                  AND ZZ.BGT_DGR = A.BGT_DGR
+                                  AND ZZ.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                  AND ZZ.REPORT_CD = #condReportCd#
+                                <isNotEmpty prepend="" property="condReportDetlCd">
+                                  AND ZZ.REPORT_DETL_CD = #condReportDetlCd#
+                                </isNotEmpty>
+                              )
+                 </isNotEmpty>
+               ) T
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.FIS_FG_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PBIZ_RANK, '0')
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, '0')
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, '0')
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_MNG_MOK_CD, '00000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+    
+</sqlMap>

@@ -1,0 +1,63 @@
+            <P ParaShape="0" Style="0">
+                <TEXT CharShape="16">
+                    <CONTAINER>
+                        <SHAPEOBJECT InstId="2120502351" Lock="false" NumberingType="Figure" ZOrder="6">
+                            <SIZE Height="1662" HeightRelTo="Absolute" Protect="false" Width="1719" WidthRelTo="Absolute" />
+                            <POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Column" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para" />
+                            <OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0" />
+                        </SHAPEOBJECT>
+                        <SHAPECOMPONENT CurHeight="1662" CurWidth="1719" GroupLevel="0" HorzFlip="false" InstID="727929142" OriHeight="1548" OriWidth="1456" VertFlip="false" XPos="0" YPos="0">
+                            <ROTATIONINFO Angle="0" CenterX="859" CenterY="831" />
+                            <RENDERINGINFO>
+                                <TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                <SCAMATRIX E1="1.18112" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.07388" E6="0.00000" />
+                                <ROTMATRIX E1="1.00000" E2="-0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                            </RENDERINGINFO>
+                        </SHAPECOMPONENT>
+                        <RECTANGLE Ratio="0" X0="0" X1="1248" X2="1248" X3="0" Y0="0" Y1="0" Y2="1332" Y3="1332">
+                            <DRAWINGOBJECT>
+                                <SHAPECOMPONENT CurHeight="1430" CurWidth="1473" GroupLevel="1" HorzFlip="false" InstID="727929143" OriHeight="1332" OriWidth="1248" VertFlip="false" XPos="208" YPos="216">
+                                    <ROTATIONINFO Angle="0" CenterX="736" CenterY="715" />
+                                    <RENDERINGINFO>
+                                        <TRANSMATRIX E1="1.00000" E2="0.00000" E3="208.00000" E4="0.00000" E5="1.00000" E6="216.00000" />
+                                        <SCAMATRIX E1="1.18072" E2="0.00000" E3="37.58894" E4="0.00000" E5="1.07363" E6="15.90362" />
+                                        <ROTMATRIX E1="1.00000" E2="-0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                        <SCAMATRIX E1="0.97030" E2="0.24192" E3="0.00000" E4="-0.24192" E5="0.97030" E6="0.00000" />
+                                        <ROTMATRIX E1="0.97030" E2="-0.24192" E3="0.00000" E4="0.24192" E5="0.97030" E6="0.00000" />
+                                    </RENDERINGINFO>
+                                </SHAPECOMPONENT>
+                                <LINESHAPE Alpha="0" EndCap="Flat" Style="Solid" />
+                                <FILLBRUSH>
+                                    <WINDOWBRUSH Alpha="0" FaceColor="13159624" HatchColor="0" />
+                                </FILLBRUSH>
+                                <SHADOW Alpha="0" Color="0" OffsetX="0" OffsetY="0" Type="0" />
+                            </DRAWINGOBJECT>
+                        </RECTANGLE>
+                        <RECTANGLE Ratio="0" X0="0" X1="1244" X2="1244" X3="0" Y0="0" Y1="0" Y2="1332" Y3="1332">
+                            <DRAWINGOBJECT>
+                                <SHAPECOMPONENT CurHeight="1430" CurWidth="1468" GroupLevel="1" HorzFlip="false" InstID="727929144" OriHeight="1332" OriWidth="1244" VertFlip="false" XPos="0" YPos="0">
+                                    <ROTATIONINFO Angle="0" CenterX="734" CenterY="715" />
+                                    <RENDERINGINFO>
+                                        <TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                        <SCAMATRIX E1="1.18073" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.07363" E6="0.00000" />
+                                        <ROTMATRIX E1="1.00000" E2="-0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                        <SCAMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                        <ROTMATRIX E1="1.00000" E2="-0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000" />
+                                    </RENDERINGINFO>
+                                </SHAPECOMPONENT>
+                                <LINESHAPE Alpha="0" EndCap="Flat" Style="Solid" />
+                                <FILLBRUSH>
+                                    <WINDOWBRUSH Alpha="0" FaceColor="16777215" HatchColor="0" />
+                                </FILLBRUSH>
+                                <SHADOW Alpha="0" Color="0" OffsetX="0" OffsetY="0" Type="0" />
+                            </DRAWINGOBJECT>
+                        </RECTANGLE>
+                    </CONTAINER>
+                    <CHAR>
+                        <FWSPACE />
+                    </CHAR>
+                </TEXT>
+                <TEXT CharShape="9">
+                    <CHAR><FWSPACE />#bizSmryTitle#</CHAR>
+                </TEXT>
+            </P>

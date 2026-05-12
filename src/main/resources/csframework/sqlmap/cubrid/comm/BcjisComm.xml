@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BcjisComm">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="BcjisComm.selectLeftMenuList" parameterClass="Map" resultClass="egovMap" >
+        /*BcjisComm.selectLeftMenuList*/
+        SELECT *
+          FROM (SELECT A.MENU_CD AS MENU_CD
+                     , A.UP_MENU_CD AS PARENT
+                     , A.MENU_NM AS MENU_NM
+                     , A.URL AS URL
+                     , A.LINE_UP_NO AS LINE_UP_NO
+                     , CASE WHEN A.LOWEST_MENU_YN = 'Y' THEN 'true' ELSE 'false' END AS IS_LEAF
+                     , CASE WHEN A.MENU_LEVEL >= 2 THEN 'false' ELSE 'true' END AS EXPANDED
+                     , 'true' AS LOADED
+                     , A.MENU_LEVEL - 1 AS "LEVEL"
+                  FROM TB_MENU A
+                     , (SELECT BB.MENU_CD
+                          FROM (SELECT A.MENU_CD
+                                     , NVL(CASE WHEN C.POW_GR_CD IN ('BC001', 'BC002') THEN 'Y'
+                                                WHEN A.UP_MENU_CD NOT IN ('MUBR00000') THEN 'Y'
+                                                WHEN A.MENU_CD IN ('MUBR40000', 'MUBR50000', 'MUBR55000', 'MUBR60000', 'MUBR90000') THEN 'N'
+                                                WHEN (SELECT COUNT(1) 
+                                                        FROM TB_USERDEPT Z
+                                                       WHERE Z.USER_ID = C.USER_ID 
+                                                         AND Z.USE_YN = 'Y'
+                                                     ) > 0 THEN 'Y'
+                                                ELSE 'N'
+                                       END, 'N') AS DEPT_YN 
+                                     , NVL(CASE WHEN C.POW_GR_CD IN ('BC001', 'BC002') THEN 'Y'
+                                                WHEN A.UP_MENU_CD NOT IN ('MUBR00000') THEN 'Y'
+                                                WHEN (SELECT COUNT(1) 
+                                                        FROM TB_USERREPORT Z 
+                                                       WHERE Z.USER_ID = C.USER_ID 
+                                                         AND Z.USE_YN = 'Y'
+                                                         AND Z.REPORT_CD = DECODE(A.MENU_CD, 'MUBR10000', '010'
+                                                                                           , 'MUBR1T000', '010'
+                                                                                           , 'MUBR20000', '020'
+                                                                                           , 'MUBR2T000', '020'
+                                                                                           , 'MUBR30000', '030'
+                                                                                           , 'MUBR40000', '040'
+                                                                                           , 'MUBR50000', '050'
+                                                                                           , 'MUBR55000', '055'
+                                                                                           , 'MUBR60000', '060'
+                                                                                           , 'MUBR70000', '090'
+                                                                                           , 'MUBR80000', '090'
+                                                                                           , 'MUBR90000', '090'
+                                                                                           , 'MUBRA0000', '090'
+                                                                                           , 'MUBRB0000', '090'
+                                                                                           , 'MUBRC0000', '090'
+                                                                                           , 'MUBRD0000', '090'
+                                                                                           , Z.REPORT_CD)
+                                                     ) > 0 THEN 'Y' 
+                                                ELSE 'N'
+                                       END, 'N') AS REPORT_YN
+                                  FROM TB_MENU A
+                                     , TB_POWGRPMENU B
+                                     , TB_USERPOWGRP C
+                                 WHERE 1 = 1
+                                   AND C.POW_GR_CD = B.POW_GR_CD
+                                   AND C.USER_ID = #userId# 
+                                   AND C.USE_YN = 'Y'
+                                   AND B.MENU_CD = A.MENU_CD
+                                   AND B.USE_YN = 'Y'
+                                   AND A.USE_YN = 'Y'
+                               ) BB
+                           WHERE 1 = 1
+                             AND (BB.REPORT_YN = 'Y' OR BB.DEPT_YN = 'Y')
+                       ) B
+                 WHERE 1 = 1
+                   AND A.MENU_CD = B.MENU_CD
+                 START WITH A.UP_MENU_CD = '000000000'
+               CONNECT BY PRIOR A.MENU_CD = A.UP_MENU_CD
+                 ORDER SIBLINGS BY A.LINE_UP_NO
+               ) T
+         WHERE 1 = 1
+           AND T.MENU_CD NOT IN ('MU0000000')
+    </select>
+    
+    <insert id="BcjisComm.insertTracelog" parameterClass="Map" >
+        /*BcjisComm.insertTracelog*/
+        INSERT TB_TRACELOG(
+               LOG_ID
+             , URL
+             , USER_ID
+             , SESSION_ID
+             , REQ_PARAM
+             , REGI_YEAR
+             , REGI_MONTH
+             , REGI_DAY
+             , REGI_WEEK
+             , REGI_DATE)
+        VALUES (#logId#
+             , #url#
+             , #userId#
+             , #sessionId#
+             , #reqParam#
+             , TO_CHAR(SYSTIMESTAMP, 'YYYY')
+             , TO_CHAR(SYSTIMESTAMP, 'MM')
+             , TO_CHAR(SYSTIMESTAMP, 'DD')
+             , TO_CHAR(SYSTIMESTAMP, 'D')
+             , SYSTIMESTAMP
+             )
+    </insert>
+    
+    <update id="BcjisComm.updateTracelogReqParam" parameterClass="Map" >
+        /*BcjisComm.updateTracelogReqParam*/
+        INSERT TB_TRACELOG
+             , REQ_PARAM = #reqParam#
+         WHERE LOG_ID = #logId#
+    </update>
+    
+    <select id="BcjisComm.selectCommComboList" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboList*/
+        SELECT B.GROUP_ID AS GROUP_ID
+             , B.DETL_CD AS CODE
+             , B.DETL_CD_NM AS CODE_NM
+          FROM TB_COMMCD A
+             , TB_COMMCDDETL B
+         WHERE 1 = 1
+           AND B.CL_CD = A.CL_CD
+           AND B.USE_YN = 'Y'
+         <isNotEmpty property="code" prepend="">
+           AND B.DETL_CD = #code#
+         </isNotEmpty>
+         <isNotEmpty property="notCode" prepend="">
+           AND B.DETL_CD <![CDATA[<>]]> #notCode#
+         </isNotEmpty>
+           AND A.CL_CD = #codeId#
+           AND A.USE_YN = 'Y'
+         ORDER BY DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListFisYear" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListFisYear*/
+        SELECT 'FIS_YEAR' AS GROUP_ID
+             , A.FIS_YEAR AS CODE
+             , A.FIS_YEAR AS CODE_NM
+          FROM TB_FISYEAR A
+         WHERE 1 = 1
+         ORDER BY FIS_YEAR DESC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListBgtDgr" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListBgtDgr*/
+        SELECT A.FIS_YEAR AS GROUP_ID
+             , A.BGT_DGR AS CODE
+             , CASE WHEN A.BGT_COMPO_FG = '10' THEN '본예산'
+                    ELSE '추경' || ADD_TIMES || '차' 
+               END AS CODE_NM
+          FROM TB_BGTDGR A
+         WHERE 1 = 1
+         ORDER BY A.FIS_YEAR DESC
+                , A.BGT_DGR DESC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListFisFgMstCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListFisFgMstCd*/
+        SELECT A.FIS_YEAR AS GROUP_ID
+             , A.FIS_FG_MST_CD AS CODE
+             , MAX(A.FIS_FG_MST_NM) AS CODE_NM
+          FROM TB_YEARFISFG A
+         WHERE 1 = 1
+         GROUP BY A.FIS_YEAR
+                , A.FIS_FG_MST_CD
+         ORDER BY A.FIS_YEAR DESC
+                , A.FIS_FG_MST_CD ASC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListFisFgCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListFisFgCd*/
+        SELECT A.FIS_YEAR || '_' || A.FIS_FG_MST_CD AS GROUP_ID
+             , A.FIS_FG_CD AS CODE
+             , A.FIS_FG_NM AS CODE_NM
+          FROM TB_YEARFISFG A
+         WHERE 1 = 1
+         ORDER BY A.FIS_YEAR DESC
+                , A.FIS_FG_CD ASC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListOfficeCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListOfficeCd*/
+        SELECT A.FIS_YEAR || '_' || A.BGT_DGR AS GROUP_ID
+             , A.OFFICE_CD AS CODE
+             , A.OFFICE_NM AS CODE_NM
+          FROM TB_DGRDEPT A
+         WHERE 1 = 1
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (SELECT 1
+                         FROM TB_USERDEPT Z
+                        WHERE Z.USER_ID = #userId#
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.USE_YN = 'Y'
+                          AND ROWNUM = 1
+                      )
+         </isEqual>
+         GROUP BY A.FIS_YEAR
+                , A.BGT_DGR
+                , A.OFFICE_CD
+                , A.OFFICE_NM
+         ORDER BY A.FIS_YEAR DESC
+                , A.BGT_DGR DESC
+                , A.OFFICE_RANK ASC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListTeMngMokCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListTeMngMokCd*/
+        SELECT A.FIS_YEAR || '_' || A.BGT_DGR AS GROUP_ID
+             , A.TE_MNG_MOK_CD AS CODE
+             , SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4) || ' ' || 
+               A.TE_MNG_MOK_NM AS CODE_NM
+          FROM TB_DGRTEMNGMOK A
+         WHERE 1 = 1
+         ORDER BY A.FIS_YEAR DESC
+                , A.BGT_DGR DESC
+                , A.TE_MNG_MOK_CD ASC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListFrscFgCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListFrscFgCd*/
+        SELECT A.FIS_YEAR AS GROUP_ID
+             , A.FRSC_FG_CD AS CODE
+             , A.FRSC_FG_CD || ' ' || A.FRSC_FG_NM AS CODE_NM
+          FROM TB_YEARFRSC A
+         WHERE 1 = 1
+         ORDER BY A.FIS_YEAR DESC
+                , A.FRSC_FG_CD ASC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListPowGrCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListPowGrCd*/
+        SELECT A.POW_GR_CD AS CODE
+             , A.POW_GR_NM AS CODE_NM
+          FROM TB_POWGR A
+         WHERE 1 = 1
+           AND A.USE_YN = 'Y'
+         ORDER BY A.POW_GR_CD
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListOrderYmdSeq" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListOrderYmdSeq*/
+        SELECT A.FIS_YEAR || '_' || A.BGT_DGR AS GROUP_ID
+             , A.ORDER_YMD_SEQ AS CODE
+             , MAX(SUBSTR(A.ORDER_YMD, 1, 4) || '-' || SUBSTR(A.ORDER_YMD, 5, 2) || '-' || SUBSTR(A.ORDER_YMD, 7, 2)) AS CODE_NM
+          FROM TB_REPORT070_O A
+         WHERE 1 = 1
+           AND A.DEL_YN = 'N'
+         GROUP BY A.FIS_YEAR
+                , A.BGT_DGR
+                , A.ORDER_YMD_SEQ
+         ORDER BY A.FIS_YEAR DESC
+                , A.BGT_DGR DESC
+                , A.ORDER_YMD_SEQ DESC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListLocalGovCd" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListGugunFg*/
+        SELECT A.LOCAL_GOV_CD AS CODE
+             , A.LOC_GOV_NM AS CODE_NM
+          FROM TB_LOCALGOV A
+         WHERE 1 = 1
+           AND UP_LOCAL_GOV_CD = '6260000'
+         ORDER BY A.LINE_UP_NO
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListPledgeInfoId" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListPledgeInfoId*/
+        SELECT A.PLEDGE_INFO_ID AS CODE
+             , A.PLEDGE_INFO_NM AS CODE_NM
+          FROM TB_PLEDGEINFO A
+         WHERE 1 = 1
+           AND A.DEL_YN = 'N'
+         ORDER BY A.PLEDGE_INFO_ID DESC
+    </select>
+    
+    <select id="BcjisComm.selectCommComboListPledgeBizId" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectCommComboListPledgeBizId*/
+        SELECT DECODE(A.PLEDGE_BIZ_LEVEL, 1, A.PLEDGE_INFO_ID, A.UP_PLEDGE_BIZ_ID) AS GROUP_ID
+             , A.PLEDGE_BIZ_ID AS CODE
+             , A.PLEDGE_BIZ_FG || '. ' || A.PLEDGE_BIZ_NM AS CODE_NM
+          FROM TB_PLEDGEBIZ A
+         WHERE 1 = 1
+           AND A.DEL_YN = 'N'
+         ORDER BY A.PLEDGE_BIZ_SEQ
+    </select>
+    
+    <select id="BcjisComm.selectIsCloseYn" parameterClass="Map" resultClass="egovMap">
+        /*BcjisComm.selectIsCloseYn*/
+        SELECT NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                      FROM TB_BGTDGRCLOSE Z 
+                     WHERE Z.FIS_YEAR = #fisYear#
+                       AND Z.BGT_DGR = #bgtDgr#
+                       AND Z.CLOSE_YN = 'Y'
+                   )
+               , 'N') AS CLOSE_YN
+    </select>
+    
+    <select id="BcjisComm.selectDeptUserYn" parameterClass="Map" resultClass="egovMap" >
+        /*BcjisComm.selectDeptUserYn*/
+        SELECT NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'N' ELSE 'Y' END 
+                      FROM TB_USERREPORT Z 
+                     WHERE 1 = 1 
+                       AND Z.USER_ID = #userId# 
+                     <isNotEmpty prepend="" property="reportCd">
+                       AND Z.REPORT_CD = #reportCd# 
+                     </isNotEmpty>
+                       AND Z.USE_YN = 'Y'
+                   )
+               , 'Y') AS USER_DEPT_YN
+    </select>
+</sqlMap>

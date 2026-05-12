@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ManageClose">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+
+    <sql id="ManageClose.selectManageCloseListSub01">
+        FROM TB_BGTDGR A
+           , TB_BGTDGRCLOSE B
+        WHERE 1 = 1
+          AND A.FIS_YEAR = B.FIS_YEAR(+)
+          AND A.BGT_DGR = B.BGT_DGR(+)
+        <isNotEmpty property="fisYear" prepend="">
+          AND A.FIS_YEAR = #fisYear#
+        </isNotEmpty>
+        <isNotEmpty property="bgtDgr" prepend="">
+          AND A.BGT_DGR = #bgtDgr#
+        </isNotEmpty>
+
+    </sql>
+
+    <select id="ManageClose.selectManageCloseList" parameterClass="Map" resultClass="egovMap">
+        /*ManageClose.selectManageCloseList*/
+        SELECT T.*
+             , (SELECT COUNT(1) FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 1) AS FILE_SN0
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 1) AS FILE_SN1
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 2) AS FILE_SN2
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 3) AS FILE_SN3
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 110) AS FILE_SN110
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 120) AS FILE_SN120
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 130) AS FILE_SN130
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 140) AS FILE_SN140
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 150) AS FILE_SN150
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 155) AS FILE_SN155
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 160) AS FILE_SN160
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 190) AS FILE_SN190
+             , '' AS HIS_VIEW
+          FROM (SELECT ROWNUM AS ROW_NUM
+                     , T1.*
+                     , B.ATCH_FILE_ID
+                  FROM (SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , CASE WHEN A.BGT_COMPO_FG = '10' THEN '본예산'
+                                     ELSE '추경' || ADD_TIMES || '차' 
+                               END AS BGT_DGR_NM
+                             , NVL(B.CLOSE_YN, 'N') AS CLOSE_YN
+                             , NVL((SELECT Z.USER_NM FROM TB_USER Z WHERE Z.USER_ID = NVL(B.MODI_ID, '')), '') AS CLOSE_USER_NM
+                             , NVL(TO_CHAR(B.MODI_DATE, 'YYYY-MM-DD HH24:MI:SS'), '') AS CLOSE_DATE
+                             , '' CLOSE_VIEW
+                             , NVL((SELECT NVL(MAX(Z.HIS_SEQ), 0) FROM TB_BGTDGRCLOSE_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR), 0) AS HIS_SEQ
+                       <include refid="ManageClose.selectManageCloseListSub01" />
+                         ORDER BY A.FIS_YEAR DESC, A.BGT_DGR DESC 
+                       ) T1
+                     , TB_BGTDGRCLOSE_H B
+                 WHERE 1 = 1
+                   AND T1.FIS_YEAR = B.FIS_YEAR(+)
+                   AND T1.BGT_DGR = B.BGT_DGR(+)
+                   AND T1.HIS_SEQ = B.HIS_SEQ(+)
+               ) T
+         WHERE 1 = 1
+        <isNotEqual property="selectAll" compareValue="Y" prepend="">
+           AND T.ROW_NUM BETWEEN NVL(#start#, 0) AND NVL(#rowNum#, 0) + NVL(#start#, 0) -1
+        </isNotEqual>
+    </select>
+
+    <select id="ManageClose.selectManageCloseListCnt" parameterClass="Map" resultClass="java.lang.Integer">
+        /*ManageClose.ManageClose.selectManageCloseListCnt*/
+        SELECT COUNT(A.FIS_YEAR) AS TOTALCNT
+        <include refid="ManageClose.selectManageCloseListSub01" />
+    </select>
+    
+    <update id="ManageClose.updateManageClose" parameterClass="Map" >
+        /*ManageClose.updateManageClose*/
+        MERGE INTO TB_BGTDGRCLOSE A
+             USING (SELECT #fisYear# AS FIS_YEAR
+                         , #bgtDgr# AS BGT_DGR
+                         , #closeYn# AS CLOSE_YN
+                   ) B 
+                ON A.FIS_YEAR = B.FIS_YEAR
+                   AND A.BGT_DGR = B.BGT_DGR
+              WHEN MATCHED THEN
+                UPDATE 
+                   SET A.CLOSE_YN = B.CLOSE_YN
+                     , MODI_ID = #userId#
+                     , MODI_DATE = SYSTIMESTAMP
+              WHEN NOT MATCHED THEN 
+                INSERT (A.FIS_YEAR, A.BGT_DGR, A.CLOSE_YN, A.REGI_ID, A.REGI_DATE, A.MODI_ID, A.MODI_DATE)
+                VALUES (B.FIS_YEAR, B.BGT_DGR, B.CLOSE_YN, #userId#, SYSTIMESTAMP, #userId#, SYSTIMESTAMP)
+    </update>
+    
+    <insert id="ManageClose.insertManageCloseHis" parameterClass="Map" >
+        /*ManageClose.insertManageCloseHis*/
+        INSERT 
+          INTO TB_BGTDGRCLOSE_H (
+               FIS_YEAR
+             , BGT_DGR
+             , HIS_SEQ
+             , CLOSE_YN
+             , CLOSE_DATE
+             , CLOSE_CANCEL_DATE
+             , ATCH_FILE_ID
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE
+        )
+        VALUES (
+               #fisYear#
+             , #bgtDgr#
+             , (SELECT NVL(MAX(Z.HIS_SEQ), 0) + 1 FROM TB_BGTDGRCLOSE_H Z WHERE Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr#)
+             , 'Y'
+             , SYSTIMESTAMP
+             , NULL
+             , #atchFileId#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+        )
+    </insert>
+    
+    <update id="ManageClose.updateManageCloseHis" parameterClass="Map" >
+        /*ManageClose.updateManageCloseHis*/
+        UPDATE TB_BGTDGRCLOSE_H
+           SET CLOSE_YN = 'N'
+             , CLOSE_CANCEL_DATE = SYSTIMESTAMP
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND HIS_SEQ = #hisSeq#
+    </update>
+</sqlMap>

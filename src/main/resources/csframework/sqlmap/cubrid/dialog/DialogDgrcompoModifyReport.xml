@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoModifyReport">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+    
+    <select id="DialogDgrcompoModifyReport.selectReportData" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModifyReport.selectReportData*/
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , A.REPORT_MSTR
+             , A.GOV_SUB
+             , A.INDI_ATTR
+             , A.ADVNC_PROC
+          FROM TB_REPORT A
+         WHERE 1 = 1
+           AND A.REPORT_CD IN ('010', '020', '040', '050', '055', '060', '090')
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <select id="DialogDgrcompoModifyReport.selectReportDetlData" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModifyReport.selectReportData*/
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.REFLECT_FG
+             , A.DEMAND_CONT
+             , A.EXAM_CONT
+             , A.INVEST_PLAN
+          FROM $reportTableNm$ A
+         WHERE 1 = 1
+           AND A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <select id="DialogDgrcompoModifyReport.selectReportDetlDataEtc" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModifyReport.selectReportDetlDataEtc*/
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.REFLECT_FG
+             , A.DEMAND_CONT
+             , A.EXAM_CONT
+             , '' AS INVEST_PLAN
+          FROM $reportTableNm$ A
+         WHERE 1 = 1
+           AND A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <update id="DialogDgrcompoModifyReport.updateReportData" parameterClass="Map" >
+        /*DialogDgrcompoModifyReport.updateReportData*/
+        UPDATE $reportTableNm$ A
+           SET REFLECT_FG 	= #reflectFg#
+           	 , DEMAND_CONT 	= #demandCont#
+           	 , EXAM_CONT 	= #examCont#
+           	 , INVEST_PLAN	= #investPlan#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="DialogDgrcompoModifyReport.updateReportDataEtc" parameterClass="Map" >
+        /*DialogDgrcompoModifyReport.updateReportDataEtc*/
+        UPDATE $reportTableNm$ A
+           SET REFLECT_FG 	= #reflectFg#
+           	 , DEMAND_CONT 	= #demandCont#
+           	 , EXAM_CONT 	= #examCont#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+</sqlMap>

@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoModify">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+    
+    <select id="DialogDgrcompoModify.selectDgrcompo" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModify.selectDgrcompo*/
+        SELECT FIS_YEAR 
+             , BGT_DGR 
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , DEMAND_COMP_GROUND 
+             , DEMAND_COMP_FORMULAR
+             , UP_TE_BGT_COMPO_ID
+             , UP_TE_BGT_COMPO_SEQ
+             , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = (SELECT Z.FIS_FG_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1) AND ROWNUM = 1), '') || '-' || 
+	             	NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') || '-' || 
+	             	NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') || '-' || 
+	             	NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') || '-' || 
+	             	COMP_GROUND AS TITLE
+             , DEPT_CD
+             , DBIZ_CD
+             , CAST((A.DEMAND_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
+             , CAST((A.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_DIFF_AMT
+             , COMP_GROUND 
+             , COMP_FORMULAR 
+             , CAST((A.BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
+             , PRE_FORMULAR AS PRE_FORMULAR
+             , CAST((A.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT 
+             , CAST((A.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DIFF_AMT
+             , PRE_COMP_FORMULAR
+             , CAST((A.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT
+             , COMPO_LEVEL
+             , NVL((SELECT CAST((Z.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
+                      FROM TB_DGRCOMPO Z 
+                     WHERE 1 = 1
+                       AND Z.FIS_YEAR = A.FIS_YEAR
+                       AND Z.BGT_DGR = A.BGT_DGR
+                       AND Z.TE_BGT_COMPO_ID = A.UP_TE_BGT_COMPO_ID
+                   )
+               , 0) AS UP_PRE_AMT
+             , NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') || '-' ||
+               '(' || DECODE(A.TE_MNG_MOK_CD, NULL, '', '00000', '', SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4)) || ')' || 
+               NVL((SELECT Z.TE_MNG_MOK_NM FROM TB_DGRTEMNGMOK Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.TE_MNG_MOK_CD = A.TE_MNG_MOK_CD AND ROWNUM = 1), '') AS DGRCOMPO_NM
+             , (SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1) AS UP_DGRCOMPO_NM
+             , DECODE(A.TE_MNG_MOK_CD, NULL, '', '00000', '', SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4)) AS TE_MNG_MOK_CD
+             , A.TE_MNG_MOK_NM 
+          FROM TB_DGRCOMPO A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <select id="DialogDgrcompoModify.selectDgrcompofrscList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModify.selectDgrcompofrscList*/
+        SELECT #fisYear# AS FIS_YEAR
+             , #bgtDgr# AS BGT_DGR
+             , #teBgtCompoId# AS TE_BGT_COMPO_ID
+             , A.FRSC_FG_CD AS FRSC_FG_CD
+             , A.FRSC_FG_NM AS FRSC_FG_NM
+             , A.STAND_FRSC_CD AS STAND_FRSC_CD
+             , CAST((NVL(B.DMN_DEF_FRSC_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_DEF_FRSC_AMT
+             , CAST((NVL(B.ADJ_DEF_FRSC_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS ADJ_DEF_FRSC_AMT
+             , CAST((NVL(B.PRE_DEF_FRSC_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT
+             , CAST(((NVL(B.PRE_DEF_FRSC_AMT, 0) + NVL(B.DMN_DEF_FRSC_AMT, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_FRSC_AMT
+             , CAST(((NVL(B.PRE_DEF_FRSC_AMT, 0) + NVL(B.ADJ_DEF_FRSC_AMT, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT
+             , CAST((NVL(B.PRE_FRSC_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT
+          FROM TB_YEARFRSC A
+             , (SELECT BB.FIS_YEAR AS FIS_YEAR
+                     , BB.FRSC_FG_CD AS FRSC_FG_CD
+                     , BB.DMN_DEF_FRSC_AMT AS DMN_DEF_FRSC_AMT
+                     , BB.ADJ_DEF_FRSC_AMT AS ADJ_DEF_FRSC_AMT
+                     , BB.PRE_DEF_FRSC_AMT AS PRE_DEF_FRSC_AMT
+                     , BB.PRE_FRSC_AMT AS PRE_FRSC_AMT
+                  FROM TB_DGRCOMPOFRSC BB
+                 WHERE 1 = 1
+                   AND BB.FIS_YEAR = #fisYear#
+                   AND BB.BGT_DGR = #bgtDgr#
+                   AND BB.TE_BGT_COMPO_ID = #teBgtCompoId#
+               ) B
+         WHERE 1 = 1
+           AND A.FIS_YEAR = B.FIS_YEAR(+)
+           AND A.FRSC_FG_CD = B.FRSC_FG_CD(+)
+           AND A.FIS_YEAR = #fisYear#
+         ORDER BY A.FRSC_FG_CD
+    </select>
+    
+    <select id="DialogDgrcompoModify.selectDgrcompocharList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModify.selectDgrcompocharList*/
+        SELECT #fisYear# AS FIS_YEAR
+             , #bgtDgr# AS BGT_DGR
+             , #teBgtCompoId# AS TE_BGT_COMPO_ID
+             , A.DETL_CD AS CHAR_FG_CD
+             , A.DETL_CD_NM AS CHAR_FG_NM
+             , CAST((NVL(B.DMN_DEF_CHAR_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_DEF_CHAR_AMT
+             , CAST((NVL(B.ADJ_DEF_CHAR_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS ADJ_DEF_CHAR_AMT
+             , CAST((NVL(B.PRE_DEF_CHAR_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_CHAR_AMT
+             , CAST(((NVL(B.PRE_DEF_CHAR_AMT, 0) + NVL(B.DMN_DEF_CHAR_AMT, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_CHAR_AMT
+             , CAST(((NVL(B.PRE_DEF_CHAR_AMT, 0) + NVL(B.ADJ_DEF_CHAR_AMT, 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS CHAR_AMT
+             , CAST((NVL(B.PRE_CHAR_AMT, 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_CHAR_AMT
+          FROM TB_COMMCDDETL A
+             , (SELECT BB.CHAR_FG_CD AS CHAR_FG_CD
+                     , BB.DMN_DEF_CHAR_AMT AS DMN_DEF_CHAR_AMT
+                     , BB.ADJ_DEF_CHAR_AMT AS ADJ_DEF_CHAR_AMT
+                     , BB.PRE_DEF_CHAR_AMT AS PRE_DEF_CHAR_AMT
+                     , BB.PRE_CHAR_AMT AS PRE_CHAR_AMT
+                  FROM TB_DGRCOMPOCHAR BB
+                 WHERE 1 = 1
+                   AND BB.FIS_YEAR = #fisYear#
+                   AND BB.BGT_DGR = #bgtDgr#
+                   AND BB.TE_BGT_COMPO_ID = #teBgtCompoId#
+               ) B
+         WHERE 1 = 1
+           AND A.DETL_CD = B.CHAR_FG_CD(+)
+           AND A.CL_CD = 'DC001'
+         ORDER BY A.DETL_CD 
+    </select>
+    
+    <update id="DialogDgrcompoModify.updateDgrcompo" parameterClass="Map" >
+        /*DialogDgrcompoModify.updateDgrcompo*/
+        UPDATE TB_DGRCOMPO A
+           SET DEMAND_COMP_GROUND= #demandCompGround#
+             , DEMAND_COMP_FORMULAR = #demandCompFormular#
+             , DEMAND_BGT_AMT = #demandBgtAmt# * NVL(#amtUnit#, 1)
+             , DEMAND_DIFF_AMT = #demandDiffAmt# * NVL(#amtUnit#, 1)
+             <isNotEmpty prepend="," property="teMngMokCd">
+             	TE_MNG_MOK_CD = #teMngMokCd#
+             </isNotEmpty>
+             <isNotEmpty prepend="," property="teMngMokNm">
+             	TE_MNG_MOK_NM = #teMngMokNm#
+             </isNotEmpty>
+             , COMP_GROUND = #compGround#
+             , COMP_FORMULAR = #compFormular#
+             , BGT_AMT = #bgtAmt# * NVL(#amtUnit#, 1)
+             , PRE_FORMULAR = #preFormular#
+             , PRE_AMT = #preAmt# * NVL(#amtUnit#, 1)
+             , DIFF_AMT = #diffAmt# * NVL(#amtUnit#, 1)
+             , PRE_COMP_FORMULAR = #preCompFormular#
+             , PRE_BGT_AMT = #preBgtAmt# * NVL(#amtUnit#, 1)
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <select id="DialogDgrcompoModify.selectModifyDgrcompo" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoModify.selectModifyDgrcompo*/
+        SELECT A.DEMAND_COMP_GROUND AS DEMAND_COMP_GROUND
+             , A.DEMAND_COMP_FORMULAR AS DEMAND_COMP_FORMULAR
+             , CAST((A.DEMAND_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
+             , CAST((A.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_DIFF_AMT
+             , A.COMP_GROUND AS COMP_GROUND
+             , A.COMP_FORMULAR AS COMP_FORMULAR
+             , A.PRE_FORMULAR AS PRE_FORMULAR
+             , CAST((A.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
+             , CAST((A.BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
+             , CAST((A.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DIFF_AMT
+             , A.PRE_COMP_FORMULAR AS PRE_COMP_FORMULAR
+             , CAST((A.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT
+             , A.COMP_GROUND AS DGRCOMPO_NM_VIEW
+             , CAST(((F.FRSC_AMT1+F.FRSC_AMT2+F.FRSC_AMT3+F.FRSC_AMT4+F.FRSC_AMT5+F.FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((F.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((F.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((F.FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT3
+             , CAST((F.FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT4
+             , CAST((F.FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT5
+             , CAST((F.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST((G.CHAR_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS CHAR_AMT1
+             , CAST((G.CHAR_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS CHAR_AMT2
+             , CAST((G.CHAR_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS CHAR_AMT3
+             , CAST(((F.DMN_FRSC_AMT1+F.DMN_FRSC_AMT2+F.DMN_FRSC_AMT3+F.DMN_FRSC_AMT4+F.DMN_FRSC_AMT5+F.DMN_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((F.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((F.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((F.DMN_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT3
+             , CAST((F.DMN_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT4
+             , CAST((F.DMN_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT5
+             , CAST((F.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST((G.DMN_CHAR_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_CHAR_AMT1
+             , CAST((G.DMN_CHAR_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_CHAR_AMT2
+             , CAST((G.DMN_CHAR_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_CHAR_AMT3
+             , CAST(((F.PRE_FRSC_AMT1+F.PRE_FRSC_AMT2+F.PRE_FRSC_AMT3+F.PRE_FRSC_AMT4+F.PRE_FRSC_AMT5+F.PRE_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT0
+             , CAST((F.PRE_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT1
+             , CAST((F.PRE_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT2
+             , CAST((F.PRE_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT3
+             , CAST((F.PRE_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT4
+             , CAST((F.PRE_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT5
+             , CAST((F.PRE_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_FRSC_AMT6
+             , CAST((G.PRE_CHAR_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_CHAR_AMT1
+             , CAST((G.PRE_CHAR_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_CHAR_AMT2
+             , CAST((G.PRE_CHAR_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_CHAR_AMT3
+             , CAST(((F.PRE_DEF_FRSC_AMT1+F.PRE_DEF_FRSC_AMT2+F.PRE_DEF_FRSC_AMT3+F.PRE_DEF_FRSC_AMT4+F.PRE_DEF_FRSC_AMT5+F.PRE_DEF_FRSC_AMT6)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT0
+             , CAST((F.PRE_DEF_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT1
+             , CAST((F.PRE_DEF_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT2
+             , CAST((F.PRE_DEF_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT3
+             , CAST((F.PRE_DEF_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT4
+             , CAST((F.PRE_DEF_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT5
+             , CAST((F.PRE_DEF_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_FRSC_AMT6
+             , CAST((G.PRE_DEF_CHAR_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_CHAR_AMT1
+             , CAST((G.PRE_DEF_CHAR_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_CHAR_AMT2
+             , CAST((G.PRE_DEF_CHAR_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_DEF_CHAR_AMT3
+             , NVL((SELECT GROUP_CONCAT(ZZ.FRSC SEPARATOR ', ')
+                              FROM (SELECT DECODE(SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1), '자', '시', SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1)) || ':' || TRIM(TO_CHAR(CAST(((NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC
+                                         , NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT
+                                      FROM TB_DGRCOMPOFRSC Z1
+                                         , TB_YEARFRSC Z2
+                                     WHERE 1 = 1
+                                       AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                                       AND Z2.FRSC_FG_CD = Z1.FRSC_FG_CD
+                                       AND Z1.FIS_YEAR = A.FIS_YEAR 
+                                       AND Z1.BGT_DGR = A.BGT_DGR 
+                                       AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                     GROUP BY Z2.FIS_YEAR
+                                            , Z2.FRSC_FG_CD
+                                   ) ZZ
+                             WHERE 1 = 1
+                               AND ZZ.FRSC_AMT <![CDATA[<>]]> 0
+                           )
+                       , '') AS FRSCES
+          FROM TB_DGRCOMPO A
+             , TB_DGRDEPT B
+             , TB_DGRBIZ C
+             , TB_YEARFISFG D
+             , (SELECT AA.FIS_YEAR
+                     , AA.BGT_DGR
+                     , AA.TE_BGT_COMPO_ID
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT1
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), '120', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), '130', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT2
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), '150', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT3
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT4
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT5
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), '200', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), '210', (BB.PRE_DEF_FRSC_AMT + BB.ADJ_DEF_FRSC_AMT), 0)), 0) AS FRSC_AMT6
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT1
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), '120', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), '130', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT2
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), '150', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT3
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT4
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT5
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), '200', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), '210', (BB.PRE_DEF_FRSC_AMT + BB.DMN_DEF_FRSC_AMT), 0)), 0) AS DMN_FRSC_AMT6
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT1
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.PRE_FRSC_AMT, '120', BB.PRE_FRSC_AMT, '130', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT2
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.PRE_FRSC_AMT, '150', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT3
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT4
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT5
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.PRE_FRSC_AMT, '200', BB.PRE_FRSC_AMT, '210', BB.PRE_FRSC_AMT, 0)), 0) AS PRE_FRSC_AMT6
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT1
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.PRE_DEF_FRSC_AMT, '120', BB.PRE_DEF_FRSC_AMT, '130', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT2
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.PRE_DEF_FRSC_AMT, '150', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT3
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT4
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT5
+                     , NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.PRE_DEF_FRSC_AMT, '200', BB.PRE_DEF_FRSC_AMT, '210', BB.PRE_DEF_FRSC_AMT, 0)), 0) AS PRE_DEF_FRSC_AMT6
+                  FROM TB_DGRCOMPO AA
+                     , TB_DGRCOMPOFRSC BB
+                     , TB_YEARFRSC CC
+                 WHERE 1 = 1
+                   AND CC.FIS_YEAR = BB.FIS_YEAR
+                   AND CC.FRSC_FG_CD = BB.FRSC_FG_CD
+                   AND BB.FIS_YEAR = AA.FIS_YEAR
+                   AND BB.BGT_DGR = AA.BGT_DGR
+                   AND BB.TE_BGT_COMPO_ID = AA.TE_BGT_COMPO_ID
+                   AND AA.FIS_YEAR = #fisYear#
+                   AND AA.BGT_DGR = #bgtDgr#
+                   AND AA.TE_BGT_COMPO_ID = #teBgtCompoId#
+                 GROUP BY AA.FIS_YEAR
+                        , AA.BGT_DGR
+                        , AA.TE_BGT_COMPO_ID
+               ) F
+             , (SELECT AA.FIS_YEAR
+                     , AA.BGT_DGR
+                     , AA.TE_BGT_COMPO_ID
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '010', (BB.PRE_DEF_CHAR_AMT + BB.ADJ_DEF_CHAR_AMT), 0)), 0) AS CHAR_AMT1
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '020', (BB.PRE_DEF_CHAR_AMT + BB.ADJ_DEF_CHAR_AMT), 0)), 0) AS CHAR_AMT2
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '090', (BB.PRE_DEF_CHAR_AMT + BB.ADJ_DEF_CHAR_AMT), 0)), 0) AS CHAR_AMT3
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '010', (BB.PRE_DEF_CHAR_AMT + BB.DMN_DEF_CHAR_AMT), 0)), 0) AS DMN_CHAR_AMT1
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '020', (BB.PRE_DEF_CHAR_AMT + BB.DMN_DEF_CHAR_AMT), 0)), 0) AS DMN_CHAR_AMT2
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '090', (BB.PRE_DEF_CHAR_AMT + BB.DMN_DEF_CHAR_AMT), 0)), 0) AS DMN_CHAR_AMT3
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '010', BB.PRE_CHAR_AMT, 0)), 0) AS PRE_CHAR_AMT1
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '020', BB.PRE_CHAR_AMT, 0)), 0) AS PRE_CHAR_AMT2
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '090', BB.PRE_CHAR_AMT, 0)), 0) AS PRE_CHAR_AMT3
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '010', BB.PRE_DEF_CHAR_AMT, 0)), 0) AS PRE_DEF_CHAR_AMT1
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '020', BB.PRE_DEF_CHAR_AMT, 0)), 0) AS PRE_DEF_CHAR_AMT2
+                     , NVL(SUM(DECODE(BB.CHAR_FG_CD, '090', BB.PRE_DEF_CHAR_AMT, 0)), 0) AS PRE_DEF_CHAR_AMT3
+                  FROM TB_DGRCOMPO AA
+                     , TB_DGRCOMPOCHAR BB
+                 WHERE 1 = 1
+                   AND BB.FIS_YEAR = AA.FIS_YEAR
+                   AND BB.BGT_DGR = AA.BGT_DGR
+                   AND BB.TE_BGT_COMPO_ID = AA.TE_BGT_COMPO_ID
+                   AND AA.FIS_YEAR = #fisYear#
+                   AND AA.BGT_DGR = #bgtDgr#
+                   AND AA.TE_BGT_COMPO_ID = #teBgtCompoId#
+                 GROUP BY AA.FIS_YEAR
+                        , AA.BGT_DGR
+                        , AA.TE_BGT_COMPO_ID
+               ) G
+         WHERE 1 = 1
+           AND D.FIS_YEAR = C.FIS_YEAR
+           AND D.FIS_FG_CD = C.FIS_FG_CD
+           AND C.FIS_YEAR = A.FIS_YEAR
+           AND C.BGT_DGR = A.BGT_DGR
+           AND C.DBIZ_CD = A.DBIZ_CD
+           AND B.FIS_YEAR = A.FIS_YEAR
+           AND B.BGT_DGR = A.BGT_DGR
+           AND B.DEPT_CD = A.DEPT_CD
+           AND G.FIS_YEAR = A.FIS_YEAR
+           AND G.BGT_DGR = A.BGT_DGR
+           AND G.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+           AND F.FIS_YEAR = A.FIS_YEAR
+           AND F.BGT_DGR = A.BGT_DGR
+           AND F.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND ROWNUM = 1
+    </select>
+    
+</sqlMap>

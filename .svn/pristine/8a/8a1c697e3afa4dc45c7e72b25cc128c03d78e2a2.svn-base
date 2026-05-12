@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogReport0C0Detl">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogReport0C0Detl.selectReport0C0D" parameterClass="Map" resultClass="egovMap" >
+        /*DialogReport0C0Detl.selectReport0C0D*/
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.SN
+             , A.TE_BGT_COMPO_SEQ
+             , NVL(A.FG_TITLE, '') AS FG_TITLE
+             , NVL(A.PRE_CONT, '') AS PRE_CONT
+             , NVL(A.DEMAND_CONT, '') AS DEMAND_CONT
+             , NVL(A.EXAM_CONT, '') AS EXAM_CONT
+             , NVL(A.REMARK, '') AS REMARK
+          FROM TB_REPORT0C0_D A
+         WHERE A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="sn">
+           AND A.SN = #sn#
+         </isNotEmpty>
+    </select>
+    
+    <insert id="DialogReport0C0Detl.insertReport0C0D" parameterClass="Map" >
+        /*DialogReport0C0Detl.insertReport0C0D*/
+        INSERT
+          INTO TB_REPORT0C0_D(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , SN
+             , TE_BGT_COMPO_SEQ
+             , FG_TITLE
+             , PRE_CONT
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REMARK
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE
+               )
+        VALUES (
+               #reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , (SELECT NVL(MAX(SN), 0) + 1 
+                  FROM TB_REPORT0C0_D 
+                 WHERE REPORT_CD = #reportCd#
+                   AND REPORT_DETL_CD = #reportDetlCd#
+                   AND FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                   AND TE_BGT_COMPO_ID = #teBgtCompoId#
+               )
+             , #teBgtCompoSeq#
+             , NVL(#fgTitle#, '')
+             , NVL(#preCont#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#remark#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+               )
+    </insert>
+    
+    <delete id="DialogReport0C0Detl.deleteReport0C0D" parameterClass="Map" >
+        /*DialogReport0C0Detl.deleteReport0C0D*/
+        DELETE 
+          FROM TB_REPORT0C0_D
+         WHERE REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="sn">
+           AND SN = #sn#
+         </isNotEmpty>
+    </delete>
+    
+    <select id="DialogReport0C0Detl.selectReport0C0DDgrcompo" parameterClass="Map" resultClass="egovMap" >
+        /*DialogReport0C0Detl.selectReport0C0DDgrcompo*/
+        SELECT TRIM(GROUP_CONCAT(NVL(REPLACE(A.FG_TITLE, CHR(10) , ' '), '') SEPARATOR '\n' )) AS DETL_NM
+          FROM TB_REPORT0C0_D A
+         WHERE A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+         ORDER BY A.SN
+    </select>
+    
+</sqlMap>

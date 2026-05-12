@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ManageCommcd">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    
+    <sql id="ManageBatchLog.selectManageBatchLogListSub01">
+                          FROM TB_BATCHLOG A
+                         WHERE 1 = 1 
+                        <isNotEmpty property="beginYmdFr" prepend="">
+                           AND A.BEGIN_YMD >= #beginYmdFr#
+                        </isNotEmpty>
+                        <isNotEmpty property="beginYmdTo" prepend="">
+                           AND A.BEGIN_YMD <![CDATA[<=]]> #beginYmdTo#
+                        </isNotEmpty>
+
+    </sql>
+    
+    <select id="ManageBatchLog.selectManageBatchLogList" parameterClass="Map" resultClass="egovMap" >
+        /*ManageBatchLog.selectManageBatchLogList*/
+        SELECT T.*
+          FROM (SELECT ROWNUM AS ROW_NUM
+                     , T1.*
+                  FROM (SELECT TO_CHAR(A.BEGIN_DATE, 'YYYY-MM-DD HH24:MI:SS') AS BEGIN_DATE
+                             , TO_CHAR(A.END_DATE, 'YYYY-MM-DD HH24:MI:SS') AS END_DATE
+                         <include refid="ManageBatchLog.selectManageBatchLogListSub01"/>
+                         ORDER BY BEGIN_DATE DESC
+                       ) T1
+               ) T
+         WHERE 1 = 1
+         <isNotEqual property="selectAll" compareValue="Y" prepend="" >
+           AND T.ROW_NUM BETWEEN NVL(#start#, 0) AND NVL(#rowNum#, 0) + NVL(#start#, 0) -1
+         </isNotEqual>
+    </select>
+    
+    <select id="ManageBatchLog.selectManageBatchLogListCnt" parameterClass="Map" resultClass="java.lang.Integer" >
+        /*ManageBatchLog.selectManageBatchLogListCnt*/
+        SELECT COUNT(A.LOG_ID) AS TOTALCNT
+        <include refid="ManageBatchLog.selectManageBatchLogListSub01"/>
+    </select>
+</sqlMap>

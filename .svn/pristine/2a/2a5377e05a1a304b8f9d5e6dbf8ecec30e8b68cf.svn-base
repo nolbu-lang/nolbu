@@ -1,0 +1,1512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="PledgeReport3">
+    
+    <select id="PledgeReport3.selectPledgeOfficeList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeReport3.selectPledgeOfficeList*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , CAST(T.DGR_LEVEL AS NUMERIC(5, 0)) AS DGR_LEVEL
+             , CAST(T.OFFICE_CNT AS NUMERIC(5, 0)) AS OFFICE_CNT
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN '합      계'
+                         ELSE NVL(T.OFFICE_NM, '')
+                    END) AS DGRCOMPO_NM
+             , T.OFFICE_CD AS OFFICE_CD
+             , CAST((T.TOT_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.YEAR1_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT0
+             , CAST((T.YEAR2_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT0
+             , CAST((T.YEAR3_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT0
+             , CAST((T.YEAR4_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT0
+             , CAST((T.YEAR5_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT0
+             , CAST((T.FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.OFFICE_CNT AS OFFICE_CNT
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.TOT_FRSC_AMT1 + A.TOT_FRSC_AMT2 + A.TOT_FRSC_AMT3 + A.TOT_FRSC_AMT4 + A.TOT_FRSC_AMT5 + A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT0
+                     , A.YEAR1_FRSC_AMT1 + A.YEAR1_FRSC_AMT2 + A.YEAR1_FRSC_AMT3 + A.YEAR1_FRSC_AMT4 + A.YEAR1_FRSC_AMT5 + A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT0
+                     , A.YEAR2_FRSC_AMT1 + A.YEAR2_FRSC_AMT2 + A.YEAR2_FRSC_AMT3 + A.YEAR2_FRSC_AMT4 + A.YEAR2_FRSC_AMT5 + A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT0
+                     , A.YEAR3_FRSC_AMT1 + A.YEAR3_FRSC_AMT2 + A.YEAR3_FRSC_AMT3 + A.YEAR3_FRSC_AMT4 + A.YEAR3_FRSC_AMT5 + A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT0
+                     , A.YEAR4_FRSC_AMT1 + A.YEAR4_FRSC_AMT2 + A.YEAR4_FRSC_AMT3 + A.YEAR4_FRSC_AMT4 + A.YEAR4_FRSC_AMT5 + A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT0
+                     , A.YEAR5_FRSC_AMT1 + A.YEAR5_FRSC_AMT2 + A.YEAR5_FRSC_AMT3 + A.YEAR5_FRSC_AMT4 + A.YEAR5_FRSC_AMT5 + A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT0
+                     , A.FRSC_AMT1 + A.FRSC_AMT2 + A.FRSC_AMT3 + A.FRSC_AMT4 + A.FRSC_AMT5 + A.FRSC_AMT6 AS FRSC_AMT0
+                     , A.DMN_FRSC_AMT1 + A.DMN_FRSC_AMT2 + A.DMN_FRSC_AMT3 + A.DMN_FRSC_AMT4 + A.DMN_FRSC_AMT5 + A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT0
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), '') AS OFFICE_NM
+                  FROM (SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || '000' || '_' || '0000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000') AS UP_DGRCOMPO_ID
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , DECODE(H.CT, 1, 0, 2, 1) AS DGR_LEVEL
+                                     , SUM(DECODE(A.COMPO_LEVEL, 1, 1, 0)) AS OFFICE_CNT
+                                     , DECODE(H.CT, 1, '0000', 2, A.OFFICE_CD) AS OFFICE_CD
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), A.TOT_FRSC_AMT1)) AS TOT_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), A.TOT_FRSC_AMT2)) AS TOT_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), A.TOT_FRSC_AMT3)) AS TOT_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), A.TOT_FRSC_AMT4)) AS TOT_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), A.TOT_FRSC_AMT5)) AS TOT_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), A.TOT_FRSC_AMT6)) AS TOT_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), A.YEAR1_FRSC_AMT1)) AS YEAR1_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), A.YEAR1_FRSC_AMT2)) AS YEAR1_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), A.YEAR1_FRSC_AMT3)) AS YEAR1_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), A.YEAR1_FRSC_AMT4)) AS YEAR1_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), A.YEAR1_FRSC_AMT5)) AS YEAR1_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), A.YEAR1_FRSC_AMT6)) AS YEAR1_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), A.YEAR2_FRSC_AMT1)) AS YEAR2_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), A.YEAR2_FRSC_AMT2)) AS YEAR2_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), A.YEAR2_FRSC_AMT3)) AS YEAR2_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), A.YEAR2_FRSC_AMT4)) AS YEAR2_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), A.YEAR2_FRSC_AMT5)) AS YEAR2_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), A.YEAR2_FRSC_AMT6)) AS YEAR2_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), A.YEAR3_FRSC_AMT1)) AS YEAR3_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), A.YEAR3_FRSC_AMT2)) AS YEAR3_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), A.YEAR3_FRSC_AMT3)) AS YEAR3_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), A.YEAR3_FRSC_AMT4)) AS YEAR3_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), A.YEAR3_FRSC_AMT5)) AS YEAR3_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), A.YEAR3_FRSC_AMT6)) AS YEAR3_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), A.YEAR4_FRSC_AMT1)) AS YEAR4_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), A.YEAR4_FRSC_AMT2)) AS YEAR4_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), A.YEAR4_FRSC_AMT3)) AS YEAR4_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), A.YEAR4_FRSC_AMT4)) AS YEAR4_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), A.YEAR4_FRSC_AMT5)) AS YEAR4_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), A.YEAR4_FRSC_AMT6)) AS YEAR4_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), A.YEAR5_FRSC_AMT1)) AS YEAR5_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), A.YEAR5_FRSC_AMT2)) AS YEAR5_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), A.YEAR5_FRSC_AMT3)) AS YEAR5_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), A.YEAR5_FRSC_AMT4)) AS YEAR5_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), A.YEAR5_FRSC_AMT5)) AS YEAR5_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), A.YEAR5_FRSC_AMT6)) AS YEAR5_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), A.FRSC_AMT1)) AS FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), A.FRSC_AMT2)) AS FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), A.FRSC_AMT3)) AS FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), A.FRSC_AMT4)) AS FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), A.FRSC_AMT5)) AS FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), A.FRSC_AMT6)) AS FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), A.DMN_FRSC_AMT1)) AS DMN_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), A.DMN_FRSC_AMT2)) AS DMN_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), A.DMN_FRSC_AMT3)) AS DMN_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), A.DMN_FRSC_AMT4)) AS DMN_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), A.DMN_FRSC_AMT5)) AS DMN_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), A.DMN_FRSC_AMT6)) AS DMN_FRSC_AMT6
+                                  FROM (SELECT A.FIS_YEAR
+                                             , A.BGT_DGR
+                                             , A.TE_BGT_COMPO_ID
+                                             , A.UP_TE_BGT_COMPO_ID
+                                             , A.COMPO_LEVEL
+                                             , A.DEPT_CD
+                                             , A.DBIZ_CD
+                                             , A.TE_MNG_MOK_CD
+                                             , A.TE_BGT_COMPO_SEQ
+                                             , A.COMP_GROUND
+                                             , A.SORT_SEQ
+                                             , B.OFFICE_CD
+                                             , E.YEAR1_FRSC_AMT1 + E.YEAR2_FRSC_AMT1 + E.YEAR3_FRSC_AMT1 + E.YEAR4_FRSC_AMT1 + E.YEAR5_FRSC_AMT1 AS TOT_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2 + E.YEAR2_FRSC_AMT2 + E.YEAR3_FRSC_AMT2 + E.YEAR4_FRSC_AMT2 + E.YEAR5_FRSC_AMT2 AS TOT_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3 + E.YEAR2_FRSC_AMT3 + E.YEAR3_FRSC_AMT3 + E.YEAR4_FRSC_AMT3 + E.YEAR5_FRSC_AMT3 AS TOT_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4 + E.YEAR2_FRSC_AMT4 + E.YEAR3_FRSC_AMT4 + E.YEAR4_FRSC_AMT4 + E.YEAR5_FRSC_AMT4 AS TOT_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5 + E.YEAR2_FRSC_AMT5 + E.YEAR3_FRSC_AMT5 + E.YEAR4_FRSC_AMT5 + E.YEAR5_FRSC_AMT5 AS TOT_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6 + E.YEAR2_FRSC_AMT6 + E.YEAR3_FRSC_AMT6 + E.YEAR4_FRSC_AMT6 + E.YEAR5_FRSC_AMT6 AS TOT_FRSC_AMT6
+                                             , E.YEAR1_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6
+                                             , E.YEAR2_FRSC_AMT1
+                                             , E.YEAR2_FRSC_AMT2
+                                             , E.YEAR2_FRSC_AMT3
+                                             , E.YEAR2_FRSC_AMT4
+                                             , E.YEAR2_FRSC_AMT5
+                                             , E.YEAR2_FRSC_AMT6
+                                             , E.YEAR3_FRSC_AMT1
+                                             , E.YEAR3_FRSC_AMT2
+                                             , E.YEAR3_FRSC_AMT3
+                                             , E.YEAR3_FRSC_AMT4
+                                             , E.YEAR3_FRSC_AMT5
+                                             , E.YEAR3_FRSC_AMT6
+                                             , E.YEAR4_FRSC_AMT1
+                                             , E.YEAR4_FRSC_AMT2
+                                             , E.YEAR4_FRSC_AMT3
+                                             , E.YEAR4_FRSC_AMT4
+                                             , E.YEAR4_FRSC_AMT5
+                                             , E.YEAR4_FRSC_AMT6
+                                             , E.YEAR5_FRSC_AMT1
+                                             , E.YEAR5_FRSC_AMT2
+                                             , E.YEAR5_FRSC_AMT3
+                                             , E.YEAR5_FRSC_AMT4
+                                             , E.YEAR5_FRSC_AMT5
+                                             , E.YEAR5_FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, '150', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.ADJ_DEF_FRSC_AMT, '200', BB.ADJ_DEF_FRSC_AMT, '210', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.DMN_DEF_FRSC_AMT, '120', BB.DMN_DEF_FRSC_AMT, '130', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.DMN_DEF_FRSC_AMT, '150', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.DMN_DEF_FRSC_AMT, '200', BB.DMN_DEF_FRSC_AMT, '210', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_PLEDGE E
+                                             , TB_PLEDGEBIZ F
+                                             , TB_PLEDGEBIZ G
+                                             , TB_PLEDGEBIZ H
+                                             , TB_PLEDGEINFO I
+                                         WHERE 1 = 1
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                         <isNotEmpty prepend="" property="fisFgMstCd">
+                                           AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                                         </isNotEmpty>
+                                         <isEqual prepend="" property="pledgeYn" compareValue="Y">
+                                           <isEqual prepend="" property="fisFgMstCd100Yn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           </isEqual>
+                                           <isEqual prepend="" property="fisFgMstCdEtcYn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD <![CDATA[<>]]> '100'
+                                           </isEqual>
+                                         </isEqual>
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND I.PLEDGE_INFO_ID = F.PLEDGE_INFO_ID
+                                           AND I.DEL_YN = 'N'
+                                           AND H.PLEDGE_BIZ_ID = G.UP_PLEDGE_BIZ_ID
+                                           AND H.DEL_YN = 'N'
+                                           AND G.PLEDGE_BIZ_ID = F.UP_PLEDGE_BIZ_ID
+                                           AND G.DEL_YN = 'N'
+                                           AND F.PLEDGE_BIZ_ID = E.PLEDGE_BIZ_ID
+                                           AND F.DEL_YN = 'N'
+                                           AND F.PLEDGE_INFO_ID = #pledgeInfoId#
+                                         <isNotEmpty prepend="" property="pledgeBizId1">
+                                           AND H.PLEDGE_BIZ_ID = #pledgeBizId1#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId2">
+                                           AND G.PLEDGE_BIZ_ID = #pledgeBizId2#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId">
+                                           AND E.PLEDGE_BIZ_ID = #pledgeBizId#
+                                         </isNotEmpty>
+                                           AND E.FIS_YEAR = #fisYear#
+                                           AND E.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdFr">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[>=]]> #teMngMokCdFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdTo">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="localGovCd" >
+                                           AND EXISTS (SELECT 1
+                                                         FROM TB_REPORT020_D Z
+                                                        WHERE Z.REPORT_CD = E.REPORT_CD
+                                                          AND Z.REPORT_DETL_CD = E.REPORT_DETL_CD
+                                                          AND Z.FIS_YEAR = E.FIS_YEAR
+                                                          AND Z.BGT_DGR = E.BGT_DGR
+                                                          AND Z.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                                          AND Z.LOCAL_GOV_CD = #localGovCd#
+                                                          AND Z.CHECK_YN = 'Y'
+                                                      )
+                                         </isNotEmpty>
+                                           AND A.COMPO_LEVEL = '1'
+                                       ) A
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 2) H
+                                 WHERE 1 = 1
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000'
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD)
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+    </select>
+    
+    <select id="PledgeReport3.selectPledgeBizList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeReport3.selectPledgeBizList*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , CAST(T.DGR_LEVEL AS NUMERIC(5, 0)) AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.PLEDGE_BIZ_ID1
+             , T.PLEDGE_BIZ_ID2
+             , T.PLEDGE_BIZ_ID
+             , T.EXAM_CONT
+             , CAST((T.TOT_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.TOT_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT1
+             , CAST((T.TOT_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT2
+             , CAST((T.TOT_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT3
+             , CAST((T.TOT_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT4
+             , CAST((T.TOT_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT5
+             , CAST((T.TOT_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT6
+             , CAST((T.FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((T.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((T.FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT3
+             , CAST((T.FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT4
+             , CAST((T.FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT5
+             , CAST((T.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST((T.DMN_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((T.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((T.DMN_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT3
+             , CAST((T.DMN_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT4
+             , CAST((T.DMN_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT5
+             , CAST((T.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST((T.YEAR1_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT0
+             , CAST((T.YEAR1_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT1
+             , CAST((T.YEAR1_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT2
+             , CAST((T.YEAR1_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT3
+             , CAST((T.YEAR1_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT4
+             , CAST((T.YEAR1_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT5
+             , CAST((T.YEAR1_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT6
+             , CAST((T.YEAR2_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT0
+             , CAST((T.YEAR2_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT1
+             , CAST((T.YEAR2_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT2
+             , CAST((T.YEAR2_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT3
+             , CAST((T.YEAR2_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT4
+             , CAST((T.YEAR2_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT5
+             , CAST((T.YEAR2_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT6
+             , CAST((T.YEAR3_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT0
+             , CAST((T.YEAR3_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT1
+             , CAST((T.YEAR3_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT2
+             , CAST((T.YEAR3_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT3
+             , CAST((T.YEAR3_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT4
+             , CAST((T.YEAR3_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT5
+             , CAST((T.YEAR3_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT6
+             , CAST((T.YEAR4_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT0
+             , CAST((T.YEAR4_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT1
+             , CAST((T.YEAR4_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT2
+             , CAST((T.YEAR4_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT3
+             , CAST((T.YEAR4_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT4
+             , CAST((T.YEAR4_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT5
+             , CAST((T.YEAR4_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT6
+             , CAST((T.YEAR5_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT0
+             , CAST((T.YEAR5_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT1
+             , CAST((T.YEAR5_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT2
+             , CAST((T.YEAR5_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT3
+             , CAST((T.YEAR5_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT4
+             , CAST((T.YEAR5_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT5
+             , CAST((T.YEAR5_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT6
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN '총   괄'
+                         WHEN T.DGR_LEVEL = 1 THEN T.PLEDGE_BIZ_NM1
+                         WHEN T.DGR_LEVEL = 2 THEN T.PLEDGE_BIZ_NM2
+                         WHEN T.DGR_LEVEL = 3 THEN T.PLEDGE_BIZ_NM
+                         WHEN T.DGR_LEVEL > 3 THEN T.COMP_GROUND
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN ''
+                         WHEN T.DGR_LEVEL = 1 THEN T.PLEDGE_BIZ_FG1
+                         WHEN T.DGR_LEVEL = 2 THEN T.PLEDGE_BIZ_FG1 || '-' || T.PLEDGE_BIZ_FG2
+                         WHEN T.DGR_LEVEL > 2 THEN T.PLEDGE_BIZ_FG1 || '-' || T.PLEDGE_BIZ_FG2 || '-' || T.PLEDGE_BIZ_FG
+                         ELSE ''
+                    END) AS PLEDGE_BIZ_FG
+             , T.CHILD_CNT AS CHILD_CNT
+             , T.DEPT_NM AS DEPT_NM
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                     , A.COMP_GROUND AS COMP_GROUND
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , A.PLEDGE_BIZ_ID1
+                     , A.PLEDGE_BIZ_ID2
+                     , A.PLEDGE_BIZ_ID
+                     , A.EXAM_CONT
+                     , A.TOT_FRSC_AMT1 + A.TOT_FRSC_AMT2 + A.TOT_FRSC_AMT3 + A.TOT_FRSC_AMT4 + A.TOT_FRSC_AMT5 + A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT0
+                     , A.TOT_FRSC_AMT1 AS TOT_FRSC_AMT1
+                     , A.TOT_FRSC_AMT2 AS TOT_FRSC_AMT2
+                     , A.TOT_FRSC_AMT3 AS TOT_FRSC_AMT3
+                     , A.TOT_FRSC_AMT4 AS TOT_FRSC_AMT4
+                     , A.TOT_FRSC_AMT5 AS TOT_FRSC_AMT5
+                     , A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT6
+                     , A.FRSC_AMT1 + A.FRSC_AMT2 + A.FRSC_AMT3 + A.FRSC_AMT4 + A.FRSC_AMT5 + A.FRSC_AMT6 AS FRSC_AMT0
+                     , A.FRSC_AMT1 AS FRSC_AMT1
+                     , A.FRSC_AMT2 AS FRSC_AMT2
+                     , A.FRSC_AMT3 AS FRSC_AMT3
+                     , A.FRSC_AMT4 AS FRSC_AMT4
+                     , A.FRSC_AMT5 AS FRSC_AMT5
+                     , A.FRSC_AMT6 AS FRSC_AMT6
+                     , A.DMN_FRSC_AMT1 + A.DMN_FRSC_AMT2 + A.DMN_FRSC_AMT3 + A.DMN_FRSC_AMT4 + A.DMN_FRSC_AMT5 + A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT0
+                     , A.DMN_FRSC_AMT1 AS DMN_FRSC_AMT1
+                     , A.DMN_FRSC_AMT2 AS DMN_FRSC_AMT2
+                     , A.DMN_FRSC_AMT3 AS DMN_FRSC_AMT3
+                     , A.DMN_FRSC_AMT4 AS DMN_FRSC_AMT4
+                     , A.DMN_FRSC_AMT5 AS DMN_FRSC_AMT5
+                     , A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT6
+                     , A.YEAR1_FRSC_AMT1 + A.YEAR1_FRSC_AMT2 + A.YEAR1_FRSC_AMT3 + A.YEAR1_FRSC_AMT4 + A.YEAR1_FRSC_AMT5 + A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT0
+                     , A.YEAR1_FRSC_AMT1 AS YEAR1_FRSC_AMT1
+                     , A.YEAR1_FRSC_AMT2 AS YEAR1_FRSC_AMT2
+                     , A.YEAR1_FRSC_AMT3 AS YEAR1_FRSC_AMT3
+                     , A.YEAR1_FRSC_AMT4 AS YEAR1_FRSC_AMT4
+                     , A.YEAR1_FRSC_AMT5 AS YEAR1_FRSC_AMT5
+                     , A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT6
+                     , A.YEAR2_FRSC_AMT1 + A.YEAR2_FRSC_AMT2 + A.YEAR2_FRSC_AMT3 + A.YEAR2_FRSC_AMT4 + A.YEAR2_FRSC_AMT5 + A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT0
+                     , A.YEAR2_FRSC_AMT1 AS YEAR2_FRSC_AMT1
+                     , A.YEAR2_FRSC_AMT2 AS YEAR2_FRSC_AMT2
+                     , A.YEAR2_FRSC_AMT3 AS YEAR2_FRSC_AMT3
+                     , A.YEAR2_FRSC_AMT4 AS YEAR2_FRSC_AMT4
+                     , A.YEAR2_FRSC_AMT5 AS YEAR2_FRSC_AMT5
+                     , A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT6
+                     , A.YEAR3_FRSC_AMT1 + A.YEAR3_FRSC_AMT2 + A.YEAR3_FRSC_AMT3 + A.YEAR3_FRSC_AMT4 + A.YEAR3_FRSC_AMT5 + A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT0
+                     , A.YEAR3_FRSC_AMT1 AS YEAR3_FRSC_AMT1
+                     , A.YEAR3_FRSC_AMT2 AS YEAR3_FRSC_AMT2
+                     , A.YEAR3_FRSC_AMT3 AS YEAR3_FRSC_AMT3
+                     , A.YEAR3_FRSC_AMT4 AS YEAR3_FRSC_AMT4
+                     , A.YEAR3_FRSC_AMT5 AS YEAR3_FRSC_AMT5
+                     , A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT6
+                     , A.YEAR4_FRSC_AMT1 + A.YEAR4_FRSC_AMT2 + A.YEAR4_FRSC_AMT3 + A.YEAR4_FRSC_AMT4 + A.YEAR4_FRSC_AMT5 + A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT0
+                     , A.YEAR4_FRSC_AMT1 AS YEAR4_FRSC_AMT1
+                     , A.YEAR4_FRSC_AMT2 AS YEAR4_FRSC_AMT2
+                     , A.YEAR4_FRSC_AMT3 AS YEAR4_FRSC_AMT3
+                     , A.YEAR4_FRSC_AMT4 AS YEAR4_FRSC_AMT4
+                     , A.YEAR4_FRSC_AMT5 AS YEAR4_FRSC_AMT5
+                     , A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT6
+                     , A.YEAR5_FRSC_AMT1 + A.YEAR5_FRSC_AMT2 + A.YEAR5_FRSC_AMT3 + A.YEAR5_FRSC_AMT4 + A.YEAR5_FRSC_AMT5 + A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT0
+                     , A.YEAR5_FRSC_AMT1 AS YEAR5_FRSC_AMT1
+                     , A.YEAR5_FRSC_AMT2 AS YEAR5_FRSC_AMT2
+                     , A.YEAR5_FRSC_AMT3 AS YEAR5_FRSC_AMT3
+                     , A.YEAR5_FRSC_AMT4 AS YEAR5_FRSC_AMT4
+                     , A.YEAR5_FRSC_AMT5 AS YEAR5_FRSC_AMT5
+                     , A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT6
+                     , A.PLEDGE_BIZ_SEQ1 AS PLEDGE_BIZ_SEQ1
+                     , A.PLEDGE_BIZ_FG1 AS PLEDGE_BIZ_FG1
+                     , A.PLEDGE_BIZ_NM1 AS PLEDGE_BIZ_NM1
+                     , A.PLEDGE_BIZ_SEQ2 AS PLEDGE_BIZ_SEQ2
+                     , A.PLEDGE_BIZ_FG2 AS PLEDGE_BIZ_FG2
+                     , A.PLEDGE_BIZ_NM2 AS PLEDGE_BIZ_NM2
+                     , A.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                     , A.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                     , A.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                     , A.CHILD_CNT AS CHILD_CNT
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), '') AS OFFICE_NM
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS DEPT_NM
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                  FROM (SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || A.PLEDGE_BIZ_ID || '_' || '00000000000'
+                                                  , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || A.PLEDGE_BIZ_ID || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || '000' || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || A.PLEDGE_BIZ_ID || '_' || A.UP_TE_BGT_COMPO_ID) AS UP_DGRCOMPO_ID                
+                                     , DECODE(H.CT, 1, 0, 2, 1, 3, 2, 4, 3, 3 + A.COMPO_LEVEL) AS DGR_LEVEL
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', 3, '00000000000', 4, '00000000000', A.TE_BGT_COMPO_ID) AS TE_BGT_COMPO_ID
+                                     , DECODE(H.CT, 1, '0000', 2, '0000', 3, '0000', 4, '0000', A.OFFICE_CD) AS OFFICE_CD
+                                     , DECODE(H.CT, 1, '0000000', 2, '0000000', 3, '0000000', 4, '0000000', A.DEPT_CD) AS DEPT_CD
+                                     , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', 3, '0000000000000000', 4, '0000000000000000', A.DBIZ_CD) AS DBIZ_CD
+                                     , DECODE(H.CT, 1, '', 2, '', 3, '', 4, '', A.COMP_GROUND) AS COMP_GROUND
+                                     , DECODE(H.CT, 1, 0, 2, 0, 3, 0, 4, 0, A.SORT_SEQ) AS SORT_SEQ
+                                     , DECODE(H.CT, 1, '00000000000', A.PLEDGE_BIZ_ID1) AS PLEDGE_BIZ_ID1
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID2) AS PLEDGE_BIZ_ID2
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', 3, '00000000000', A.PLEDGE_BIZ_ID) AS PLEDGE_BIZ_ID
+                                     , DECODE(H.CT, 1, 0, A.PLEDGE_BIZ_SEQ1) AS PLEDGE_BIZ_SEQ1
+                                     , MAX(A.PLEDGE_BIZ_FG1) AS PLEDGE_BIZ_FG1
+                                     , MAX(A.PLEDGE_BIZ_NM1) AS PLEDGE_BIZ_NM1
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ2) AS PLEDGE_BIZ_SEQ2
+                                     , MAX(A.PLEDGE_BIZ_FG2) AS PLEDGE_BIZ_FG2
+                                     , MAX(A.PLEDGE_BIZ_NM2) AS PLEDGE_BIZ_NM2
+                                     , DECODE(H.CT, 1, 0, 2, 0, 3, 0, A.PLEDGE_BIZ_SEQ) AS PLEDGE_BIZ_SEQ
+                                     , MAX(A.PLEDGE_BIZ_FG) AS PLEDGE_BIZ_FG
+                                     , MAX(A.PLEDGE_BIZ_NM) AS PLEDGE_BIZ_NM
+                                     , MAX(DECODE(H.CT, 1, '', 2, '', 3, '', 4, '', A.EXAM_CONT)) AS EXAM_CONT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), A.TOT_FRSC_AMT1)) AS TOT_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), A.TOT_FRSC_AMT2)) AS TOT_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), A.TOT_FRSC_AMT3)) AS TOT_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), A.TOT_FRSC_AMT4)) AS TOT_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), A.TOT_FRSC_AMT5)) AS TOT_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), A.TOT_FRSC_AMT6)) AS TOT_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), A.FRSC_AMT1)) AS FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), A.FRSC_AMT2)) AS FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), A.FRSC_AMT3)) AS FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), A.FRSC_AMT4)) AS FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), A.FRSC_AMT5)) AS FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), A.FRSC_AMT6)) AS FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), A.DMN_FRSC_AMT1)) AS DMN_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), A.DMN_FRSC_AMT2)) AS DMN_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), A.DMN_FRSC_AMT3)) AS DMN_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), A.DMN_FRSC_AMT4)) AS DMN_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), A.DMN_FRSC_AMT5)) AS DMN_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), A.DMN_FRSC_AMT6)) AS DMN_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), A.YEAR1_FRSC_AMT1)) AS YEAR1_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), A.YEAR1_FRSC_AMT2)) AS YEAR1_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), A.YEAR1_FRSC_AMT3)) AS YEAR1_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), A.YEAR1_FRSC_AMT4)) AS YEAR1_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), A.YEAR1_FRSC_AMT5)) AS YEAR1_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), A.YEAR1_FRSC_AMT6)) AS YEAR1_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), A.YEAR2_FRSC_AMT1)) AS YEAR2_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), A.YEAR2_FRSC_AMT2)) AS YEAR2_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), A.YEAR2_FRSC_AMT3)) AS YEAR2_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), A.YEAR2_FRSC_AMT4)) AS YEAR2_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), A.YEAR2_FRSC_AMT5)) AS YEAR2_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), A.YEAR2_FRSC_AMT6)) AS YEAR2_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), A.YEAR3_FRSC_AMT1)) AS YEAR3_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), A.YEAR3_FRSC_AMT2)) AS YEAR3_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), A.YEAR3_FRSC_AMT3)) AS YEAR3_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), A.YEAR3_FRSC_AMT4)) AS YEAR3_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), A.YEAR3_FRSC_AMT5)) AS YEAR3_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), A.YEAR3_FRSC_AMT6)) AS YEAR3_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), A.YEAR4_FRSC_AMT1)) AS YEAR4_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), A.YEAR4_FRSC_AMT2)) AS YEAR4_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), A.YEAR4_FRSC_AMT3)) AS YEAR4_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), A.YEAR4_FRSC_AMT4)) AS YEAR4_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), A.YEAR4_FRSC_AMT5)) AS YEAR4_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), A.YEAR4_FRSC_AMT6)) AS YEAR4_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), A.YEAR5_FRSC_AMT1)) AS YEAR5_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), A.YEAR5_FRSC_AMT2)) AS YEAR5_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), A.YEAR5_FRSC_AMT3)) AS YEAR5_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), A.YEAR5_FRSC_AMT4)) AS YEAR5_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), A.YEAR5_FRSC_AMT5)) AS YEAR5_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), A.YEAR5_FRSC_AMT6)) AS YEAR5_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', 1, 0), 2, DECODE(A.COMPO_LEVEL, '1', 1, 0), 3, DECODE(A.COMPO_LEVEL, '1', 1, 0), 4, DECODE(A.COMPO_LEVEL, '1', 1, 0), 1)) AS CHILD_CNT
+                                  FROM (SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                                             , A.UP_TE_BGT_COMPO_ID AS UP_TE_BGT_COMPO_ID
+                                             , A.DEPT_CD AS DEPT_CD
+                                             , A.DBIZ_CD AS DBIZ_CD
+                                             , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                                             , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+                                             , A.COMPO_LEVEL AS COMPO_LEVEL
+                                             , A.COMP_GROUND AS COMP_GROUND
+                                             , A.SORT_SEQ AS SORT_SEQ
+                                             , B.OFFICE_CD AS OFFICE_CD
+                                             , I.PLEDGE_INFO_ID
+                                             , H.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID1
+                                             , G.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID2
+                                             , F.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+                                             , H.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ1
+                                             , H.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG1
+                                             , H.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM1
+                                             , G.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ2
+                                             , G.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG2
+                                             , G.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM2
+                                             , F.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                                             , F.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                                             , F.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                                             , E.EXAM_CONT
+                                             , E.YEAR1_FRSC_AMT1 + E.YEAR2_FRSC_AMT1 + E.YEAR3_FRSC_AMT1 + E.YEAR4_FRSC_AMT1 + E.YEAR5_FRSC_AMT1 AS TOT_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2 + E.YEAR2_FRSC_AMT2 + E.YEAR3_FRSC_AMT2 + E.YEAR4_FRSC_AMT2 + E.YEAR5_FRSC_AMT2 AS TOT_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3 + E.YEAR2_FRSC_AMT3 + E.YEAR3_FRSC_AMT3 + E.YEAR4_FRSC_AMT3 + E.YEAR5_FRSC_AMT3 AS TOT_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4 + E.YEAR2_FRSC_AMT4 + E.YEAR3_FRSC_AMT4 + E.YEAR4_FRSC_AMT4 + E.YEAR5_FRSC_AMT4 AS TOT_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5 + E.YEAR2_FRSC_AMT5 + E.YEAR3_FRSC_AMT5 + E.YEAR4_FRSC_AMT5 + E.YEAR5_FRSC_AMT5 AS TOT_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6 + E.YEAR2_FRSC_AMT6 + E.YEAR3_FRSC_AMT6 + E.YEAR4_FRSC_AMT6 + E.YEAR5_FRSC_AMT6 AS TOT_FRSC_AMT6
+                                             , E.YEAR1_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6
+                                             , E.YEAR2_FRSC_AMT1
+                                             , E.YEAR2_FRSC_AMT2
+                                             , E.YEAR2_FRSC_AMT3
+                                             , E.YEAR2_FRSC_AMT4
+                                             , E.YEAR2_FRSC_AMT5
+                                             , E.YEAR2_FRSC_AMT6
+                                             , E.YEAR3_FRSC_AMT1
+                                             , E.YEAR3_FRSC_AMT2
+                                             , E.YEAR3_FRSC_AMT3
+                                             , E.YEAR3_FRSC_AMT4
+                                             , E.YEAR3_FRSC_AMT5
+                                             , E.YEAR3_FRSC_AMT6
+                                             , E.YEAR4_FRSC_AMT1
+                                             , E.YEAR4_FRSC_AMT2
+                                             , E.YEAR4_FRSC_AMT3
+                                             , E.YEAR4_FRSC_AMT4
+                                             , E.YEAR4_FRSC_AMT5
+                                             , E.YEAR4_FRSC_AMT6
+                                             , E.YEAR5_FRSC_AMT1
+                                             , E.YEAR5_FRSC_AMT2
+                                             , E.YEAR5_FRSC_AMT3
+                                             , E.YEAR5_FRSC_AMT4
+                                             , E.YEAR5_FRSC_AMT5
+                                             , E.YEAR5_FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, '150', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.ADJ_DEF_FRSC_AMT, '200', BB.ADJ_DEF_FRSC_AMT, '210', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.DMN_DEF_FRSC_AMT, '120', BB.DMN_DEF_FRSC_AMT, '130', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.DMN_DEF_FRSC_AMT, '150', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.DMN_DEF_FRSC_AMT, '200', BB.DMN_DEF_FRSC_AMT, '210', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_PLEDGE E
+                                             , TB_PLEDGEBIZ F
+                                             , TB_PLEDGEBIZ G
+                                             , TB_PLEDGEBIZ H
+                                             , TB_PLEDGEINFO I
+                                         WHERE 1 = 1
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                         <isNotEmpty prepend="" property="fisFgMstCd">
+                                           AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                                         </isNotEmpty>
+                                         <isEqual prepend="" property="pledgeYn" compareValue="Y">
+                                           <isEqual prepend="" property="fisFgMstCd100Yn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           </isEqual>
+                                           <isEqual prepend="" property="fisFgMstCdEtcYn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD <![CDATA[<>]]> '100'
+                                           </isEqual>
+                                         </isEqual>
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND I.PLEDGE_INFO_ID = F.PLEDGE_INFO_ID
+                                           AND I.DEL_YN = 'N'
+                                           AND H.PLEDGE_BIZ_ID = G.UP_PLEDGE_BIZ_ID
+                                           AND H.DEL_YN = 'N'
+                                           AND G.PLEDGE_BIZ_ID = F.UP_PLEDGE_BIZ_ID
+                                           AND G.DEL_YN = 'N'
+                                           AND F.PLEDGE_BIZ_ID = E.PLEDGE_BIZ_ID
+                                           AND F.DEL_YN = 'N'
+                                           AND F.PLEDGE_INFO_ID = #pledgeInfoId#
+                                         <isNotEmpty prepend="" property="pledgeBizId1">
+                                           AND H.PLEDGE_BIZ_ID = #pledgeBizId1#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId2">
+                                           AND G.PLEDGE_BIZ_ID = #pledgeBizId2#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId">
+                                           AND E.PLEDGE_BIZ_ID = #pledgeBizId#
+                                         </isNotEmpty>
+                                           AND E.FIS_YEAR = #fisYear#
+                                           AND E.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdFr">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[>=]]> #teMngMokCdFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdTo">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
+                                         </isNotEmpty>
+                                       ) A
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 5) H
+                                 WHERE 1 = 1
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '00000000000' || '_' || '00000000000' || '_' || '00000000000'
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || '00000000000' || '_' || '00000000000'
+                                                     , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || '00000000000'
+                                                     , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || A.PLEDGE_BIZ_ID
+                                                     , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.PLEDGE_BIZ_ID1 || '_' || A.PLEDGE_BIZ_ID2 || '_' || A.PLEDGE_BIZ_ID || '_' || A.TE_BGT_COMPO_ID)
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.PLEDGE_BIZ_SEQ1, 0)
+                , NVL(T.PLEDGE_BIZ_ID1, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ2, 0)
+                , NVL(T.PLEDGE_BIZ_ID2, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ, 0)
+                , NVL(T.PLEDGE_BIZ_ID, '00000000000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PBIZ_RANK, 0)
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, 0)
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, 0)
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+    
+    <select id="PledgeReport3.selectPledgeDeptList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeReport3.selectPledgeDeptList*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , CAST(T.DGR_LEVEL AS NUMERIC(5, 0)) AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.PLEDGE_BIZ_ID1
+             , T.PLEDGE_BIZ_ID2
+             , T.PLEDGE_BIZ_ID
+             , T.EXAM_CONT
+             , CAST((T.TOT_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.TOT_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT1
+             , CAST((T.TOT_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT2
+             , CAST((T.TOT_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT3
+             , CAST((T.TOT_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT4
+             , CAST((T.TOT_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT5
+             , CAST((T.TOT_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT6
+             , CAST((T.FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((T.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((T.FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT3
+             , CAST((T.FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT4
+             , CAST((T.FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT5
+             , CAST((T.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST((T.DMN_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((T.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((T.DMN_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT3
+             , CAST((T.DMN_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT4
+             , CAST((T.DMN_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT5
+             , CAST((T.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST((T.YEAR1_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT0
+             , CAST((T.YEAR1_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT1
+             , CAST((T.YEAR1_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT2
+             , CAST((T.YEAR1_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT3
+             , CAST((T.YEAR1_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT4
+             , CAST((T.YEAR1_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT5
+             , CAST((T.YEAR1_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT6
+             , CAST((T.YEAR2_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT0
+             , CAST((T.YEAR2_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT1
+             , CAST((T.YEAR2_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT2
+             , CAST((T.YEAR2_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT3
+             , CAST((T.YEAR2_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT4
+             , CAST((T.YEAR2_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT5
+             , CAST((T.YEAR2_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT6
+             , CAST((T.YEAR3_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT0
+             , CAST((T.YEAR3_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT1
+             , CAST((T.YEAR3_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT2
+             , CAST((T.YEAR3_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT3
+             , CAST((T.YEAR3_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT4
+             , CAST((T.YEAR3_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT5
+             , CAST((T.YEAR3_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT6
+             , CAST((T.YEAR4_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT0
+             , CAST((T.YEAR4_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT1
+             , CAST((T.YEAR4_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT2
+             , CAST((T.YEAR4_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT3
+             , CAST((T.YEAR4_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT4
+             , CAST((T.YEAR4_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT5
+             , CAST((T.YEAR4_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT6
+             , CAST((T.YEAR5_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT0
+             , CAST((T.YEAR5_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT1
+             , CAST((T.YEAR5_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT2
+             , CAST((T.YEAR5_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT3
+             , CAST((T.YEAR5_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT4
+             , CAST((T.YEAR5_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT5
+             , CAST((T.YEAR5_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT6
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN '총   괄'
+                         WHEN T.DGR_LEVEL = 1 THEN T.OFFICE_NM
+                         WHEN T.DGR_LEVEL > 1 THEN T.COMP_GROUND
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , T.PLEDGE_BIZ_FG1 || '-' || T.PLEDGE_BIZ_FG2 || '-' || T.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+             , T.CHILD_CNT AS CHILD_CNT
+             , T.DEPT_NM AS DEPT_NM
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                     , A.COMP_GROUND AS COMP_GROUND
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , A.PLEDGE_BIZ_ID1
+                     , A.PLEDGE_BIZ_ID2
+                     , A.PLEDGE_BIZ_ID
+                     , A.EXAM_CONT
+                     , A.TOT_FRSC_AMT1 + A.TOT_FRSC_AMT2 + A.TOT_FRSC_AMT3 + A.TOT_FRSC_AMT4 + A.TOT_FRSC_AMT5 + A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT0
+                     , A.TOT_FRSC_AMT1 AS TOT_FRSC_AMT1
+                     , A.TOT_FRSC_AMT2 AS TOT_FRSC_AMT2
+                     , A.TOT_FRSC_AMT3 AS TOT_FRSC_AMT3
+                     , A.TOT_FRSC_AMT4 AS TOT_FRSC_AMT4
+                     , A.TOT_FRSC_AMT5 AS TOT_FRSC_AMT5
+                     , A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT6
+                     , A.FRSC_AMT1 + A.FRSC_AMT2 + A.FRSC_AMT3 + A.FRSC_AMT4 + A.FRSC_AMT5 + A.FRSC_AMT6 AS FRSC_AMT0
+                     , A.FRSC_AMT1 AS FRSC_AMT1
+                     , A.FRSC_AMT2 AS FRSC_AMT2
+                     , A.FRSC_AMT3 AS FRSC_AMT3
+                     , A.FRSC_AMT4 AS FRSC_AMT4
+                     , A.FRSC_AMT5 AS FRSC_AMT5
+                     , A.FRSC_AMT6 AS FRSC_AMT6
+                     , A.DMN_FRSC_AMT1 + A.DMN_FRSC_AMT2 + A.DMN_FRSC_AMT3 + A.DMN_FRSC_AMT4 + A.DMN_FRSC_AMT5 + A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT0
+                     , A.DMN_FRSC_AMT1 AS DMN_FRSC_AMT1
+                     , A.DMN_FRSC_AMT2 AS DMN_FRSC_AMT2
+                     , A.DMN_FRSC_AMT3 AS DMN_FRSC_AMT3
+                     , A.DMN_FRSC_AMT4 AS DMN_FRSC_AMT4
+                     , A.DMN_FRSC_AMT5 AS DMN_FRSC_AMT5
+                     , A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT6
+                     , A.YEAR1_FRSC_AMT1 + A.YEAR1_FRSC_AMT2 + A.YEAR1_FRSC_AMT3 + A.YEAR1_FRSC_AMT4 + A.YEAR1_FRSC_AMT5 + A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT0
+                     , A.YEAR1_FRSC_AMT1 AS YEAR1_FRSC_AMT1
+                     , A.YEAR1_FRSC_AMT2 AS YEAR1_FRSC_AMT2
+                     , A.YEAR1_FRSC_AMT3 AS YEAR1_FRSC_AMT3
+                     , A.YEAR1_FRSC_AMT4 AS YEAR1_FRSC_AMT4
+                     , A.YEAR1_FRSC_AMT5 AS YEAR1_FRSC_AMT5
+                     , A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT6
+                     , A.YEAR2_FRSC_AMT1 + A.YEAR2_FRSC_AMT2 + A.YEAR2_FRSC_AMT3 + A.YEAR2_FRSC_AMT4 + A.YEAR2_FRSC_AMT5 + A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT0
+                     , A.YEAR2_FRSC_AMT1 AS YEAR2_FRSC_AMT1
+                     , A.YEAR2_FRSC_AMT2 AS YEAR2_FRSC_AMT2
+                     , A.YEAR2_FRSC_AMT3 AS YEAR2_FRSC_AMT3
+                     , A.YEAR2_FRSC_AMT4 AS YEAR2_FRSC_AMT4
+                     , A.YEAR2_FRSC_AMT5 AS YEAR2_FRSC_AMT5
+                     , A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT6
+                     , A.YEAR3_FRSC_AMT1 + A.YEAR3_FRSC_AMT2 + A.YEAR3_FRSC_AMT3 + A.YEAR3_FRSC_AMT4 + A.YEAR3_FRSC_AMT5 + A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT0
+                     , A.YEAR3_FRSC_AMT1 AS YEAR3_FRSC_AMT1
+                     , A.YEAR3_FRSC_AMT2 AS YEAR3_FRSC_AMT2
+                     , A.YEAR3_FRSC_AMT3 AS YEAR3_FRSC_AMT3
+                     , A.YEAR3_FRSC_AMT4 AS YEAR3_FRSC_AMT4
+                     , A.YEAR3_FRSC_AMT5 AS YEAR3_FRSC_AMT5
+                     , A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT6
+                     , A.YEAR4_FRSC_AMT1 + A.YEAR4_FRSC_AMT2 + A.YEAR4_FRSC_AMT3 + A.YEAR4_FRSC_AMT4 + A.YEAR4_FRSC_AMT5 + A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT0
+                     , A.YEAR4_FRSC_AMT1 AS YEAR4_FRSC_AMT1
+                     , A.YEAR4_FRSC_AMT2 AS YEAR4_FRSC_AMT2
+                     , A.YEAR4_FRSC_AMT3 AS YEAR4_FRSC_AMT3
+                     , A.YEAR4_FRSC_AMT4 AS YEAR4_FRSC_AMT4
+                     , A.YEAR4_FRSC_AMT5 AS YEAR4_FRSC_AMT5
+                     , A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT6
+                     , A.YEAR5_FRSC_AMT1 + A.YEAR5_FRSC_AMT2 + A.YEAR5_FRSC_AMT3 + A.YEAR5_FRSC_AMT4 + A.YEAR5_FRSC_AMT5 + A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT0
+                     , A.YEAR5_FRSC_AMT1 AS YEAR5_FRSC_AMT1
+                     , A.YEAR5_FRSC_AMT2 AS YEAR5_FRSC_AMT2
+                     , A.YEAR5_FRSC_AMT3 AS YEAR5_FRSC_AMT3
+                     , A.YEAR5_FRSC_AMT4 AS YEAR5_FRSC_AMT4
+                     , A.YEAR5_FRSC_AMT5 AS YEAR5_FRSC_AMT5
+                     , A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT6
+                     , A.PLEDGE_BIZ_SEQ1 AS PLEDGE_BIZ_SEQ1
+                     , A.PLEDGE_BIZ_FG1 AS PLEDGE_BIZ_FG1
+                     , A.PLEDGE_BIZ_NM1 AS PLEDGE_BIZ_NM1
+                     , A.PLEDGE_BIZ_SEQ2 AS PLEDGE_BIZ_SEQ2
+                     , A.PLEDGE_BIZ_FG2 AS PLEDGE_BIZ_FG2
+                     , A.PLEDGE_BIZ_NM2 AS PLEDGE_BIZ_NM2
+                     , A.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                     , A.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                     , A.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                     , A.CHILD_CNT AS CHILD_CNT
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), '') AS OFFICE_NM
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS DEPT_NM
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                  FROM (SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD || '_' || A.PLEDGE_BIZ_ID || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || '000' || '_' || '0000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000' || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD || '_' || '00000000000' || '_' || A.UP_TE_BGT_COMPO_ID) AS UP_DGRCOMPO_ID                
+                                     , DECODE(H.CT, 1, 0, 2, 1, 1 + A.COMPO_LEVEL) AS DGR_LEVEL
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.TE_BGT_COMPO_ID) AS TE_BGT_COMPO_ID
+                                     , DECODE(H.CT, 1, '0000', A.OFFICE_CD) AS OFFICE_CD
+                                     , DECODE(H.CT, 1, '0000000', 2, '0000000', A.DEPT_CD) AS DEPT_CD
+                                     , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', A.DBIZ_CD) AS DBIZ_CD
+                                     , DECODE(H.CT, 1, '00000', 2, '00000', A.TE_MNG_MOK_CD) AS TE_MNG_MOK_CD
+                                     , DECODE(H.CT, 1, '', 2, '', A.COMP_GROUND) AS COMP_GROUND
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.SORT_SEQ) AS SORT_SEQ
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID1) AS PLEDGE_BIZ_ID1
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID2) AS PLEDGE_BIZ_ID2
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID) AS PLEDGE_BIZ_ID
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ1) AS PLEDGE_BIZ_SEQ1
+                                     , MAX(A.PLEDGE_BIZ_FG1) AS PLEDGE_BIZ_FG1
+                                     , MAX(A.PLEDGE_BIZ_NM1) AS PLEDGE_BIZ_NM1
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ2) AS PLEDGE_BIZ_SEQ2
+                                     , MAX(A.PLEDGE_BIZ_FG2) AS PLEDGE_BIZ_FG2
+                                     , MAX(A.PLEDGE_BIZ_NM2) AS PLEDGE_BIZ_NM2
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ) AS PLEDGE_BIZ_SEQ
+                                     , MAX(A.PLEDGE_BIZ_FG) AS PLEDGE_BIZ_FG
+                                     , MAX(A.PLEDGE_BIZ_NM) AS PLEDGE_BIZ_NM
+                                     , MAX(DECODE(H.CT, 1, '', 2, A.EXAM_CONT)) AS EXAM_CONT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), A.TOT_FRSC_AMT1)) AS TOT_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), A.TOT_FRSC_AMT2)) AS TOT_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), A.TOT_FRSC_AMT3)) AS TOT_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), A.TOT_FRSC_AMT4)) AS TOT_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), A.TOT_FRSC_AMT5)) AS TOT_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), A.TOT_FRSC_AMT6)) AS TOT_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), A.FRSC_AMT1)) AS FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), A.FRSC_AMT2)) AS FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), A.FRSC_AMT3)) AS FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), A.FRSC_AMT4)) AS FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), A.FRSC_AMT5)) AS FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), A.FRSC_AMT6)) AS FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), A.DMN_FRSC_AMT1)) AS DMN_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), A.DMN_FRSC_AMT2)) AS DMN_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), A.DMN_FRSC_AMT3)) AS DMN_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), A.DMN_FRSC_AMT4)) AS DMN_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), A.DMN_FRSC_AMT5)) AS DMN_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), A.DMN_FRSC_AMT6)) AS DMN_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), A.YEAR1_FRSC_AMT1)) AS YEAR1_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), A.YEAR1_FRSC_AMT2)) AS YEAR1_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), A.YEAR1_FRSC_AMT3)) AS YEAR1_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), A.YEAR1_FRSC_AMT4)) AS YEAR1_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), A.YEAR1_FRSC_AMT5)) AS YEAR1_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), A.YEAR1_FRSC_AMT6)) AS YEAR1_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), A.YEAR2_FRSC_AMT1)) AS YEAR2_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), A.YEAR2_FRSC_AMT2)) AS YEAR2_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), A.YEAR2_FRSC_AMT3)) AS YEAR2_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), A.YEAR2_FRSC_AMT4)) AS YEAR2_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), A.YEAR2_FRSC_AMT5)) AS YEAR2_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), A.YEAR2_FRSC_AMT6)) AS YEAR2_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), A.YEAR3_FRSC_AMT1)) AS YEAR3_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), A.YEAR3_FRSC_AMT2)) AS YEAR3_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), A.YEAR3_FRSC_AMT3)) AS YEAR3_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), A.YEAR3_FRSC_AMT4)) AS YEAR3_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), A.YEAR3_FRSC_AMT5)) AS YEAR3_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), A.YEAR3_FRSC_AMT6)) AS YEAR3_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), A.YEAR4_FRSC_AMT1)) AS YEAR4_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), A.YEAR4_FRSC_AMT2)) AS YEAR4_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), A.YEAR4_FRSC_AMT3)) AS YEAR4_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), A.YEAR4_FRSC_AMT4)) AS YEAR4_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), A.YEAR4_FRSC_AMT5)) AS YEAR4_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), A.YEAR4_FRSC_AMT6)) AS YEAR4_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), A.YEAR5_FRSC_AMT1)) AS YEAR5_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), A.YEAR5_FRSC_AMT2)) AS YEAR5_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), A.YEAR5_FRSC_AMT3)) AS YEAR5_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), A.YEAR5_FRSC_AMT4)) AS YEAR5_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), A.YEAR5_FRSC_AMT5)) AS YEAR5_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), A.YEAR5_FRSC_AMT6)) AS YEAR5_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', 1, 0), 2, DECODE(A.COMPO_LEVEL, '1', 1, 0), 1)) AS CHILD_CNT
+                                  FROM (SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                                             , A.UP_TE_BGT_COMPO_ID AS UP_TE_BGT_COMPO_ID
+                                             , A.DEPT_CD AS DEPT_CD
+                                             , A.DBIZ_CD AS DBIZ_CD
+                                             , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                                             , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+                                             , A.COMPO_LEVEL AS COMPO_LEVEL
+                                             , A.COMP_GROUND AS COMP_GROUND
+                                             , A.SORT_SEQ AS SORT_SEQ
+                                             , B.OFFICE_CD AS OFFICE_CD
+                                             , I.PLEDGE_INFO_ID
+                                             , H.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID1
+                                             , G.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID2
+                                             , F.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+                                             , H.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ1
+                                             , H.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG1
+                                             , H.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM1
+                                             , G.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ2
+                                             , G.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG2
+                                             , G.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM2
+                                             , F.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                                             , F.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                                             , F.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                                             , E.EXAM_CONT
+                                             , E.YEAR1_FRSC_AMT1 + E.YEAR2_FRSC_AMT1 + E.YEAR3_FRSC_AMT1 + E.YEAR4_FRSC_AMT1 + E.YEAR5_FRSC_AMT1 AS TOT_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2 + E.YEAR2_FRSC_AMT2 + E.YEAR3_FRSC_AMT2 + E.YEAR4_FRSC_AMT2 + E.YEAR5_FRSC_AMT2 AS TOT_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3 + E.YEAR2_FRSC_AMT3 + E.YEAR3_FRSC_AMT3 + E.YEAR4_FRSC_AMT3 + E.YEAR5_FRSC_AMT3 AS TOT_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4 + E.YEAR2_FRSC_AMT4 + E.YEAR3_FRSC_AMT4 + E.YEAR4_FRSC_AMT4 + E.YEAR5_FRSC_AMT4 AS TOT_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5 + E.YEAR2_FRSC_AMT5 + E.YEAR3_FRSC_AMT5 + E.YEAR4_FRSC_AMT5 + E.YEAR5_FRSC_AMT5 AS TOT_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6 + E.YEAR2_FRSC_AMT6 + E.YEAR3_FRSC_AMT6 + E.YEAR4_FRSC_AMT6 + E.YEAR5_FRSC_AMT6 AS TOT_FRSC_AMT6
+                                             , E.YEAR1_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6
+                                             , E.YEAR2_FRSC_AMT1
+                                             , E.YEAR2_FRSC_AMT2
+                                             , E.YEAR2_FRSC_AMT3
+                                             , E.YEAR2_FRSC_AMT4
+                                             , E.YEAR2_FRSC_AMT5
+                                             , E.YEAR2_FRSC_AMT6
+                                             , E.YEAR3_FRSC_AMT1
+                                             , E.YEAR3_FRSC_AMT2
+                                             , E.YEAR3_FRSC_AMT3
+                                             , E.YEAR3_FRSC_AMT4
+                                             , E.YEAR3_FRSC_AMT5
+                                             , E.YEAR3_FRSC_AMT6
+                                             , E.YEAR4_FRSC_AMT1
+                                             , E.YEAR4_FRSC_AMT2
+                                             , E.YEAR4_FRSC_AMT3
+                                             , E.YEAR4_FRSC_AMT4
+                                             , E.YEAR4_FRSC_AMT5
+                                             , E.YEAR4_FRSC_AMT6
+                                             , E.YEAR5_FRSC_AMT1
+                                             , E.YEAR5_FRSC_AMT2
+                                             , E.YEAR5_FRSC_AMT3
+                                             , E.YEAR5_FRSC_AMT4
+                                             , E.YEAR5_FRSC_AMT5
+                                             , E.YEAR5_FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, '150', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.ADJ_DEF_FRSC_AMT, '200', BB.ADJ_DEF_FRSC_AMT, '210', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.DMN_DEF_FRSC_AMT, '120', BB.DMN_DEF_FRSC_AMT, '130', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.DMN_DEF_FRSC_AMT, '150', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.DMN_DEF_FRSC_AMT, '200', BB.DMN_DEF_FRSC_AMT, '210', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_PLEDGE E
+                                             , TB_PLEDGEBIZ F
+                                             , TB_PLEDGEBIZ G
+                                             , TB_PLEDGEBIZ H
+                                             , TB_PLEDGEINFO I
+                                         WHERE 1 = 1
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                         <isNotEmpty prepend="" property="fisFgMstCd">
+                                           AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                                         </isNotEmpty>
+                                         <isEqual prepend="" property="pledgeYn" compareValue="Y">
+                                           <isEqual prepend="" property="fisFgMstCd100Yn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD = '100'
+                                           </isEqual>
+                                           <isEqual prepend="" property="fisFgMstCdEtcYn" compareValue="Y">
+                                           AND D.FIS_FG_MST_CD <![CDATA[<>]]> '100'
+                                           </isEqual>
+                                         </isEqual>
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND I.PLEDGE_INFO_ID = F.PLEDGE_INFO_ID
+                                           AND I.DEL_YN = 'N'
+                                           AND H.PLEDGE_BIZ_ID = G.UP_PLEDGE_BIZ_ID
+                                           AND H.DEL_YN = 'N'
+                                           AND G.PLEDGE_BIZ_ID = F.UP_PLEDGE_BIZ_ID
+                                           AND G.DEL_YN = 'N'
+                                           AND F.PLEDGE_BIZ_ID = E.PLEDGE_BIZ_ID
+                                           AND F.DEL_YN = 'N'
+                                           AND F.PLEDGE_INFO_ID = #pledgeInfoId#
+                                         <isNotEmpty prepend="" property="pledgeBizId1">
+                                           AND H.PLEDGE_BIZ_ID = #pledgeBizId1#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId2">
+                                           AND G.PLEDGE_BIZ_ID = #pledgeBizId2#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId">
+                                           AND E.PLEDGE_BIZ_ID = #pledgeBizId#
+                                         </isNotEmpty>
+                                           AND E.FIS_YEAR = #fisYear#
+                                           AND E.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdFr">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[>=]]> #teMngMokCdFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdTo">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
+                                         </isNotEmpty>
+                                       ) A
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                                 WHERE 1 = 1
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000' || '_' || '00000000000'
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD || '_' || '00000000000' || '_' || '00000000000'
+                                                     , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.OFFICE_CD || '_' || A.PLEDGE_BIZ_ID || '_' || A.TE_BGT_COMPO_ID)
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PLEDGE_BIZ_SEQ1, 0)
+                , NVL(T.PLEDGE_BIZ_ID1, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ2, 0)
+                , NVL(T.PLEDGE_BIZ_ID2, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ, 0)
+                , NVL(T.PLEDGE_BIZ_ID, '00000000000')
+                , NVL(T.PBIZ_RANK, 0)
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, 0)
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, 0)
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_MNG_MOK_CD, '00000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+    
+    <select id="PledgeReport3.selectPledgeEtcList" parameterClass="Map" resultClass="egovMap" >
+        /*PledgeReport3.selectPledgeEtcList*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , CAST(T.DGR_LEVEL AS NUMERIC(5, 0)) AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.PLEDGE_BIZ_ID1
+             , T.PLEDGE_BIZ_ID2
+             , T.PLEDGE_BIZ_ID
+             , T.EXAM_CONT
+             , CAST((T.TOT_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT0
+             , CAST((T.TOT_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT1
+             , CAST((T.TOT_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT2
+             , CAST((T.TOT_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT3
+             , CAST((T.TOT_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT4
+             , CAST((T.TOT_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT5
+             , CAST((T.TOT_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_FRSC_AMT6
+             , CAST((T.FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT0
+             , CAST((T.FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT1
+             , CAST((T.FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT2
+             , CAST((T.FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT3
+             , CAST((T.FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT4
+             , CAST((T.FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT5
+             , CAST((T.FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT6
+             , CAST((T.DMN_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT0
+             , CAST((T.DMN_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT1
+             , CAST((T.DMN_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT2
+             , CAST((T.DMN_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT3
+             , CAST((T.DMN_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT4
+             , CAST((T.DMN_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT5
+             , CAST((T.DMN_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DMN_FRSC_AMT6
+             , CAST((T.YEAR1_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT0
+             , CAST((T.YEAR1_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT1
+             , CAST((T.YEAR1_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT2
+             , CAST((T.YEAR1_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT3
+             , CAST((T.YEAR1_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT4
+             , CAST((T.YEAR1_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT5
+             , CAST((T.YEAR1_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR1_FRSC_AMT6
+             , CAST((T.YEAR2_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT0
+             , CAST((T.YEAR2_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT1
+             , CAST((T.YEAR2_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT2
+             , CAST((T.YEAR2_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT3
+             , CAST((T.YEAR2_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT4
+             , CAST((T.YEAR2_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT5
+             , CAST((T.YEAR2_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR2_FRSC_AMT6
+             , CAST((T.YEAR3_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT0
+             , CAST((T.YEAR3_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT1
+             , CAST((T.YEAR3_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT2
+             , CAST((T.YEAR3_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT3
+             , CAST((T.YEAR3_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT4
+             , CAST((T.YEAR3_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT5
+             , CAST((T.YEAR3_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR3_FRSC_AMT6
+             , CAST((T.YEAR4_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT0
+             , CAST((T.YEAR4_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT1
+             , CAST((T.YEAR4_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT2
+             , CAST((T.YEAR4_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT3
+             , CAST((T.YEAR4_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT4
+             , CAST((T.YEAR4_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT5
+             , CAST((T.YEAR4_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR4_FRSC_AMT6
+             , CAST((T.YEAR5_FRSC_AMT0/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT0
+             , CAST((T.YEAR5_FRSC_AMT1/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT1
+             , CAST((T.YEAR5_FRSC_AMT2/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT2
+             , CAST((T.YEAR5_FRSC_AMT3/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT3
+             , CAST((T.YEAR5_FRSC_AMT4/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT4
+             , CAST((T.YEAR5_FRSC_AMT5/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT5
+             , CAST((T.YEAR5_FRSC_AMT6/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS YEAR5_FRSC_AMT6
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN '기타특별회계'
+                         WHEN T.DGR_LEVEL = 1 THEN T.FIS_FG_NM
+                         WHEN T.DGR_LEVEL > 1 THEN T.COMP_GROUND
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , T.PLEDGE_BIZ_FG1 || '-' || T.PLEDGE_BIZ_FG2 || '-' || T.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+             , T.CHILD_CNT AS CHILD_CNT
+             , T.DEPT_NM AS DEPT_NM
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                     , A.COMP_GROUND AS COMP_GROUND
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , A.PLEDGE_BIZ_ID1
+                     , A.PLEDGE_BIZ_ID2
+                     , A.PLEDGE_BIZ_ID
+                     , A.EXAM_CONT
+                     , A.TOT_FRSC_AMT1 + A.TOT_FRSC_AMT2 + A.TOT_FRSC_AMT3 + A.TOT_FRSC_AMT4 + A.TOT_FRSC_AMT5 + A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT0
+                     , A.TOT_FRSC_AMT1 AS TOT_FRSC_AMT1
+                     , A.TOT_FRSC_AMT2 AS TOT_FRSC_AMT2
+                     , A.TOT_FRSC_AMT3 AS TOT_FRSC_AMT3
+                     , A.TOT_FRSC_AMT4 AS TOT_FRSC_AMT4
+                     , A.TOT_FRSC_AMT5 AS TOT_FRSC_AMT5
+                     , A.TOT_FRSC_AMT6 AS TOT_FRSC_AMT6
+                     , A.FRSC_AMT1 + A.FRSC_AMT2 + A.FRSC_AMT3 + A.FRSC_AMT4 + A.FRSC_AMT5 + A.FRSC_AMT6 AS FRSC_AMT0
+                     , A.FRSC_AMT1 AS FRSC_AMT1
+                     , A.FRSC_AMT2 AS FRSC_AMT2
+                     , A.FRSC_AMT3 AS FRSC_AMT3
+                     , A.FRSC_AMT4 AS FRSC_AMT4
+                     , A.FRSC_AMT5 AS FRSC_AMT5
+                     , A.FRSC_AMT6 AS FRSC_AMT6
+                     , A.DMN_FRSC_AMT1 + A.DMN_FRSC_AMT2 + A.DMN_FRSC_AMT3 + A.DMN_FRSC_AMT4 + A.DMN_FRSC_AMT5 + A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT0
+                     , A.DMN_FRSC_AMT1 AS DMN_FRSC_AMT1
+                     , A.DMN_FRSC_AMT2 AS DMN_FRSC_AMT2
+                     , A.DMN_FRSC_AMT3 AS DMN_FRSC_AMT3
+                     , A.DMN_FRSC_AMT4 AS DMN_FRSC_AMT4
+                     , A.DMN_FRSC_AMT5 AS DMN_FRSC_AMT5
+                     , A.DMN_FRSC_AMT6 AS DMN_FRSC_AMT6
+                     , A.YEAR1_FRSC_AMT1 + A.YEAR1_FRSC_AMT2 + A.YEAR1_FRSC_AMT3 + A.YEAR1_FRSC_AMT4 + A.YEAR1_FRSC_AMT5 + A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT0
+                     , A.YEAR1_FRSC_AMT1 AS YEAR1_FRSC_AMT1
+                     , A.YEAR1_FRSC_AMT2 AS YEAR1_FRSC_AMT2
+                     , A.YEAR1_FRSC_AMT3 AS YEAR1_FRSC_AMT3
+                     , A.YEAR1_FRSC_AMT4 AS YEAR1_FRSC_AMT4
+                     , A.YEAR1_FRSC_AMT5 AS YEAR1_FRSC_AMT5
+                     , A.YEAR1_FRSC_AMT6 AS YEAR1_FRSC_AMT6
+                     , A.YEAR2_FRSC_AMT1 + A.YEAR2_FRSC_AMT2 + A.YEAR2_FRSC_AMT3 + A.YEAR2_FRSC_AMT4 + A.YEAR2_FRSC_AMT5 + A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT0
+                     , A.YEAR2_FRSC_AMT1 AS YEAR2_FRSC_AMT1
+                     , A.YEAR2_FRSC_AMT2 AS YEAR2_FRSC_AMT2
+                     , A.YEAR2_FRSC_AMT3 AS YEAR2_FRSC_AMT3
+                     , A.YEAR2_FRSC_AMT4 AS YEAR2_FRSC_AMT4
+                     , A.YEAR2_FRSC_AMT5 AS YEAR2_FRSC_AMT5
+                     , A.YEAR2_FRSC_AMT6 AS YEAR2_FRSC_AMT6
+                     , A.YEAR3_FRSC_AMT1 + A.YEAR3_FRSC_AMT2 + A.YEAR3_FRSC_AMT3 + A.YEAR3_FRSC_AMT4 + A.YEAR3_FRSC_AMT5 + A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT0
+                     , A.YEAR3_FRSC_AMT1 AS YEAR3_FRSC_AMT1
+                     , A.YEAR3_FRSC_AMT2 AS YEAR3_FRSC_AMT2
+                     , A.YEAR3_FRSC_AMT3 AS YEAR3_FRSC_AMT3
+                     , A.YEAR3_FRSC_AMT4 AS YEAR3_FRSC_AMT4
+                     , A.YEAR3_FRSC_AMT5 AS YEAR3_FRSC_AMT5
+                     , A.YEAR3_FRSC_AMT6 AS YEAR3_FRSC_AMT6
+                     , A.YEAR4_FRSC_AMT1 + A.YEAR4_FRSC_AMT2 + A.YEAR4_FRSC_AMT3 + A.YEAR4_FRSC_AMT4 + A.YEAR4_FRSC_AMT5 + A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT0
+                     , A.YEAR4_FRSC_AMT1 AS YEAR4_FRSC_AMT1
+                     , A.YEAR4_FRSC_AMT2 AS YEAR4_FRSC_AMT2
+                     , A.YEAR4_FRSC_AMT3 AS YEAR4_FRSC_AMT3
+                     , A.YEAR4_FRSC_AMT4 AS YEAR4_FRSC_AMT4
+                     , A.YEAR4_FRSC_AMT5 AS YEAR4_FRSC_AMT5
+                     , A.YEAR4_FRSC_AMT6 AS YEAR4_FRSC_AMT6
+                     , A.YEAR5_FRSC_AMT1 + A.YEAR5_FRSC_AMT2 + A.YEAR5_FRSC_AMT3 + A.YEAR5_FRSC_AMT4 + A.YEAR5_FRSC_AMT5 + A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT0
+                     , A.YEAR5_FRSC_AMT1 AS YEAR5_FRSC_AMT1
+                     , A.YEAR5_FRSC_AMT2 AS YEAR5_FRSC_AMT2
+                     , A.YEAR5_FRSC_AMT3 AS YEAR5_FRSC_AMT3
+                     , A.YEAR5_FRSC_AMT4 AS YEAR5_FRSC_AMT4
+                     , A.YEAR5_FRSC_AMT5 AS YEAR5_FRSC_AMT5
+                     , A.YEAR5_FRSC_AMT6 AS YEAR5_FRSC_AMT6
+                     , A.PLEDGE_BIZ_SEQ1 AS PLEDGE_BIZ_SEQ1
+                     , A.PLEDGE_BIZ_FG1 AS PLEDGE_BIZ_FG1
+                     , A.PLEDGE_BIZ_NM1 AS PLEDGE_BIZ_NM1
+                     , A.PLEDGE_BIZ_SEQ2 AS PLEDGE_BIZ_SEQ2
+                     , A.PLEDGE_BIZ_FG2 AS PLEDGE_BIZ_FG2
+                     , A.PLEDGE_BIZ_NM2 AS PLEDGE_BIZ_NM2
+                     , A.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                     , A.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                     , A.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                     , A.CHILD_CNT AS CHILD_CNT
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                     , A.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                     , A.FIS_FG_CD AS FIS_FG_CD
+                     , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = A.FIS_FG_CD AND ROWNUM = 1), '') AS FIS_FG_NM
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), '') AS DEPT_NM
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                  FROM (SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.FIS_FG_CD || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.FIS_FG_CD || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || '000' || '_' || '0000' || '_' || '00000000000'
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000'
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.FIS_FG_CD || '_' || A.UP_TE_BGT_COMPO_ID) AS UP_DGRCOMPO_ID                
+                                     , DECODE(H.CT, 1, 0, 2, 1, 1 + A.COMPO_LEVEL) AS DGR_LEVEL
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.TE_BGT_COMPO_ID) AS TE_BGT_COMPO_ID
+                                     , DECODE(H.CT, 1, '0000', A.OFFICE_CD) AS OFFICE_CD
+                                     , DECODE(H.CT, 1, '0000000', 2, '0000000', A.DEPT_CD) AS DEPT_CD
+                                     , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', A.DBIZ_CD) AS DBIZ_CD
+                                     , DECODE(H.CT, 1, '00000', 2, '00000', A.TE_MNG_MOK_CD) AS TE_MNG_MOK_CD
+                                     , DECODE(H.CT, 1, '000', A.FIS_FG_MST_CD) AS FIS_FG_MST_CD
+                                     , DECODE(H.CT, 1, '000', A.FIS_FG_CD) AS FIS_FG_CD
+                                     , DECODE(H.CT, 1, '', 2, '', A.COMP_GROUND) AS COMP_GROUND
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.SORT_SEQ) AS SORT_SEQ
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID1) AS PLEDGE_BIZ_ID1
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID2) AS PLEDGE_BIZ_ID2
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.PLEDGE_BIZ_ID) AS PLEDGE_BIZ_ID
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ1) AS PLEDGE_BIZ_SEQ1
+                                     , MAX(A.PLEDGE_BIZ_FG1) AS PLEDGE_BIZ_FG1
+                                     , MAX(A.PLEDGE_BIZ_NM1) AS PLEDGE_BIZ_NM1
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ2) AS PLEDGE_BIZ_SEQ2
+                                     , MAX(A.PLEDGE_BIZ_FG2) AS PLEDGE_BIZ_FG2
+                                     , MAX(A.PLEDGE_BIZ_NM2) AS PLEDGE_BIZ_NM2
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.PLEDGE_BIZ_SEQ) AS PLEDGE_BIZ_SEQ
+                                     , MAX(A.PLEDGE_BIZ_FG) AS PLEDGE_BIZ_FG
+                                     , MAX(A.PLEDGE_BIZ_NM) AS PLEDGE_BIZ_NM
+                                     , MAX(DECODE(H.CT, 1, '', 2, A.EXAM_CONT)) AS EXAM_CONT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT1, 0), A.TOT_FRSC_AMT1)) AS TOT_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT2, 0), A.TOT_FRSC_AMT2)) AS TOT_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT3, 0), A.TOT_FRSC_AMT3)) AS TOT_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT4, 0), A.TOT_FRSC_AMT4)) AS TOT_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT5, 0), A.TOT_FRSC_AMT5)) AS TOT_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.TOT_FRSC_AMT6, 0), A.TOT_FRSC_AMT6)) AS TOT_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT1, 0), A.FRSC_AMT1)) AS FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT2, 0), A.FRSC_AMT2)) AS FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT3, 0), A.FRSC_AMT3)) AS FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT4, 0), A.FRSC_AMT4)) AS FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT5, 0), A.FRSC_AMT5)) AS FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.FRSC_AMT6, 0), A.FRSC_AMT6)) AS FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT1, 0), A.DMN_FRSC_AMT1)) AS DMN_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT2, 0), A.DMN_FRSC_AMT2)) AS DMN_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT3, 0), A.DMN_FRSC_AMT3)) AS DMN_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT4, 0), A.DMN_FRSC_AMT4)) AS DMN_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT5, 0), A.DMN_FRSC_AMT5)) AS DMN_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DMN_FRSC_AMT6, 0), A.DMN_FRSC_AMT6)) AS DMN_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT1, 0), A.YEAR1_FRSC_AMT1)) AS YEAR1_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT2, 0), A.YEAR1_FRSC_AMT2)) AS YEAR1_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT3, 0), A.YEAR1_FRSC_AMT3)) AS YEAR1_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT4, 0), A.YEAR1_FRSC_AMT4)) AS YEAR1_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT5, 0), A.YEAR1_FRSC_AMT5)) AS YEAR1_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR1_FRSC_AMT6, 0), A.YEAR1_FRSC_AMT6)) AS YEAR1_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT1, 0), A.YEAR2_FRSC_AMT1)) AS YEAR2_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT2, 0), A.YEAR2_FRSC_AMT2)) AS YEAR2_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT3, 0), A.YEAR2_FRSC_AMT3)) AS YEAR2_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT4, 0), A.YEAR2_FRSC_AMT4)) AS YEAR2_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT5, 0), A.YEAR2_FRSC_AMT5)) AS YEAR2_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR2_FRSC_AMT6, 0), A.YEAR2_FRSC_AMT6)) AS YEAR2_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT1, 0), A.YEAR3_FRSC_AMT1)) AS YEAR3_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT2, 0), A.YEAR3_FRSC_AMT2)) AS YEAR3_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT3, 0), A.YEAR3_FRSC_AMT3)) AS YEAR3_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT4, 0), A.YEAR3_FRSC_AMT4)) AS YEAR3_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT5, 0), A.YEAR3_FRSC_AMT5)) AS YEAR3_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR3_FRSC_AMT6, 0), A.YEAR3_FRSC_AMT6)) AS YEAR3_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT1, 0), A.YEAR4_FRSC_AMT1)) AS YEAR4_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT2, 0), A.YEAR4_FRSC_AMT2)) AS YEAR4_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT3, 0), A.YEAR4_FRSC_AMT3)) AS YEAR4_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT4, 0), A.YEAR4_FRSC_AMT4)) AS YEAR4_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT5, 0), A.YEAR4_FRSC_AMT5)) AS YEAR4_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR4_FRSC_AMT6, 0), A.YEAR4_FRSC_AMT6)) AS YEAR4_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT1, 0), A.YEAR5_FRSC_AMT1)) AS YEAR5_FRSC_AMT1
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT2, 0), A.YEAR5_FRSC_AMT2)) AS YEAR5_FRSC_AMT2
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT3, 0), A.YEAR5_FRSC_AMT3)) AS YEAR5_FRSC_AMT3
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT4, 0), A.YEAR5_FRSC_AMT4)) AS YEAR5_FRSC_AMT4
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT5, 0), A.YEAR5_FRSC_AMT5)) AS YEAR5_FRSC_AMT5
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.YEAR5_FRSC_AMT6, 0), A.YEAR5_FRSC_AMT6)) AS YEAR5_FRSC_AMT6
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', 1, 0), 2, DECODE(A.COMPO_LEVEL, '1', 1, 0), 1)) AS CHILD_CNT
+                                  FROM (SELECT A.FIS_YEAR AS FIS_YEAR
+                                             , A.BGT_DGR AS BGT_DGR
+                                             , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                                             , A.UP_TE_BGT_COMPO_ID AS UP_TE_BGT_COMPO_ID
+                                             , A.DEPT_CD AS DEPT_CD
+                                             , A.DBIZ_CD AS DBIZ_CD
+                                             , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                                             , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+                                             , A.COMPO_LEVEL AS COMPO_LEVEL
+                                             , A.COMP_GROUND AS COMP_GROUND
+                                             , A.SORT_SEQ AS SORT_SEQ
+                                             , B.OFFICE_CD AS OFFICE_CD
+                                             , D.FIS_FG_MST_CD
+                                             , D.FIS_FG_CD
+                                             , I.PLEDGE_INFO_ID
+                                             , H.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID1
+                                             , G.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID2
+                                             , F.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+                                             , H.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ1
+                                             , H.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG1
+                                             , H.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM1
+                                             , G.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ2
+                                             , G.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG2
+                                             , G.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM2
+                                             , F.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+                                             , F.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+                                             , F.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+                                             , E.EXAM_CONT
+                                             , E.YEAR1_FRSC_AMT1 + E.YEAR2_FRSC_AMT1 + E.YEAR3_FRSC_AMT1 + E.YEAR4_FRSC_AMT1 + E.YEAR5_FRSC_AMT1 AS TOT_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2 + E.YEAR2_FRSC_AMT2 + E.YEAR3_FRSC_AMT2 + E.YEAR4_FRSC_AMT2 + E.YEAR5_FRSC_AMT2 AS TOT_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3 + E.YEAR2_FRSC_AMT3 + E.YEAR3_FRSC_AMT3 + E.YEAR4_FRSC_AMT3 + E.YEAR5_FRSC_AMT3 AS TOT_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4 + E.YEAR2_FRSC_AMT4 + E.YEAR3_FRSC_AMT4 + E.YEAR4_FRSC_AMT4 + E.YEAR5_FRSC_AMT4 AS TOT_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5 + E.YEAR2_FRSC_AMT5 + E.YEAR3_FRSC_AMT5 + E.YEAR4_FRSC_AMT5 + E.YEAR5_FRSC_AMT5 AS TOT_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6 + E.YEAR2_FRSC_AMT6 + E.YEAR3_FRSC_AMT6 + E.YEAR4_FRSC_AMT6 + E.YEAR5_FRSC_AMT6 AS TOT_FRSC_AMT6
+                                             , E.YEAR1_FRSC_AMT1
+                                             , E.YEAR1_FRSC_AMT2
+                                             , E.YEAR1_FRSC_AMT3
+                                             , E.YEAR1_FRSC_AMT4
+                                             , E.YEAR1_FRSC_AMT5
+                                             , E.YEAR1_FRSC_AMT6
+                                             , E.YEAR2_FRSC_AMT1
+                                             , E.YEAR2_FRSC_AMT2
+                                             , E.YEAR2_FRSC_AMT3
+                                             , E.YEAR2_FRSC_AMT4
+                                             , E.YEAR2_FRSC_AMT5
+                                             , E.YEAR2_FRSC_AMT6
+                                             , E.YEAR3_FRSC_AMT1
+                                             , E.YEAR3_FRSC_AMT2
+                                             , E.YEAR3_FRSC_AMT3
+                                             , E.YEAR3_FRSC_AMT4
+                                             , E.YEAR3_FRSC_AMT5
+                                             , E.YEAR3_FRSC_AMT6
+                                             , E.YEAR4_FRSC_AMT1
+                                             , E.YEAR4_FRSC_AMT2
+                                             , E.YEAR4_FRSC_AMT3
+                                             , E.YEAR4_FRSC_AMT4
+                                             , E.YEAR4_FRSC_AMT5
+                                             , E.YEAR4_FRSC_AMT6
+                                             , E.YEAR5_FRSC_AMT1
+                                             , E.YEAR5_FRSC_AMT2
+                                             , E.YEAR5_FRSC_AMT3
+                                             , E.YEAR5_FRSC_AMT4
+                                             , E.YEAR5_FRSC_AMT5
+                                             , E.YEAR5_FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, '150', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.ADJ_DEF_FRSC_AMT, '200', BB.ADJ_DEF_FRSC_AMT, '210', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT6
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT1
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.DMN_DEF_FRSC_AMT, '120', BB.DMN_DEF_FRSC_AMT, '130', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT2
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.DMN_DEF_FRSC_AMT, '150', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT3
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT4
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT5
+                                             , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '170', BB.DMN_DEF_FRSC_AMT, '200', BB.DMN_DEF_FRSC_AMT, '210', BB.DMN_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS DMN_FRSC_AMT6
+                                          FROM TB_DGRCOMPO A
+                                             , TB_DGRDEPT B
+                                             , TB_DGRBIZ C
+                                             , TB_YEARFISFG D
+                                             , TB_PLEDGE E
+                                             , TB_PLEDGEBIZ F
+                                             , TB_PLEDGEBIZ G
+                                             , TB_PLEDGEBIZ H
+                                             , TB_PLEDGEINFO I
+                                         WHERE 1 = 1
+                                           AND D.FIS_YEAR = C.FIS_YEAR
+                                           AND D.FIS_FG_CD = C.FIS_FG_CD
+                                           AND D.FIS_FG_MST_CD <![CDATA[<>]]> '100'
+                                           AND C.FIS_YEAR = A.FIS_YEAR
+                                           AND C.BGT_DGR = A.BGT_DGR
+                                           AND C.DBIZ_CD = A.DBIZ_CD
+                                           AND B.FIS_YEAR = A.FIS_YEAR
+                                           AND B.BGT_DGR = A.BGT_DGR
+                                           AND B.DEPT_CD = A.DEPT_CD
+                                           AND A.FIS_YEAR = E.FIS_YEAR
+                                           AND A.BGT_DGR = E.BGT_DGR
+                                           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                           AND I.PLEDGE_INFO_ID = F.PLEDGE_INFO_ID
+                                           AND I.DEL_YN = 'N'
+                                           AND H.PLEDGE_BIZ_ID = G.UP_PLEDGE_BIZ_ID
+                                           AND H.DEL_YN = 'N'
+                                           AND G.PLEDGE_BIZ_ID = F.UP_PLEDGE_BIZ_ID
+                                           AND G.DEL_YN = 'N'
+                                           AND F.PLEDGE_BIZ_ID = E.PLEDGE_BIZ_ID
+                                           AND F.DEL_YN = 'N'
+                                           AND F.PLEDGE_INFO_ID = #pledgeInfoId#
+                                         <isNotEmpty prepend="" property="pledgeBizId1">
+                                           AND H.PLEDGE_BIZ_ID = #pledgeBizId1#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId2">
+                                           AND G.PLEDGE_BIZ_ID = #pledgeBizId2#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="pledgeBizId">
+                                           AND E.PLEDGE_BIZ_ID = #pledgeBizId#
+                                         </isNotEmpty>
+                                           AND E.FIS_YEAR = #fisYear#
+                                           AND E.BGT_DGR = #bgtDgr#
+                                         <isNotEmpty prepend="" property="officeCd">
+                                           AND B.OFFICE_CD = #officeCd#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankFr">
+                                           AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="deptRankTo">
+                                           AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdFr">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[>=]]> #teMngMokCdFr#
+                                         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="teMngMokCdTo">
+                                           AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
+                                         </isNotEmpty>
+                                       ) A
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                                 WHERE 1 = 1
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '0000' || '_' || '00000000000'
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.FIS_FG_CD || '_' || '00000000000'
+                                                     , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || A.FIS_FG_CD || '_' || A.TE_BGT_COMPO_ID)
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.FIS_FG_MST_CD, '000')
+                , NVL(T.FIS_FG_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PLEDGE_BIZ_SEQ1, 0)
+                , NVL(T.PLEDGE_BIZ_ID1, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ2, 0)
+                , NVL(T.PLEDGE_BIZ_ID2, '00000000000')
+                , NVL(T.PLEDGE_BIZ_SEQ, 0)
+                , NVL(T.PLEDGE_BIZ_ID, '00000000000')
+                , NVL(T.PBIZ_RANK, 0)
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, 0)
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, 0)
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_MNG_MOK_CD, '00000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+        
+</sqlMap>

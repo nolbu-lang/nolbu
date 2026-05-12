@@ -1,0 +1,650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ReportWrite0B0">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="ReportWrite0B0.selectReport0B0List" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite0B0.selectReport0B0List*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , T.DGR_LEVEL AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , T.REPORT_CD AS REPORT_CD
+             , T.REPORT_DETL_CD AS REPORT_DETL_CD
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , CAST((T.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT
+             , CAST((T.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
+             , CAST(((T.PRE_AMT + T.DIFF_AMT)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS ADD_BGT_AMT
+             , CAST((T.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
+             , T.COMPO_LEVEL AS COMPO_LEVEL
+             , T.SRCH_VAL AS SRCH_VAL
+             , T.SRCH_VAL AS SRCH_VAL_VIEW
+             , T.BIZ_NM AS BIZ_NM
+             , T.BIZ_NM AS BIZ_NM_VIEW
+             , T.BIZ_AMOUNT AS BIZ_AMOUNT
+             , T.BIZ_AMOUNT AS BIZ_AMOUNT_VIEW
+             , T.BIZ_PERIOD AS BIZ_PERIOD
+             , T.BIZ_PERIOD AS BIZ_PERIOD_VIEW
+             , CAST((T.TOT_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_BIZ_AMT
+             , CAST((T.TOT_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_BIZ_AMT_VIEW
+             , CAST((T.PRE_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BIZ_AMT
+             , CAST((T.PRE_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BIZ_AMT_VIEW
+             , CAST((T.FRSC_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT
+             , T.FRSCES AS FRSCES
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN T.FIS_FG_MST_NM
+                         WHEN T.DGR_LEVEL = 1 THEN DECODE(T.FIS_FG_MST_CD, '100', DECODE(T.SECT_CD, '010', '일반공공행정·질서·안전·교육', '060', '문화 및 관광, 체육', '080', '사회복지, 보건', T.SECT_NM), T.FIS_FG_NM)
+                         WHEN T.DGR_LEVEL > 1 THEN LAVEL_SYMBOL || T.COMP_GROUND
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , T.UP_DGRCOMPO_ID AS PARENT
+             , CASE WHEN T.CHILD_CNT > 0  THEN 'false'
+                    ELSE 'true'
+               END AS IS_LEAF
+             , 'true' AS EXPANDED
+             , 'true' AS LOADED
+             , T.DGR_LEVEL AS "LEVEL"
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                     , A.REPORT_CD AS REPORT_CD
+                     , A.REPORT_DETL_CD AS REPORT_DETL_CD
+                     , A.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                     , A.SECT_CD AS SECT_CD
+                     , A.SECT_NM AS SECT_NM
+                     , A.FIS_FG_CD AS FIS_FG_CD
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                     , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+                     , A.COMPO_LEVEL AS COMPO_LEVEL
+                     , A.COMP_GROUND AS COMP_GROUND
+                     , A.PRE_BGT_AMT AS PRE_BGT_AMT
+                     , A.PRE_AMT AS PRE_AMT
+                     , A.DEMAND_DIFF_AMT AS DEMAND_DIFF_AMT
+                     , A.DIFF_AMT AS DIFF_AMT
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , A.SRCH_VAL AS SRCH_VAL
+                     , A.BIZ_NM AS BIZ_NM
+                     , A.BIZ_AMOUNT AS BIZ_AMOUNT
+                     , A.BIZ_PERIOD AS BIZ_PERIOD
+                     , A.TOT_BIZ_AMT AS TOT_BIZ_AMT
+                     , A.PRE_BIZ_AMT AS PRE_BIZ_AMT
+                     , NVL((SELECT Z.FIS_FG_MST_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_MST_CD = A.FIS_FG_MST_CD AND ROWNUM = 1), 0) AS FIS_FG_MST_NM
+                     , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = A.FIS_FG_CD AND ROWNUM = 1), 0) AS FIS_FG_NM
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '0000000000000000') AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '0000000000000000') AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                     , NVL((SELECT COUNT(*) 
+                              FROM TB_DGRCOMPO Z
+                                 , TB_REPORT0B0 Z2 
+                             WHERE Z2.FIS_YEAR = Z.FIS_YEAR 
+                               AND Z2.BGT_DGR = Z.BGT_DGR 
+                               AND Z2.TE_BGT_COMPO_ID = Z.TE_BGT_COMPO_ID 
+                               AND Z.FIS_YEAR = A.FIS_YEAR 
+                               AND Z.BGT_DGR = A.BGT_DGR
+                               AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID), 0) AS CHILD_CNT
+                     , NVL((SELECT Z.SYMBOL FROM TB_DGRCOMPOSYMBOL Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.COMPO_LEVEL = A.COMPO_LEVEL AND SYMBOL_LENGTH > 0), '') AS LAVEL_SYMBOL
+                     , NVL((SELECT Z.LINE_UP_ORD FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP002' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_LINE_UP_ORD
+                     , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT
+                     , NVL((SELECT GROUP_CONCAT(ZZ.FRSC SEPARATOR '<![CDATA[<BR>]]>')
+                              FROM (SELECT MAX(Z2.FRSC_FG_NM) || ':' || TRIM(TO_CHAR(CAST(((NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC
+                                         , NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT
+                                      FROM TB_DGRCOMPOFRSC Z1
+                                         , TB_YEARFRSC Z2
+                                     WHERE 1 = 1
+                                       AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                                       AND Z2.FRSC_FG_CD = Z1.FRSC_FG_CD
+                                       AND Z1.FIS_YEAR = A.FIS_YEAR 
+                                       AND Z1.BGT_DGR = A.BGT_DGR 
+                                       AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                     GROUP BY Z2.FIS_YEAR
+                                            , Z2.FRSC_FG_CD
+                                   ) ZZ
+                             WHERE 1 = 1
+                               AND ZZ.FRSC_AMT <![CDATA[<>]]> 0
+                           )
+                       , '') AS FRSCES
+                  FROM (
+                        SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || '00000000000' 
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || '000' || '_' || '000' || '_' || '00000000000' 
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' ||  A.UP_TE_BGT_COMPO_ID) AS UP_DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, 0, 2, 1, 3, 1 + A.COMPO_LEVEL) AS DGR_LEVEL
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , E.REPORT_CD AS REPORT_CD
+                                     , E.REPORT_DETL_CD AS REPORT_DETL_CD
+                                     , C.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.TE_BGT_COMPO_ID) AS TE_BGT_COMPO_ID
+                                     , DECODE(H.CT, 1, '000', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD)) AS SECT_CD
+                                     , DECODE(H.CT, 1, '000', C.SECT_NM) AS SECT_NM
+                                     , DECODE(H.CT, 1, '000', 2, DECODE(C.FIS_FG_MST_CD, '100', '000', C.FIS_FG_CD), C.FIS_FG_CD) AS FIS_FG_CD
+                                     , DECODE(H.CT, 1, '0000', 2, '0000', B.OFFICE_CD) AS OFFICE_CD
+                                     , DECODE(H.CT, 1, '0000000', 2, '0000000', A.DEPT_CD) AS DEPT_CD
+                                     , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', C.DBIZ_CD) AS DBIZ_CD 
+                                     , DECODE(H.CT, 1, '00000', 2, '00000', A.TE_MNG_MOK_CD) AS TE_MNG_MOK_CD 
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.TE_BGT_COMPO_SEQ) AS TE_BGT_COMPO_SEQ 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DEMAND_DIFF_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DEMAND_DIFF_AMT, 0), A.DEMAND_DIFF_AMT)) AS DEMAND_DIFF_AMT
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.COMPO_LEVEL) AS COMPO_LEVEL 
+                                     , DECODE(H.CT, 1, '', 2, '', A.COMP_GROUND) AS COMP_GROUND 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), A.DIFF_AMT)) AS DIFF_AMT
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.SORT_SEQ) AS SORT_SEQ 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.PRE_BGT_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.PRE_BGT_AMT, 0), A.PRE_BGT_AMT)) AS PRE_BGT_AMT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), A.PRE_AMT)) AS PRE_AMT
+                                     , DECODE(H.CT, 1, '', 2, '', E.REFLECT_FG) AS REFLECT_FG 
+                                     , DECODE(H.CT, 1, '', 2, '', E.DEMAND_CONT) AS DEMAND_CONT 
+                                     , DECODE(H.CT, 1, '', 2, '', E.SRCH_VAL) AS SRCH_VAL
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_NM) AS BIZ_NM 
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_AMOUNT) AS BIZ_AMOUNT
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_PERIOD) AS BIZ_PERIOD
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', E.TOT_BIZ_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', E.TOT_BIZ_AMT, 0), E.TOT_BIZ_AMT)) AS TOT_BIZ_AMT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', E.PRE_BIZ_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', E.PRE_BIZ_AMT, 0), E.PRE_BIZ_AMT)) AS PRE_BIZ_AMT
+                                  FROM TB_DGRCOMPO A
+                                     , TB_DGRDEPT B
+                                     , TB_DGRBIZ C
+                                     , TB_YEARFISFG D
+                                     , TB_REPORT0B0 E
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                                 WHERE 1 = 1
+                                 <isEqual prepend="" property="userDeptYn" compareValue="Y">
+                                   AND EXISTS (SELECT 1
+                                                 FROM TB_USERDEPT Z
+                                                WHERE Z.USER_ID = #userId#
+                                                  AND Z.DEPT_CD = B.DEPT_CD
+                                                  AND Z.USE_YN = 'Y'
+                                                  AND ROWNUM = 1
+                                              )
+                                 </isEqual>
+                                   AND D.FIS_YEAR = C.FIS_YEAR
+                                   AND D.FIS_FG_CD = C.FIS_FG_CD
+                                   AND C.FIS_YEAR = A.FIS_YEAR
+                                   AND C.BGT_DGR = A.BGT_DGR
+                                   AND C.DBIZ_CD = A.DBIZ_CD
+                                   AND B.FIS_YEAR = A.FIS_YEAR
+                                   AND B.BGT_DGR = A.BGT_DGR
+                                   AND B.DEPT_CD = A.DEPT_CD
+                                   AND A.FIS_YEAR = E.FIS_YEAR
+                                   AND A.BGT_DGR = E.BGT_DGR
+                                   AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                   AND E.REPORT_CD = #reportCd#
+                                   AND E.REPORT_DETL_CD = #reportDetlCd#
+                                   AND E.FIS_YEAR = #fisYear#
+                                   AND E.BGT_DGR = #bgtDgr#
+                                 <isNotEmpty prepend="" property="fisFgMstCd">
+                                   AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="fisFgCd">
+                                   AND D.FIS_FG_CD = #fisFgCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="srchVal">
+                                   AND E.SRCH_VAL LIKE '%' || #srchVal# || '%'
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="officeCd">
+                                   AND B.OFFICE_CD = #officeCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankFr">
+                                   AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankTo">
+                                   AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                 </isNotEmpty>
+                                 <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+                                   AND EXISTS (SELECT 1
+                                                 FROM TB_DGRCOMPOFRSC Z
+                                                WHERE 1 = 1
+                                                  AND Z.FIS_YEAR = A.FIS_YEAR
+                                                  AND Z.BGT_DGR = A.BGT_DGR
+                                                  AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                                  AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdFr">
+                                                  AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                                                </isNotEmpty>                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdTo">
+                                                  AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                                                </isNotEmpty>
+                                              )
+                                 </isEqual>
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || '00000000000' 
+                                                     , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || A.TE_BGT_COMPO_ID)
+                                     
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.FIS_FG_MST_CD, '000')
+                , DECODE(T.FIS_FG_MST_CD, '100', T.SECT_CD, '000')
+                , NVL(T.FIS_FG_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PBIZ_RANK, 0)
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, 0)
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, 0)
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_MNG_MOK_CD, '00000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+    
+    <select id="ReportWrite0B0.selectReport0B0ExcelList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite0B0.selectReport0B0List*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , CAST(T.DGR_LEVEL AS NUMERIC(5, 0)) AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , T.REPORT_CD AS REPORT_CD
+             , T.REPORT_DETL_CD AS REPORT_DETL_CD
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , T.FIS_FG_MST_CD AS FIS_FG_MST_CD
+             , T.SECT_CD AS SECT_CD
+             , T.FIS_FG_CD AS FIS_FG_CD
+             , CAST((T.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT
+             , CAST((T.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
+             , CAST((T.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
+             , CAST(((T.PRE_AMT + T.DIFF_AMT)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS ADD_BGT_AMT
+             , CAST((T.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
+             , T.COMPO_LEVEL AS COMPO_LEVEL
+             , T.SRCH_VAL AS SRCH_VAL
+             , T.BIZ_NM AS BIZ_NM
+             , T.BIZ_AMOUNT AS BIZ_AMOUNT
+             , T.BIZ_PERIOD AS BIZ_PERIOD
+             , CAST((T.TOT_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_BIZ_AMT
+             , CAST((T.TOT_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS TOT_BIZ_AMT_VIEW
+             , CAST((T.PRE_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BIZ_AMT
+             , CAST((T.PRE_BIZ_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BIZ_AMT_VIEW
+             , CAST((T.FRSC_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS FRSC_AMT
+             , T.FIS_FG_MST_NM
+             , T.FIS_FG_NM
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN '합계'
+                         WHEN T.DGR_LEVEL = 1 THEN DECODE(T.FIS_FG_MST_CD, '100', DECODE(T.SECT_CD, '010', '일반공공행정·질서·안전·교육', '060', '문화 및 관광, 체육', '080', '사회복지, 보건', T.SECT_NM), T.FIS_FG_NM)
+                         WHEN T.DGR_LEVEL > 1 THEN LAVEL_SYMBOL || NVL(T.BIZ_NM, T.COMP_GROUND)
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , T.UP_DGRCOMPO_ID AS PARENT
+             , CASE WHEN T.CHILD_CNT > 0  THEN 'false'
+                    ELSE 'true'
+               END AS IS_LEAF
+             , 'true' AS EXPANDED
+             , 'true' AS LOADED
+             , T.DGR_LEVEL AS "LEVEL"
+          FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
+                     , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+                     , A.DGR_LEVEL AS DGR_LEVEL
+                     , A.FIS_YEAR AS FIS_YEAR
+                     , A.BGT_DGR AS BGT_DGR
+                     , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+                     , A.REPORT_CD AS REPORT_CD
+                     , A.REPORT_DETL_CD AS REPORT_DETL_CD
+                     , A.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                     , A.SECT_CD AS SECT_CD
+                     , A.SECT_NM AS SECT_NM
+                     , A.FIS_FG_CD AS FIS_FG_CD
+                     , A.OFFICE_CD AS OFFICE_CD
+                     , A.DEPT_CD AS DEPT_CD
+                     , A.DBIZ_CD AS DBIZ_CD
+                     , A.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+                     , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+                     , A.COMPO_LEVEL AS COMPO_LEVEL
+                     , A.COMP_GROUND AS COMP_GROUND
+                     , A.PRE_BGT_AMT AS PRE_BGT_AMT
+                     , A.PRE_AMT AS PRE_AMT
+                     , A.DEMAND_DIFF_AMT AS DEMAND_DIFF_AMT
+                     , A.DIFF_AMT AS DIFF_AMT
+                     , A.SORT_SEQ AS SORT_SEQ
+                     , A.SRCH_VAL AS SRCH_VAL
+                     , A.BIZ_NM AS BIZ_NM
+                     , A.BIZ_AMOUNT AS BIZ_AMOUNT
+                     , A.BIZ_PERIOD AS BIZ_PERIOD
+                     , A.TOT_BIZ_AMT AS TOT_BIZ_AMT
+                     , A.PRE_BIZ_AMT AS PRE_BIZ_AMT
+                     , NVL((SELECT Z.FIS_FG_MST_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_MST_CD = A.FIS_FG_MST_CD AND ROWNUM = 1), 0) AS FIS_FG_MST_NM
+                     , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = A.FIS_FG_CD AND ROWNUM = 1), 0) AS FIS_FG_NM
+                     , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
+                     , NVL((SELECT Z.DEPT_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DEPT_CD = A.DEPT_CD AND ROWNUM = 1), 0) AS DEPT_RANK
+                     , NVL((SELECT Z.PBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS PBIZ_RANK
+                     , NVL((SELECT Z.PBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '0000000000000000') AS PBIZ_CD
+                     , NVL((SELECT Z.UBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS UBIZ_RANK
+                     , NVL((SELECT Z.UBIZ_CD FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '0000000000000000') AS UBIZ_CD
+                     , NVL((SELECT Z.DBIZ_RANK FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), 0) AS DBIZ_RANK
+                     , NVL((SELECT COUNT(*) FROM TB_DGRCOMPO Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID), 0) AS CHILD_CNT
+                     , NVL((SELECT Z.SYMBOL FROM TB_DGRCOMPOSYMBOL Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.COMPO_LEVEL = A.COMPO_LEVEL AND SYMBOL_LENGTH > 0), '') AS LAVEL_SYMBOL
+                     , NVL((SELECT Z.LINE_UP_ORD FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP002' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_LINE_UP_ORD
+                     , (SELECT NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) AS FRSC_AMT
+                  FROM (
+                        SELECT T.*
+                          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || '00000000000' 
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || '000' || '_' || '000' || '_' || '00000000000' 
+                                                  , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                  , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' ||  A.UP_TE_BGT_COMPO_ID) AS UP_DGRCOMPO_ID
+                                     , DECODE(H.CT, 1, 0, 2, 1, 3, 1 + A.COMPO_LEVEL) AS DGR_LEVEL
+                                     , A.FIS_YEAR AS FIS_YEAR
+                                     , A.BGT_DGR AS BGT_DGR
+                                     , E.REPORT_CD AS REPORT_CD
+                                     , E.REPORT_DETL_CD AS REPORT_DETL_CD
+                                     , C.FIS_FG_MST_CD AS FIS_FG_MST_CD
+                                     , DECODE(H.CT, 1, '00000000000', 2, '00000000000', A.TE_BGT_COMPO_ID) AS TE_BGT_COMPO_ID
+                                     , DECODE(H.CT, 1, '000', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD)) AS SECT_CD
+                                     , DECODE(H.CT, 1, '000', C.SECT_NM) AS SECT_NM
+                                     , DECODE(H.CT, 1, '000', 2, DECODE(C.FIS_FG_MST_CD, '100', '000', C.FIS_FG_CD), C.FIS_FG_CD) AS FIS_FG_CD
+                                     , DECODE(H.CT, 1, '0000', 2, '0000', B.OFFICE_CD) AS OFFICE_CD
+                                     , DECODE(H.CT, 1, '0000000', 2, '0000000', A.DEPT_CD) AS DEPT_CD
+                                     , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', C.DBIZ_CD) AS DBIZ_CD 
+                                     , DECODE(H.CT, 1, '00000', 2, '00000', A.TE_MNG_MOK_CD) AS TE_MNG_MOK_CD 
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.TE_BGT_COMPO_SEQ) AS TE_BGT_COMPO_SEQ 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DEMAND_DIFF_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DEMAND_DIFF_AMT, 0), A.DEMAND_DIFF_AMT)) AS DEMAND_DIFF_AMT
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.COMPO_LEVEL) AS COMPO_LEVEL 
+                                     , DECODE(H.CT, 1, '', 2, '', A.COMP_GROUND) AS COMP_GROUND 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), A.DIFF_AMT)) AS DIFF_AMT
+                                     , DECODE(H.CT, 1, 0, 2, 0, A.SORT_SEQ) AS SORT_SEQ 
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.PRE_BGT_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.PRE_BGT_AMT, 0), A.PRE_BGT_AMT)) AS PRE_BGT_AMT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), A.PRE_AMT)) AS PRE_AMT
+                                     , DECODE(H.CT, 1, '', 2, '', E.REFLECT_FG) AS REFLECT_FG 
+                                     , DECODE(H.CT, 1, '', 2, '', E.DEMAND_CONT) AS DEMAND_CONT 
+                                     , DECODE(H.CT, 1, '', 2, '', E.SRCH_VAL) AS SRCH_VAL
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_NM) AS BIZ_NM 
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_AMOUNT) AS BIZ_AMOUNT
+                                     , DECODE(H.CT, 1, '', 2, '', E.BIZ_PERIOD) AS BIZ_PERIOD
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', E.TOT_BIZ_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', E.TOT_BIZ_AMT, 0), E.TOT_BIZ_AMT)) AS TOT_BIZ_AMT
+                                     , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', E.PRE_BIZ_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', E.PRE_BIZ_AMT, 0), E.PRE_BIZ_AMT)) AS PRE_BIZ_AMT
+                                  FROM TB_DGRCOMPO A
+                                     , TB_DGRDEPT B
+                                     , TB_DGRBIZ C
+                                     , TB_YEARFISFG D
+                                     , TB_REPORT0B0 E
+                                     , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 3) H
+                                 WHERE 1 = 1
+                                 <isEqual prepend="" property="userDeptYn" compareValue="Y">
+                                   AND EXISTS (SELECT 1
+                                                 FROM TB_USERDEPT Z
+                                                WHERE Z.USER_ID = #userId#
+                                                  AND Z.DEPT_CD = B.DEPT_CD
+                                                  AND Z.USE_YN = 'Y'
+                                                  AND ROWNUM = 1
+                                              )
+                                 </isEqual>
+                                   AND D.FIS_YEAR = C.FIS_YEAR
+                                   AND D.FIS_FG_CD = C.FIS_FG_CD
+                                   AND C.FIS_YEAR = A.FIS_YEAR
+                                   AND C.BGT_DGR = A.BGT_DGR
+                                   AND C.DBIZ_CD = A.DBIZ_CD
+                                   AND B.FIS_YEAR = A.FIS_YEAR
+                                   AND B.BGT_DGR = A.BGT_DGR
+                                   AND B.DEPT_CD = A.DEPT_CD
+                                   AND A.FIS_YEAR = E.FIS_YEAR
+                                   AND A.BGT_DGR = E.BGT_DGR
+                                   AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+                                   AND E.REPORT_CD = #reportCd#
+                                   AND E.REPORT_DETL_CD = #reportDetlCd#
+                                   AND E.FIS_YEAR = #fisYear#
+                                   AND E.BGT_DGR = #bgtDgr#
+                                 <isNotEmpty prepend="" property="fisFgMstCd">
+                                   AND D.FIS_FG_MST_CD = #fisFgMstCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="fisFgCd">
+                                   AND D.FIS_FG_CD = #fisFgCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="srchVal">
+                                   AND E.SRCH_VAL LIKE '%' || #srchVal# || '%'
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="officeCd">
+                                   AND B.OFFICE_CD = #officeCd#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankFr">
+                                   AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+                                 </isNotEmpty>
+                                 <isNotEmpty prepend="" property="deptRankTo">
+                                   AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+                                 </isNotEmpty>
+                                 <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+                                   AND EXISTS (SELECT 1
+                                                 FROM TB_DGRCOMPOFRSC Z
+                                                WHERE 1 = 1
+                                                  AND Z.FIS_YEAR = A.FIS_YEAR
+                                                  AND Z.BGT_DGR = A.BGT_DGR
+                                                  AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                                  AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdFr">
+                                                  AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                                                </isNotEmpty>                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdTo">
+                                                  AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                                                </isNotEmpty>
+                                              )
+                                 </isEqual>
+                                 GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || '000' || '_' || '00000000000' 
+                                                     , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || '00000000000' 
+                                                     , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || C.FIS_FG_MST_CD || '_' || DECODE(C.FIS_FG_MST_CD, '100', DECODE(C.SECT_CD, '020', '010', '050', '010', '090', '080', C.SECT_CD), C.FIS_FG_CD) || '_' || A.TE_BGT_COMPO_ID)
+                                     
+                               ) T
+                       ) A
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.FIS_FG_MST_CD, '000')
+                , DECODE(T.FIS_FG_MST_CD, '100', T.SECT_CD, '000')
+                , NVL(T.FIS_FG_CD, '000')
+                , NVL(T.OFFICE_RANK, 0)
+                , NVL(T.OFFICE_CD, '0000')
+                , NVL(T.DEPT_RANK, 0)
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.PBIZ_RANK, 0)
+                , NVL(T.PBIZ_CD, '0000000000000000')
+                , NVL(T.UBIZ_RANK, 0)
+                , NVL(T.UBIZ_CD, '0000000000000000')
+                , NVL(T.DBIZ_RANK, 0)
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_MNG_MOK_CD, '00000')
+                , NVL(T.SORT_SEQ, 0)
+    </select>
+    
+    <update id="ReportWrite0B0.updateReport0B0" parameterClass="Map" >
+        /*ReportWrite0B0.updateReport0B0*/
+        UPDATE TB_REPORT0B0
+           SET BIZ_NM = #bizNm#
+             , BIZ_AMOUNT = #bizAmount#
+             , BIZ_PERIOD = #bizPeriod#
+             , TOT_BIZ_AMT = NVL(#totBizAmt#, 0) * NVL(#amtUnit#, 1)
+             , PRE_BIZ_AMT = NVL(#preBizAmt#, 0) * NVL(#amtUnit#, 1)
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <insert id="ReportWrite0B0.insertReport0B0" parameterClass="Map" >
+      /*ReportWrite0B0.insertReport0B0*/
+        INSERT
+          INTO TB_REPORT0B0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , BIZ_NM
+             , BIZ_AMOUNT
+             , BIZ_PERIOD
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT 
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #reportCd#
+             , #reportDetlCd#
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , ''
+             , ''
+             , ''
+             , ''
+             , A.COMP_GROUND
+             , ''
+             , ''
+             , 0
+             , 0
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+             , (SELECT A.FIS_YEAR
+                     , A.BGT_DGR
+                     , A.TE_BGT_COMPO_ID
+                  FROM (SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , A.TE_BGT_COMPO_ID
+                             , 'Y' AS SEL_YN
+                          FROM TB_REPORT A
+                         WHERE A.REPORT_CD IN ('020', '0A0')
+                        UNION ALL
+                        SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , A.TE_BGT_COMPO_ID
+                             , NVL((SELECT CASE WHEN NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) >= #check030Amt# THEN 'Y' ELSE 'N' END
+                                      FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC 
+                                     WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID), 'N') AS SEL_YN
+                          FROM TB_REPORT A
+                         WHERE A.REPORT_CD = '030'
+                       ) A
+                 WHERE A.SEL_YN = 'Y'
+                 GROUP BY A.FIS_YEAR
+                        , A.BGT_DGR
+                        , A.TE_BGT_COMPO_ID
+               ) B
+         WHERE 1 = 1
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (SELECT 1
+                         FROM TB_USERDEPT Z
+                        WHERE Z.USER_ID = #userId#
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.USE_YN = 'Y'
+                          AND ROWNUM = 1
+                      )
+         </isEqual>
+           AND A.FIS_YEAR = B.FIS_YEAR
+           AND A.BGT_DGR = B.BGT_DGR
+           AND A.TE_BGT_COMPO_ID = B.TE_BGT_COMPO_ID
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.COMPO_LEVEL = 1
+           AND NOT EXISTS (SELECT 1 
+                             FROM TB_REPORT0B0 Z 
+                            WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                              AND Z.REPORT_CD = #reportCd#
+                              AND Z.REPORT_DETL_CD = #reportDetlCd#
+                          )
+    </insert>
+    
+    <insert id="ReportWrite0B0.insertReport" parameterClass="Map" >
+        /*ReportWrite0B0.insertReport*/
+        INSERT
+          INTO TB_REPORT(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #reportCd#
+             , #reportDetlCd#
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+             , (SELECT A.FIS_YEAR
+                     , A.BGT_DGR
+                     , A.TE_BGT_COMPO_ID
+                  FROM (SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , A.TE_BGT_COMPO_ID
+                             , 'Y' AS SEL_YN
+                          FROM TB_REPORT A
+                         WHERE A.REPORT_CD IN ('020', '0A0')
+                        UNION ALL
+                        SELECT A.FIS_YEAR
+                             , A.BGT_DGR
+                             , A.TE_BGT_COMPO_ID
+                             , NVL((SELECT CASE WHEN NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0) >= #check030Amt# THEN 'Y' ELSE 'N' END
+                                      FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC 
+                                     WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = A.FIS_YEAR AND BB.BGT_DGR = A.BGT_DGR AND BB.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID), 'N') AS SEL_YN
+                          FROM TB_REPORT A
+                         WHERE A.REPORT_CD = '030'
+                       ) A
+                 WHERE A.SEL_YN = 'Y'
+                 GROUP BY A.FIS_YEAR
+                        , A.BGT_DGR
+                        , A.TE_BGT_COMPO_ID
+               ) B
+         WHERE 1 = 1
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (SELECT 1
+                         FROM TB_USERDEPT Z
+                        WHERE Z.USER_ID = #userId#
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.USE_YN = 'Y'
+                          AND ROWNUM = 1
+                      )
+         </isEqual>
+           AND A.FIS_YEAR = B.FIS_YEAR
+           AND A.BGT_DGR = B.BGT_DGR
+           AND A.TE_BGT_COMPO_ID = B.TE_BGT_COMPO_ID
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.COMPO_LEVEL = 1
+           AND NOT EXISTS (SELECT 1 
+                             FROM TB_REPORT Z 
+                            WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                              AND Z.BGT_DGR = A.BGT_DGR
+                              AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                              AND Z.REPORT_CD = #reportCd#
+                              AND Z.REPORT_DETL_CD = #reportDetlCd#
+                          )
+    </insert>
+</sqlMap>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoSort">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogPledgeSort.selectPledgeSortPledgeBizList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogPledgeSort.selectPledgeSortPledgeBizList*/
+        SELECT A.PLEDGE_BIZ_ID AS PLEDGE_BIZ_ID
+             , A.PLEDGE_BIZ_FG AS PLEDGE_BIZ_FG
+             , A.PLEDGE_BIZ_NM AS PLEDGE_BIZ_NM
+             , A.PLEDGE_BIZ_SEQ AS PLEDGE_BIZ_SEQ
+          FROM TB_PLEDGEBIZ A
+         WHERE 1 = 1
+           AND A.UP_PLEDGE_BIZ_ID = #upPledgeBizId#
+           AND A.DEL_YN = 'N'
+         ORDER BY A.PLEDGE_BIZ_SEQ
+    </select>
+    
+    <update id="DialogPledgeSort.updatePledgeBizSort" parameterClass="Map" >
+        /*DialogPledgeSort.updatePledgeBizSort*/
+        UPDATE TB_PLEDGEBIZ A
+           SET PLEDGE_BIZ_SEQ = #pledgeBizSeq#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.PLEDGE_BIZ_ID = #pledgeBizId#
+    </update>
+</sqlMap>

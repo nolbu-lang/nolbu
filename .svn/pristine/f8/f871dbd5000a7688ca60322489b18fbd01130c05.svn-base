@@ -1,0 +1,2012 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="ReportComm">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <insert id="ReportComm.insertReport" parameterClass="Map" >
+        /*ReportComm.insertReport*/
+        INSERT 
+          INTO TB_REPORT(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert> 
+    
+    <update id="ReportComm.updateReport" parameterClass="Map" >
+        /*ReportComm.updateReport*/
+        UPDATE TB_REPORT
+           SET MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+             <isNotEmpty prepend="," property="reportMstr">
+             	REPORT_MSTR	=	#reportMstr#
+             </isNotEmpty> 
+           	 <isNotEmpty prepend="," property="govSub">
+           	 	GOV_SUB		=	#govSub#
+             </isNotEmpty> 
+           	 <isNotEmpty prepend="," property="indiAttr">
+           	 	INDI_ATTR	=	#indiAttr# 
+             </isNotEmpty> 
+           	 <isNotEmpty prepend="," property="advncProc">
+           	 	ADVNC_PROC	=	#advncProc#
+             </isNotEmpty>
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <delete id="ReportComm.deleteReport" parameterClass="Map" >
+        /*ReportComm.deleteReport*/
+        DELETE
+          FROM TB_REPORT
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+         <isNotEmpty prepend="" property="fisYear">
+           AND FIS_YEAR = #fisYear#
+         </isNotEmpty>
+         <isNotEmpty prepend="" property="bgtDgr">
+           AND BGT_DGR = #bgtDgr#
+         </isNotEmpty>
+         <isNotEmpty prepend="" property="teBgtCompoId">
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         </isNotEmpty>
+    </delete>
+    
+    <select id="ReportComm.selectReportInfo" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportInfo*/
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.REPORT_NM
+             , A.SHEET_NM
+             , A.PRINT_PAPER_SIZE
+             , A.PRINT_SCALE
+             , A.RIGHT_MARGIN
+             , A.LEFT_MARGIN
+             , A.TOP_MARGIN
+             , A.BOTTOM_MARGIN
+             , A.HEADER_MARGIN
+             , A.FOOTER_MARGIN
+             , A.ZOOM
+             , NVL((SELECT Z.BGT_COMPO_FG
+                      FROM TB_BGTDGR Z
+                     WHERE 1 = 1
+                       AND Z.FIS_YEAR = A.FIS_YEAR
+                       AND Z.BGT_DGR = A.BGT_DGR
+                       AND ROWNUM = 1)
+               , '') AS BGT_COMPO_FG  
+             , NVL((SELECT CASE WHEN Z.BGT_COMPO_FG = '10' THEN '본예산'
+                                ELSE '추경' || ADD_TIMES || '차' 
+                           END AS BGT_DGR_NM
+                      FROM TB_BGTDGR Z
+                     WHERE 1 = 1
+                       AND Z.FIS_YEAR = A.FIS_YEAR
+                       AND Z.BGT_DGR = A.BGT_DGR
+                       AND ROWNUM = 1)
+               , '') AS BGT_DGR_NM  
+          FROM TB_REPORTINFO A
+         WHERE 1 = 1
+           AND A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+    </select>
+    
+    <select id="ReportComm.selectReportColWidthList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportColWidthList*/
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , COL_SEQ
+             , COL_WIDTH
+          FROM TB_REPORTCOLWIDTH
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+         ORDER BY COL_SEQ
+    </select>
+    
+    <select id="ReportComm.selectReportStyleList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportStyleList*/
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , STYLE_NM
+             , FONT_HEIGHT
+             , FONT_NM
+             , FONT_WEIGHT_YN
+             , FONT_WEIGHT
+             , ALIGNMENT
+             , V_ALIGNMENT
+             , BORDER_RIGHT_YN
+             , BORDER_RIGHT
+             , BORDER_RIGHT_COLOR
+             , BORDER_LEFT_YN
+             , BORDER_LEFT
+             , BORDER_LEFT_COLOR
+             , BORDER_TOP_YN
+             , BORDER_TOP
+             , BORDER_TOP_COLOR
+             , BORDER_BOTTOM_YN
+             , BORDER_BOTTOM
+             , BORDER_BOTTOM_COLOR
+             , FORE_FILL_YN
+             , FORE_GROUND_COLOR_R
+             , FORE_GROUND_COLOR_B
+             , FORE_GROUND_COLOR_G
+             , FILL_PATTERN
+             , WRAP_TEXT_YN
+             , DATA_FORMAT
+             , USER_DATA_FORMAT
+             , FONT_COLOR_YN
+             , FONT_COLOR_R
+             , FONT_COLOR_B
+             , FONT_COLOR_G
+          FROM TB_REPORTSTYLE
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+    </select>
+    
+    <select id="ReportComm.selectReportHeaderList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportHeaderList*/
+        SELECT ROW_SEQ AS ROW_SEQ
+             , CELL_SEQ AS CELL_SEQ
+             , NVL(HEADER_CONT, '') AS HEADER_CONT
+          FROM TB_REPORTHEADER
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+         ORDER BY ROW_SEQ
+                , CELL_SEQ
+    </select>
+    
+    <select id="ReportComm.selectReportMergeList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportMergeList*/
+        SELECT NVL(MERGE_VAL, '') AS MERGE_VAL
+          FROM TB_REPORTMERGE
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+         ORDER BY MERGE_SEQ
+    </select>
+    
+    <select id="ReportComm.selectReportContList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectReportContList*/
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , CONT_SEQ
+             , CONT
+          FROM TB_REPORTCONT
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+         ORDER BY CONT_SEQ
+    </select>
+    
+    <select id="ReportComm.selectDgrcompoChildIdList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectDgrcompoChildIdList*/
+        SELECT #reportCd# AS REPORT_CD
+             , #reportDetlCd# AS REPORT_DETL_CD
+             , FIS_YEAR AS FIS_YEAR
+             , BGT_DGR AS BGT_DGR
+             , TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , #srchVal# AS SRCH_VAL
+          FROM TB_DGRCOMPO
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND UP_TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+    
+    <!-- TB_REPORT010 -->
+    <insert id="ReportComm.insertReport010" parameterClass="Map" >
+        /*ReportComm.insertReport010*/
+        INSERT 
+          INTO TB_REPORT010(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , INVEST_PLAN
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#investPlan#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport010" parameterClass="Map" >
+        /*ReportComm.deleteReport010*/
+        DELETE
+          FROM TB_REPORT010
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport010" parameterClass="Map" >
+        /*ReportComm.copyReport010*/
+        UPDATE TB_REPORT010
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, INVEST_PLAN)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, INVEST_PLAN
+                  FROM TB_REPORT010
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport010" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport010*/
+        UPDATE TB_REPORT010
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    <!-- TB_REPORT020 -->
+    <insert id="ReportComm.insertReport020" parameterClass="Map" >
+        /*ReportComm.insertReport020*/
+        INSERT 
+          INTO TB_REPORT020(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REPORT_SORT_SEQ
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , TOT_CHAR_AMT1
+             , TOT_CHAR_AMT2
+             , TOT_CHAR_AMT3
+             , PRE_INV_FRSC_AMT1
+             , PRE_INV_FRSC_AMT2
+             , PRE_INV_FRSC_AMT3
+             , PRE_INV_FRSC_AMT4
+             , PRE_INV_FRSC_AMT5
+             , PRE_INV_FRSC_AMT6
+             , PRE_INV_CHAR_AMT1
+             , PRE_INV_CHAR_AMT2
+             , PRE_INV_CHAR_AMT3
+             , MAYOR_REPORT_YN
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , INVEST_PLAN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#reportSortSeq#, '')
+             , NVL(#totFrscAmt1#, 0)
+             , NVL(#totFrscAmt2#, 0)
+             , NVL(#totFrscAmt3#, 0)
+             , NVL(#totFrscAmt4#, 0)
+             , NVL(#totFrscAmt5#, 0)
+             , NVL(#totFrscAmt6#, 0)
+             , NVL(#totCharAmt1#, 0)
+             , NVL(#totCharAmt2#, 0)
+             , NVL(#totCharAmt3#, 0)
+             , NVL(#preInvFrscAmt1#, 0)
+             , NVL(#preInvFrscAmt2#, 0)
+             , NVL(#preInvFrscAmt3#, 0)
+             , NVL(#preInvFrscAmt4#, 0)
+             , NVL(#preInvFrscAmt5#, 0)
+             , NVL(#preInvFrscAmt6#, 0)
+             , NVL(#preInvCharAmt1#, 0)
+             , NVL(#preInvCharAmt2#, 0)
+             , NVL(#preInvCharAmt3#, 0)
+             , NVL(#mayorReportYn#, 'Y')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , NVL(#investPlan#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport020" parameterClass="Map" >
+        /*ReportComm.deleteReport020*/
+        DELETE
+          FROM TB_REPORT020
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport020" parameterClass="Map" >
+        /*ReportComm.copyReport020*/
+        UPDATE TB_REPORT020
+           SET (REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , TOT_FRSC_AMT1
+             , TOT_FRSC_AMT2
+             , TOT_FRSC_AMT3
+             , TOT_FRSC_AMT4
+             , TOT_FRSC_AMT5
+             , TOT_FRSC_AMT6
+             , TOT_CHAR_AMT1
+             , TOT_CHAR_AMT2
+             , TOT_CHAR_AMT3
+             , PRE_INV_FRSC_AMT1
+             , PRE_INV_FRSC_AMT2
+             , PRE_INV_FRSC_AMT3
+             , PRE_INV_FRSC_AMT4
+             , PRE_INV_FRSC_AMT5
+             , PRE_INV_FRSC_AMT6
+             , PRE_INV_CHAR_AMT1
+             , PRE_INV_CHAR_AMT2
+             , PRE_INV_CHAR_AMT3
+             , MAYOR_REPORT_YN
+             , INVEST_PLAN)
+             = (SELECT REFLECT_FG
+                     , DEMAND_CONT
+                     , EXAM_CONT
+                     , TOT_FRSC_AMT1
+                     , TOT_FRSC_AMT2
+                     , TOT_FRSC_AMT3
+                     , TOT_FRSC_AMT4
+                     , TOT_FRSC_AMT5
+                     , TOT_FRSC_AMT6
+                     , TOT_CHAR_AMT1
+                     , TOT_CHAR_AMT2
+                     , TOT_CHAR_AMT3
+                     , PRE_INV_FRSC_AMT1
+                     , PRE_INV_FRSC_AMT2
+                     , PRE_INV_FRSC_AMT3
+                     , PRE_INV_FRSC_AMT4
+                     , PRE_INV_FRSC_AMT5
+                     , PRE_INV_FRSC_AMT6
+                     , PRE_INV_CHAR_AMT1
+                     , PRE_INV_CHAR_AMT2
+                     , PRE_INV_CHAR_AMT3
+                     , MAYOR_REPORT_YN
+                     , INVEST_PLAN
+                  FROM TB_REPORT020
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport020" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport020*/
+        UPDATE TB_REPORT020
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateReportSortSeqReport020" parameterClass="Map" >
+        /*ReportComm.updateReportSortSeqReport020*/
+        UPDATE TB_REPORT020
+           SET REPORT_SORT_SEQ = NVL(#reportSortSeq#, 'N')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateMayorReportYnReport020" parameterClass="Map" >
+        /*ReportComm.updateMayorReportYnReport020*/
+        UPDATE TB_REPORT020
+           SET MAYOR_REPORT_YN = NVL(#mayorReportYn#, 'Y')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <!-- TB_REPORT020D -->
+    <insert id="ReportComm.insertReport020D" parameterClass="Map" >
+        /*ReportComm.insertReport020D*/
+        INSERT 
+          INTO TB_REPORT020_D(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , LOCAL_GOV_CD
+             , CHECK_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , B.LOCAL_GOV_CD
+             , 'N'
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT020 A
+             , TB_LOCALGOV B
+         WHERE 1 =1
+           AND B.UP_LOCAL_GOV_CD = '6260000'
+           AND A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </insert>
+    
+    <delete id="ReportComm.deleteReport020D" parameterClass="Map" >
+        /*ReportComm.deleteReport020D*/
+        DELETE
+          FROM TB_REPORT020_D
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="localGovCd">
+           AND LOCAL_GOV_CD = #localGovCd# 
+         </isNotEmpty>
+    </delete>
+    
+    <update id="ReportComm.copyReport020D" parameterClass="Map" >
+        /*ReportComm.copyReport020D*/
+        UPDATE TB_REPORT020_D
+           SET (CHECK_YN)
+             = (SELECT CHECK_YN
+                  FROM TB_REPORT020_D
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 <isNotEmpty prepend="" property="srcLocalGovCd">
+                   AND LOCAL_GOV_CD = #srcLocalGovCd# 
+                 </isNotEmpty>
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="localGovCd">
+           AND LOCAL_GOV_CD = #localGovCd# 
+         </isNotEmpty>
+    </update>
+    
+    <update id="ReportComm.updateReport020D" parameterClass="Map" >
+        /*ReportComm.updateReport020D*/
+        UPDATE TB_REPORT020_D
+           SET CHECK_YN = NVL(#checkYn#, 'N')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="localGovCd">
+           AND LOCAL_GOV_CD = #localGovCd# 
+         </isNotEmpty>
+    </update>
+    
+    
+    
+    <!-- TB_REPORT030 -->
+    <insert id="ReportComm.insertReport030" parameterClass="Map" >
+        /*ReportComm.insertReport030*/
+        INSERT 
+          INTO TB_REPORT030(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , DEPT_CD
+             , DBIZ_CD
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #reportCd#
+             , #reportDetlCd#
+             , FIS_YEAR
+             , BGT_DGR
+             , DEPT_CD
+             , DBIZ_CD
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGRCOMPO A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND NOT EXISTS (SELECT 1
+                             FROM TB_REPORT030 Z
+                            WHERE 1 = 1
+                              AND Z.REPORT_CD = #reportCd#
+                              AND Z.REPORT_DETL_CD = #reportDetlCd#
+                              AND Z.FIS_YEAR = A.FIS_YEAR
+                              AND Z.BGT_DGR = A.BGT_DGR
+                              AND Z.DEPT_CD = A.DEPT_CD
+                              AND Z.DBIZ_CD = A.DBIZ_CD
+                          ) 
+         GROUP BY FIS_YEAR
+                , BGT_DGR
+                , DEPT_CD
+                , DBIZ_CD
+    </insert>
+    
+    <delete id="ReportComm.deleteReport030" parameterClass="Map" >
+        /*ReportComm.deleteReport030*/
+        DELETE
+          FROM TB_REPORT030 A
+         WHERE 1 = 1
+           AND A.REPORT_CD = #reportCd#
+           AND A.REPORT_DETL_CD = #reportDetlCd#
+           AND EXISTS (SELECT 1
+                         FROM TB_DGRCOMPO Z
+                        WHERE 1 = 1
+                          AND Z.FIS_YEAR = A.FIS_YEAR
+                          AND Z.BGT_DGR = A.BGT_DGR
+                          AND Z.DEPT_CD = A.DEPT_CD
+                          AND Z.DBIZ_CD = A.DBIZ_CD
+                          AND Z.FIS_YEAR = #fisYear#
+                          AND Z.BGT_DGR = #bgtDgr#
+                          AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#
+                      )
+           AND NOT EXISTS (SELECT 1
+                             FROM TB_DGRCOMPO Z1
+                                , TB_DGRCOMPO Z2
+                                , TB_REPORT Z3
+                            WHERE 1 = 1
+                              AND Z3.REPORT_CD = #reportCd#
+                              AND Z3.REPORT_DETL_CD = #reportDetlCd#
+                              AND Z3.FIS_YEAR = Z2.FIS_YEAR
+                              AND Z3.BGT_DGR = Z2.BGT_DGR
+                              AND Z3.TE_BGT_COMPO_ID = Z2.TE_BGT_COMPO_ID
+                              AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                              AND Z2.BGT_DGR = Z1.BGT_DGR
+                              AND Z2.DEPT_CD = Z1.DEPT_CD
+                              AND Z2.DBIZ_CD = Z1.DBIZ_CD
+                              AND Z1.FIS_YEAR = #fisYear#
+                              AND Z1.BGT_DGR = #bgtDgr#
+                              AND Z1.TE_BGT_COMPO_ID = #teBgtCompoId#
+                          )    
+    </delete>
+    
+    <update id="ReportComm.copyReport030" parameterClass="Map" >
+        /*ReportComm.copyReport030*/
+        UPDATE TB_REPORT030
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT
+                  FROM TB_REPORT030
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND DEPT_CD = #srcDeptCd#
+                   AND DBIZ_CD = #srcDbizCd#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND DEPT_CD = #deptCd#
+           AND DBIZ_CD = #dbizCd#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport030" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport030*/
+        UPDATE TB_REPORT030
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND DEPT_CD = #deptCd#
+           AND DBIZ_CD = #dbizCd#
+    </update>
+    
+    
+    <!-- TB_REPORT040 -->
+    <insert id="ReportComm.insertReport040" parameterClass="Map" >
+        /*ReportComm.insertReport040*/
+        INSERT 
+          INTO TB_REPORT040(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , STAFF_CNT
+             , STAFF_CURR_CNT
+             , DRIVER_CNT
+             , ETC_CNT
+             , EXP_FG
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#staffCnt#, 0)
+             , NVL(#staffCurrCnt#, 0)
+             , NVL(#driverCnt#, 0)
+             , NVL(#etcCnt#, 0)
+             , NVL(#expFg#, '020')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport040" parameterClass="Map" >
+        /*ReportComm.deleteReport040*/
+        DELETE
+          FROM TB_REPORT040
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport040" parameterClass="Map" >
+        /*ReportComm.copyReport040*/
+        UPDATE TB_REPORT040
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, STAFF_CNT, STAFF_CURR_CNT, DRIVER_CNT, ETC_CNT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, STAFF_CNT, STAFF_CURR_CNT, DRIVER_CNT, ETC_CNT
+                  FROM TB_REPORT040
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport040" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport040*/
+        UPDATE TB_REPORT040
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    
+    <!-- TB_REPORT050 -->
+    <insert id="ReportComm.insertReport050" parameterClass="Map" >
+        /*ReportComm.insertReport050*/
+        INSERT 
+          INTO TB_REPORT050(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport050" parameterClass="Map" >
+        /*ReportComm.deleteReport050*/
+        DELETE
+          FROM TB_REPORT050
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport050" parameterClass="Map" >
+        /*ReportComm.copyReport050*/
+        UPDATE TB_REPORT050
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT
+                  FROM TB_REPORT050
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport050" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport050*/
+        UPDATE TB_REPORT050
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    <!-- TB_REPORT055 -->
+    <insert id="ReportComm.insertReport055" parameterClass="Map" >
+        /*ReportComm.insertReport055*/
+        INSERT 
+          INTO TB_REPORT055(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , JUDG_RSLT_AMT
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#judgRsltAmt#, 0)
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport055" parameterClass="Map" >
+        /*ReportComm.deleteReport055*/
+        DELETE
+          FROM TB_REPORT055
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport055" parameterClass="Map" >
+        /*ReportComm.copyReport055*/
+        UPDATE TB_REPORT055
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, JUDG_RSLT_AMT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, JUDG_RSLT_AMT
+                  FROM TB_REPORT055
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport055" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport055*/
+        UPDATE TB_REPORT055
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    
+    <!-- TB_REPORT060 -->
+    <insert id="ReportComm.insertReport060" parameterClass="Map" >
+        /*ReportComm.insertReport060*/
+        INSERT 
+          INTO TB_REPORT060(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport060" parameterClass="Map" >
+        /*ReportComm.deleteReport060*/
+        DELETE
+          FROM TB_REPORT060
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport060" parameterClass="Map" >
+        /*ReportComm.copyReport060*/
+        UPDATE TB_REPORT060
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT
+                  FROM TB_REPORT060
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport060" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport060*/
+        UPDATE TB_REPORT060
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <!-- TB_REPORT070 -->
+    <insert id="ReportComm.insertReport070" parameterClass="Map" >
+        /*ReportComm.insertReport070*/
+        INSERT 
+          INTO TB_REPORT070(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , ORDER_YMD_SEQ
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , CONSIDER_AMT1
+             , CONSIDER_AMT2
+             , CONSIDER_AMT3
+             , CONSIDER_AMT4
+             , CONSIDER_AMT5
+             , CONSIDER_AMT6
+             , REPORT_SORT_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT T.REPORT_CD
+             , T.REPORT_DETL_CD
+             , T.FIS_YEAR
+             , T.BGT_DGR
+             , CAST(#orderYmdSeq# AS INTEGER) AS ORDER_YMD_SEQ
+             , T.TE_BGT_COMPO_ID
+             , T.TE_BGT_COMPO_SEQ
+             , T.REFLECT_FG
+             , T.DEMAND_CONT
+             , T.EXAM_CONT
+             , T.CONSIDER_AMT1
+             , T.CONSIDER_AMT2
+             , T.CONSIDER_AMT3
+             , T.CONSIDER_AMT4
+             , T.CONSIDER_AMT5
+             , T.CONSIDER_AMT6
+             , T.REPORT_SORT_SEQ
+             , CAST(#userId# AS VARCHAR(20)) AS REGI_ID
+             , SYSTIMESTAMP
+             , CAST(#userId# AS VARCHAR(20)) AS MODI_ID
+             , SYSTIMESTAMP
+          FROM (SELECT CAST('070' AS VARCHAR(5)) AS REPORT_CD
+                     , CAST('071' AS VARCHAR(5)) AS REPORT_DETL_CD
+                     , A.FIS_YEAR
+                     , A.BGT_DGR
+                     , -10 AS ORDER_YMD_SEQ
+                     , A.TE_BGT_COMPO_ID
+                     , A.TE_BGT_COMPO_SEQ
+                     , '' AS REFLECT_FG
+                     , '' AS DEMAND_CONT
+                     , '' AS EXAM_CONT
+                     , NVL(#considerAmt1#, '0') AS CONSIDER_AMT1
+                     , NVL(#considerAmt2#, '0') AS CONSIDER_AMT2
+                     , NVL(#considerAmt3#, '0') AS CONSIDER_AMT3
+                     , NVL(#considerAmt4#, '0') AS CONSIDER_AMT4
+                     , NVL(#considerAmt5#, '0') AS CONSIDER_AMT5
+                     , NVL(#considerAmt6#, '0') AS CONSIDER_AMT6
+                     , CAST(NVL(#reportSortSeq#, '') AS VARCHAR(10)) AS REPORT_SORT_SEQ
+                  FROM TB_DGRCOMPO A
+                 WHERE 1 = 1
+                   AND A.FIS_YEAR = #fisYear#
+                   AND A.BGT_DGR = #bgtDgr#
+                   AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+                UNION ALL
+                SELECT CAST('070' AS VARCHAR(5)) AS REPORT_CD
+                     , CAST('071' AS VARCHAR(5)) AS REPORT_DETL_CD
+                     , A.FIS_YEAR
+                     , A.BGT_DGR
+                     , -1 AS ORDER_YMD_SEQ
+                     , A.TE_BGT_COMPO_ID
+                     , A.TE_BGT_COMPO_SEQ
+                     , A.REFLECT_FG
+                     , A.DEMAND_CONT
+                     , A.EXAM_CONT
+                     , NVL(#considerAmt1#, '0') AS CONSIDER_AMT1
+                     , NVL(#considerAmt2#, '0') AS CONSIDER_AMT2
+                     , NVL(#considerAmt3#, '0') AS CONSIDER_AMT3
+                     , NVL(#considerAmt4#, '0') AS CONSIDER_AMT4
+                     , NVL(#considerAmt5#, '0') AS CONSIDER_AMT5
+                     , NVL(#considerAmt6#, '0') AS CONSIDER_AMT6
+                     , CAST(NVL(#reportSortSeq#, '') AS VARCHAR(10)) AS REPORT_SORT_SEQ
+                  FROM TB_REPORT010 A
+                 WHERE 1 = 1
+                   AND A.REPORT_CD = '010' 
+                   AND A.REPORT_DETL_CD = '011'
+                   AND A.FIS_YEAR = #fisYear#
+                   AND A.BGT_DGR = #bgtDgr#
+                   AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+                UNION ALL
+                SELECT A.REPORT_CD
+                     , A.REPORT_DETL_CD
+                     , A.FIS_YEAR
+                     , A.BGT_DGR
+                     , A.ORDER_YMD_SEQ AS ORDER_YMD_SEQ
+                     , A.TE_BGT_COMPO_ID
+                     , A.TE_BGT_COMPO_SEQ
+                     , A.REFLECT_FG
+                     , A.DEMAND_CONT
+                     , A.EXAM_CONT
+                     , A.CONSIDER_AMT1
+                     , A.CONSIDER_AMT2
+                     , A.CONSIDER_AMT3
+                     , A.CONSIDER_AMT4
+                     , A.CONSIDER_AMT5
+                     , A.CONSIDER_AMT6
+                     , A.REPORT_SORT_SEQ
+                 FROM TB_REPORT070 A    
+                 WHERE 1 = 1
+                   AND A.REPORT_CD = #reportCd#
+                   AND A.REPORT_DETL_CD = #reportDetlCd#
+                   AND A.FIS_YEAR = #fisYear#
+                   AND A.BGT_DGR = #bgtDgr#
+                   AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+               ) T
+         GROUP BY T.REPORT_CD
+                , T.REPORT_DETL_CD
+                , T.FIS_YEAR
+                , T.BGT_DGR
+                , T.TE_BGT_COMPO_ID HAVING MAX(T.ORDER_YMD_SEQ)
+    </insert>
+    
+    <insert id="ReportComm.insertReport070s" parameterClass="Map" >
+        /*ReportComm.insertReport070s*/
+        INSERT 
+          INTO TB_REPORT(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT A.REPORT_CD
+             , A.REPORT_DETL_CD
+             , A.FIS_YEAR
+             , A.BGT_DGR
+             , A.TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_REPORT070 A
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+         GROUP BY A.REPORT_CD
+                , A.REPORT_DETL_CD
+                , A.FIS_YEAR
+                , A.BGT_DGR
+                , A.TE_BGT_COMPO_ID
+                , A.TE_BGT_COMPO_SEQ
+    </insert>
+    
+    <delete id="ReportComm.deleteReport070" parameterClass="Map" >
+        /*ReportComm.deleteReport070*/
+        DELETE
+          FROM TB_REPORT070
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </delete>
+    
+    <update id="ReportComm.copyReport070" parameterClass="Map" >
+        /*ReportComm.copyReport070*/
+        UPDATE TB_REPORT070
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT
+               , CONSIDER_AMT1
+               , CONSIDER_AMT2
+               , CONSIDER_AMT3
+               , CONSIDER_AMT4
+               , CONSIDER_AMT5
+               , CONSIDER_AMT6
+               , REPORT_SORT_SEQ)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT
+               , CONSIDER_AMT1
+               , CONSIDER_AMT2
+               , CONSIDER_AMT3
+               , CONSIDER_AMT4
+               , CONSIDER_AMT5
+               , CONSIDER_AMT6
+               , REPORT_SORT_SEQ
+                  FROM TB_REPORT070
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                   AND ORDER_YMD_SEQ = #srcOrderYmdSeq#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport070" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport070*/
+        UPDATE TB_REPORT070
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </update>
+    
+    <update id="ReportComm.updateReportSortSeqReport070" parameterClass="Map" >
+        /*ReportComm.updateReportSortSeqReport070*/
+        UPDATE TB_REPORT070
+           SET REPORT_SORT_SEQ = #reportSortSeq#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+           AND ORDER_YMD_SEQ = #orderYmdSeq#
+    </update>
+    
+    <!-- TB_REPORT080 -->
+    <insert id="ReportComm.insertReport080" parameterClass="Map" >
+        /*ReportComm.insertReport080*/
+        INSERT 
+          INTO TB_REPORT080(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , IMPORT_PERSON_NM
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT
+             , ADD_DEMAND_AMT
+             , REFLECT_AMT
+             , REPORT_SORT_SEQ
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL((SELECT Z.REFLECT_FG FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                    , NVL((SELECT MAX(Z.REFLECT_FG) FROM TB_REPORT020 Z WHERE Z.REPORT_CD = '020' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                           , '')
+               )
+             , NVL((SELECT Z.DEMAND_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                    , NVL((SELECT MAX(Z.DEMAND_CONT) FROM TB_REPORT020 Z WHERE Z.REPORT_CD = '020' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                           , '')
+               )
+             , NVL((SELECT Z.EXAM_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                    , NVL((SELECT MAX(Z.EXAM_CONT) FROM TB_REPORT020 Z WHERE Z.REPORT_CD = '020' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#)
+                           , '')
+               )
+             , NVL(#importPersonNm#, '')
+             , NVL(#totBizAmt#, 0)
+             , NVL(#preBizAmt#, 0)
+             , NVL(#addDemandAmt#, 0)
+             , NVL(#reflectAmt#, 0)
+             , NVL(#reportSortSeq#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport080" parameterClass="Map" >
+        /*ReportComm.deleteReport080*/
+        DELETE
+          FROM TB_REPORT080
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport080" parameterClass="Map" >
+        /*ReportComm.copyReport080*/
+        UPDATE TB_REPORT080
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, IMPORT_PERSON_NM, TOT_BIZ_AMT, PRE_BIZ_AMT, ADD_DEMAND_AMT, REFLECT_AMT, REPORT_SORT_SEQ)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, IMPORT_PERSON_NM, TOT_BIZ_AMT, PRE_BIZ_AMT, ADD_DEMAND_AMT, REFLECT_AMT, REPORT_SORT_SEQ
+                  FROM TB_REPORT080
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport080" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport080*/
+        UPDATE TB_REPORT080
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateReportSortSeqReport080" parameterClass="Map" >
+        /*ReportComm.updateReportSortSeqReport080*/
+        UPDATE TB_REPORT080
+           SET REPORT_SORT_SEQ = #reportSortSeq#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    <!-- TB_REPORT090 -->
+    <insert id="ReportComm.insertReport090" parameterClass="Map" >
+        /*ReportComm.insertReport090*/
+        INSERT 
+          INTO TB_REPORT090(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport090" parameterClass="Map" >
+        /*ReportComm.deleteReport090*/
+        DELETE
+          FROM TB_REPORT090
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport090" parameterClass="Map" >
+        /*ReportComm.copyReport090*/
+        UPDATE TB_REPORT090
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT
+                  FROM TB_REPORT090
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport090" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport090*/
+        UPDATE TB_REPORT090
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    
+    <!-- TB_REPORT0A0 -->
+    <insert id="ReportComm.insertReport0A0" parameterClass="Map" >
+        /*ReportComm.insertReport0A0*/
+        INSERT 
+          INTO TB_REPORT0A0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , MAYOR_REPORT_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+       VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL((SELECT Z.REFLECT_FG FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL((SELECT Z.DEMAND_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL((SELECT Z.EXAM_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL(#mayorReportYn#, 'Y')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport0A0" parameterClass="Map" >
+        /*ReportComm.deleteReport0A0*/
+        DELETE
+          FROM TB_REPORT0A0
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport0A0" parameterClass="Map" >
+        /*ReportComm.copyReport0A0*/
+        UPDATE TB_REPORT0A0
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, MAYOR_REPORT_YN)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, MAYOR_REPORT_YN
+                  FROM TB_REPORT0A0
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport0A0" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport0A0*/
+        UPDATE TB_REPORT0A0
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateMayorReportYnReport0A0" parameterClass="Map" >
+        /*ReportComm.updateMayorReportYnReport0A0*/
+        UPDATE TB_REPORT0A0
+           SET MAYOR_REPORT_YN = NVL(#mayorReportYn#, 'Y')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <!-- TB_REPORT0B0 -->
+    <insert id="ReportComm.insertReport0B0" parameterClass="Map" >
+        /*ReportComm.insertReport0B0*/
+        INSERT 
+          INTO TB_REPORT0B0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , SRCH_VAL
+             , BIZ_NM
+             , BIZ_AMOUNT
+             , BIZ_PERIOD
+             , TOT_BIZ_AMT
+             , PRE_BIZ_AMT 
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reflectFg#, '')
+             , NVL(#demandCont#, '')
+             , NVL(#examCont#, '')
+             , NVL(#srchVal#, '')
+             , NVL(#bizNm#, (SELECT Z.COMP_GROUND 
+                               FROM TB_DGRCOMPO Z 
+                              WHERE Z.FIS_YEAR = #fisYear# 
+                                AND Z.BGT_DGR = #bgtDgr# 
+                                AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#
+                                AND ROWNUM = 1
+                             )
+               )
+             , NVL(#bizAmount#, '')
+             , NVL(#bizPeriod#, '')
+             , NVL(#totbizAmt#, 0)
+             , NVL(#prebizAmt#, 0)
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport0B0" parameterClass="Map" >
+        /*ReportComm.deleteReport0B0*/
+        DELETE
+          FROM TB_REPORT0B0
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport0B0" parameterClass="Map" >
+        /*ReportComm.copyReport0B0*/
+        UPDATE TB_REPORT0B0
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, BIZ_NM, BIZ_AMOUNT, BIZ_PERIOD, TOT_BIZ_AMT, PRE_BIZ_AMT)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, BIZ_NM, BIZ_AMOUNT, BIZ_PERIOD, TOT_BIZ_AMT, PRE_BIZ_AMT
+                  FROM TB_REPORT0B0
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport0B0" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport0B0*/
+        UPDATE TB_REPORT0B0
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <!-- TB_REPORT0C0 -->
+    <insert id="ReportComm.insertReport0C0" parameterClass="Map" >
+        /*ReportComm.insertReport0C0*/
+        INSERT 
+          INTO TB_REPORT0C0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , BIZ_NM
+             , BIZ_SMRY_TITLE
+             , BIZ_SMRY_CONT
+             , PROM_CORP_TITLE
+             , PROM_CORP_CONT
+             , DEMAND_TITLE
+             , DEMAND_CONT
+             , EXPLAIN_CONT
+             , EXAM_CONT
+             , TOT_FRSC_CONT
+             , PRE_INV_FRSC_CONT
+             , PRE_DEF_FRSC_CONT
+             , PRE_FRSC_CONT
+             , DMN_FRSC_CONT
+             , FRSC_CONT
+             , INVEST_PLAN0
+             , INVEST_PLAN1
+             , INVEST_PLAN2
+             , INVEST_PLAN6
+             , INVEST_PLAN_CONT
+             , REPORT_FG
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+       VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , #bizNm#
+             , NVL(#bizSmryTitle#, '사업개요')
+             , #bizSmryCont#
+             , NVL(#promCorpTitle#, '추진상황')
+             , #promCorpCont#
+             , NVL(#demandTitle#, '예산요구 및 조정(안)')
+             , #demandCont#
+             , #explainCont#
+             , #examCont#
+             , #totFrscCont#
+             , #preInvFrscCont#
+             , #preDefFrscCont#
+             , #preFrscCont#
+             , #dmnFrscCont#
+             , #frscCont#
+             , #investPlan0#
+             , #investPlan1#
+             , #investPlan2#
+             , #investPlan6#
+             , #investPlanCont#
+             , NVL(#reportFg#, '020')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport0C0" parameterClass="Map" >
+        /*ReportComm.deleteReport0C0*/
+        DELETE
+          FROM TB_REPORT0C0
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport0C0" parameterClass="Map" >
+        /*ReportComm.copyReport0C0*/
+        UPDATE TB_REPORT0C0
+           SET (BIZ_NM, BIZ_SMRY_TITLE, BIZ_SMRY_CONT, PROM_CORP_TITLE, PROM_CORP_CONT, DEMAND_TITLE, DEMAND_CONT, EXPLAIN_CONT, EXAM_CONT
+                      , TOT_FRSC_CONT, PRE_INV_FRSC_CONT, PRE_DEF_FRSC_CONT, PRE_FRSC_CONT, DMN_FRSC_CONT, FRSC_CONT
+                      , INVEST_PLAN0, INVEST_PLAN1, INVEST_PLAN2, INVEST_PLAN6, INVEST_PLAN_CONT, REPORT_FG)
+             = (SELECT BIZ_NM, BIZ_SMRY_TITLE, BIZ_SMRY_CONT, PROM_CORP_TITLE, PROM_CORP_CONT, DEMAND_TITLE, DEMAND_CONT, EXPLAIN_CONT, EXAM_CONT
+                     , TOT_FRSC_CONT, PRE_INV_FRSC_CONT, PRE_DEF_FRSC_CONT, PRE_FRSC_CONT, DMN_FRSC_CONT, FRSC_CONT
+                     , INVEST_PLAN0, INVEST_PLAN1, INVEST_PLAN2, INVEST_PLAN6, INVEST_PLAN_CONT, REPORT_FG
+                  FROM TB_REPORT0C0
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport0C0" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport0C0*/
+        UPDATE TB_REPORT0C0
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <delete id="ReportComm.deleteReport0C0D" parameterClass="Map" >
+        /*ReportComm.deleteReport0C0D*/
+        DELETE
+          FROM TB_REPORT0C0_D
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+         <isNotEmpty prepend="" property="sn">
+           AND SN = #sn# 
+         </isNotEmpty>
+    </delete>
+    
+    <!-- TB_REPORT0D0 -->
+    <insert id="ReportComm.insertReport0D0" parameterClass="Map" >
+        /*ReportComm.insertReport0D0*/
+        INSERT 
+          INTO TB_REPORT0D0(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REFLECT_FG
+             , DEMAND_CONT
+             , EXAM_CONT
+             , MAYOR_REPORT_YN
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+       VALUES (#reportCd#
+             , #reportDetlCd#
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL((SELECT Z.REFLECT_FG FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL((SELECT Z.DEMAND_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL((SELECT Z.EXAM_CONT FROM TB_REPORT010 Z WHERE Z.REPORT_CD = '010' AND Z.REPORT_DETL_CD = '011' AND Z.FIS_YEAR = #fisYear# AND Z.BGT_DGR = #bgtDgr# AND Z.TE_BGT_COMPO_ID = #teBgtCompoId#), '')
+             , NVL(#mayorReportYn#, 'Y')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <delete id="ReportComm.deleteReport0D0" parameterClass="Map" >
+        /*ReportComm.deleteReport0D0*/
+        DELETE
+          FROM TB_REPORT0D0
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+    
+    <update id="ReportComm.copyReport0D0" parameterClass="Map" >
+        /*ReportComm.copyReport0D0*/
+        UPDATE TB_REPORT0D0
+           SET (REFLECT_FG, DEMAND_CONT, EXAM_CONT, MAYOR_REPORT_YN)
+             = (SELECT REFLECT_FG, DEMAND_CONT, EXAM_CONT, MAYOR_REPORT_YN
+                  FROM TB_REPORT0D0
+                 WHERE 1 = 1
+                   AND REPORT_CD = #srcReportCd#
+                   AND REPORT_DETL_CD = #srcReportDetlCd#
+                   AND FIS_YEAR = #srcFisYear#
+                   AND BGT_DGR = #srcBgtDgr#
+                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                 )
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateSrchValReport0D0" parameterClass="Map" >
+        /*ReportComm.updateSrchValReport0D0*/
+        UPDATE TB_REPORT0D0
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+    
+    <update id="ReportComm.updateMayorReportYnReport0D0" parameterClass="Map" >
+        /*ReportComm.updateMayorReportYnReport0D0*/
+        UPDATE TB_REPORT0D0
+           SET MAYOR_REPORT_YN = NVL(#mayorReportYn#, 'Y')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+</sqlMap>

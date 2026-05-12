@@ -1,0 +1,462 @@
+package com.cs.bcjis.report.util;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.Properties;
+import java.util.UUID;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+import org.springframework.core.io.ClassPathResource;
+
+import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.comm.util.BcjisStringUtil;
+import com.cs.bcjis.comm.util.BcjisWebUtil;
+
+public class ReportSaveHwpUtil {
+    /**
+     * Logger for this class
+     */
+    private static final Logger logger = Logger.getLogger(ReportSaveHwpUtil.class);
+
+    public static String writeHwpFile(String fileCont, String storePathString) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("writeHwpFile(String, String) - start");
+        }
+
+        String realFileName = "";
+        FileOutputStream fos = null;
+        try {
+            File saveFolder = new File(BcjisWebUtil.filePathBlackList(storePathString));
+
+            if (!saveFolder.exists() || saveFolder.isFile()) {
+                saveFolder.mkdirs();
+            }
+
+            realFileName = new StringBuilder().append(storePathString).append(File.separator).append(BcjisCommUtil.getCurrentDate("yyyyMMddhhmmssSSS")).append(UUID.randomUUID()).toString();
+
+            fos = new FileOutputStream(realFileName);
+
+            fos.write(fileCont.getBytes("UTF-8"));
+
+        } catch (Exception e) {
+            logger.error("writeHwpFile(String, String)", e);
+
+            throw e;
+        } finally {
+            if (fos != null)
+                fos.close();
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("writeExcelFile(String, String) - end");
+        }
+        return realFileName;
+    }
+
+    public static String readSrcFile(String fileNm) throws IOException {
+        ClassPathResource cpr = null;
+        File file = null;
+        FileInputStream fis = null;
+
+        try {
+            cpr = new ClassPathResource("csframework/resources/" + fileNm);
+            file = cpr.getFile();
+            fis = new FileInputStream(file);
+
+            byte[] bytes = IOUtils.toByteArray(fis);
+            return new String(bytes, 0, bytes.length, "UTF-8");
+        } finally {
+            try {
+                if (fis != null)
+                    fis.close();
+            } catch (IOException ex) {
+            }
+        }
+    }
+
+    public static String getStorePathString(Properties config, String storePath, String KeyStr) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("getStorePathString(Properties, String, String) - start");
+        }
+
+        if ("".equals(storePath) || storePath == null) {
+            String returnString = config.getProperty("Globals.excelStorePath") + File.separator + KeyStr;
+            if (logger.isDebugEnabled()) {
+                logger.debug("getStorePathString(Properties, String, String) - end");
+            }
+            return returnString;
+        }
+
+        String returnString = config.getProperty(storePath) + File.separator + KeyStr;
+        if (logger.isDebugEnabled()) {
+            logger.debug("getStorePathString(Properties, String, String) - end");
+        }
+        return returnString;
+    }
+
+    public static String getContString(String src, String name, String trg) {
+        StringBuffer sBuf = new StringBuffer();
+        String[] trgs = trg.split("\\n");
+
+        for (int i = 0; i < trgs.length; i++) {
+            sBuf.append(src.replace(name, " " + trgs[i]));
+        }
+
+        return sBuf.toString();
+    }
+
+    public static String getNewLineString(){
+        return "<P ParaShape=\"23\" Style=\"0\"><TEXT CharShape=\"45\" /></P>";
+    }
+    
+    public static String getYearShort(String year, int addYear) {
+        try {
+            int iYear = Integer.parseInt(year);
+            iYear = iYear + addYear;
+
+            String sYear = String.valueOf(iYear);
+            if (sYear.length() < 4) {
+                return "";
+            }
+
+            return sYear.substring(2, 4);
+
+        } catch (NumberFormatException nfe) {
+            return "";
+        }
+    }
+
+    public static String getAmtStrValue(Object value) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("getAmtStrValue(Object) - start");
+        }
+
+        if (BcjisCommUtil.isNullString(value) == true || "0".equals(String.valueOf(value)) == true) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("getAmtStrValue(Object) - end");
+            }
+            return "";
+        }
+
+        long l = 0l;
+
+        try {
+            l = Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException nef) {
+            logger.error("getAmtStrValue(Object)", nef);
+
+            return "";
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("getAmtStrValue(Object) - end");
+        }
+
+        NumberFormat formatter = new DecimalFormat("###,###,###,###,###,###");
+        return formatter.format(l);
+    }
+
+    public static String getColString(String src, String name, String trg) {
+        StringBuffer sBuf = new StringBuffer();
+        String[] trgs = trg.split("\\n");
+
+        for (int i = 0; i < trgs.length; i++) {
+            sBuf.append(src.replace(name, trgs[i]));
+        }
+
+        return sBuf.toString();
+    }
+
+    public static String getReport0C0010(String src, JSONObject data) {
+
+        String rtnStr = src;
+
+        String report0C0010DetlStr = getReport0C0010DetlStr();
+
+        rtnStr = rtnStr.replace("#preFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -1));
+        rtnStr = rtnStr.replace("#fisYear#", ReportSaveUtil.getXmlStringValue(data.get("fisYear")));
+        rtnStr = rtnStr.replace("#preFrscAmt0#", getAmtStrValue(data.get("preFrscAmt0")));
+        rtnStr = rtnStr.replace("#preFrscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "preFrscAmt", data));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0#", getAmtStrValue(data.get("dmnFrscAmt0")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "dmnFrscAmt", data));
+        rtnStr = rtnStr.replace("#frscAmt0#", getAmtStrValue(data.get("frscAmt0")));
+        rtnStr = rtnStr.replace("#frscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "frscAmt", data));
+        rtnStr = rtnStr.replace("#investPlanCont#", ReportSaveUtil.getXmlStringValue(data.get("investPlanCont")));
+
+        String detlNm = ReportSaveUtil.getXmlStringValue(data.get("detlNm"));
+
+        String[] rows = BcjisStringUtil.split(detlNm, "||");
+        String[] cols = null;
+
+        StringBuffer sBuf = new StringBuffer();
+        int rowCount = 3;
+        int borderFill0 = 21;
+        int borderFill1 = 15;
+        for (int i = 0; i < rows.length; i++) {
+            if (BcjisCommUtil.isNullString(rows[i]) == true) {
+                continue;
+            }
+
+            cols = BcjisStringUtil.split(rows[i], "^^", 5);
+
+            if (i == rows.length - 1) {
+                borderFill0 = 27;
+                borderFill1 = 17;
+            } else {
+                borderFill0 = 21;
+                borderFill1 = 15;
+            }
+            
+            sBuf.append("<ROW>");
+            sBuf.append("<CELL BorderFill=\"16\" ColAddr=\"0\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"18048\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"21\" Style=\"0\"><TEXT CharShape=\"21\"><CHAR>#cols0#</CHAR></TEXT></P>", "#cols0#", cols[0]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\"15\" ColAddr=\"1\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"10594\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols1#</CHAR></TEXT></P>", "#cols1#", cols[1]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\""+borderFill0+"\" ColAddr=\"2\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"9245\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols2#</CHAR></TEXT></P>", "#cols2#", cols[2]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\""+borderFill1+"\" ColAddr=\"3\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (i + 3) + "\" RowSpan=\"1\" Width=\"9245\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols3#</CHAR></TEXT></P>", "#cols3#", cols[3]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\"18\" ColAddr=\"4\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (i + 3) + "\" RowSpan=\"1\" Width=\"16025\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"19\" Style=\"0\"><TEXT CharShape=\"34\"><CHAR>#cols4#</CHAR></TEXT></P>", "#cols4#", cols[4]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("</ROW>");
+            
+            rowCount++;
+
+        }
+
+        rtnStr = rtnStr.replace("#rowCount#", String.valueOf(rowCount));
+
+        rtnStr = rtnStr.replace("#report0C0010Row#", sBuf.toString());
+
+        return rtnStr;
+    }
+
+    public static String getReport0C0010Add(String src, JSONObject data) {
+        String rtnStr = src;
+
+        String report0C0010DetlStr = getReport0C0010DetlStr();
+
+        rtnStr = rtnStr.replace("#preFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -1));
+        rtnStr = rtnStr.replace("#fisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), 0));
+        rtnStr = rtnStr.replace("#fisYear#", ReportSaveUtil.getXmlStringValue(data.get("fisYear")));
+        rtnStr = rtnStr.replace("#addTimes#", ReportSaveUtil.getXmlStringValue(data.get("addTimes")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt0#", getAmtStrValue(data.get("preDefFrscAmt0")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "preDefFrscAmt", data));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0#", getAmtStrValue(data.get("dmnFrscAmt0")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "dmnFrscAmt", data));
+        rtnStr = rtnStr.replace("#frscAmt0#", getAmtStrValue(data.get("frscAmt0")));
+        rtnStr = rtnStr.replace("#frscAmt0Detl#", getReport0C0010Detl(report0C0010DetlStr, "frscAmt", data));
+        rtnStr = rtnStr.replace("#investPlanCont#", ReportSaveUtil.getXmlStringValue(data.get("investPlanCont")));
+
+        String detlNm = ReportSaveUtil.getXmlStringValue(data.get("detlNm"));
+
+        String[] rows = BcjisStringUtil.split(detlNm, "||");
+        String[] cols = null;
+
+        StringBuffer sBuf = new StringBuffer();
+        int rowCount = 3;
+        int borderFill0 = 21;
+        int borderFill1 = 15;
+        for (int i = 0; i < rows.length; i++) {
+            if (BcjisCommUtil.isNullString(rows[i]) == true) {
+                continue;
+            }
+
+            cols = BcjisStringUtil.split(rows[i], "^^", 5);
+            
+            if (i == rows.length - 1) {
+                borderFill0 = 27;
+                borderFill1 = 17;
+            } else {
+                borderFill0 = 21;
+                borderFill1 = 15;
+            }
+            
+            sBuf.append("<ROW>");
+            sBuf.append("<CELL BorderFill=\"16\" ColAddr=\"0\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"18048\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"21\" Style=\"0\"><TEXT CharShape=\"21\"><CHAR>#cols0#</CHAR></TEXT></P>", "#cols0#", cols[0]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\"15\" ColAddr=\"1\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"10594\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols1#</CHAR></TEXT></P>", "#cols1#", cols[1]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\""+borderFill0+"\" ColAddr=\"2\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"9245\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols2#</CHAR></TEXT></P>", "#cols2#", cols[2]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\""+borderFill1+"\" ColAddr=\"3\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"9245\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"15\" Style=\"0\"><TEXT CharShape=\"23\"><CHAR>#cols3#</CHAR></TEXT></P>", "#cols3#", cols[3]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("<CELL BorderFill=\"18\" ColAddr=\"4\" ColSpan=\"1\" Dirty=\"false\" Editable=\"false\" HasMargin=\"false\" Header=\"false\" Height=\"1780\" Protect=\"false\" RowAddr=\"" + (rowCount) + "\" RowSpan=\"1\" Width=\"16025\">");
+            sBuf.append("<PARALIST LineWrap=\"Break\" LinkListID=\"0\" LinkListIDNext=\"0\" TextDirection=\"0\" VertAlign=\"Center\">");
+            sBuf.append(getColString("<P ParaShape=\"19\" Style=\"0\"><TEXT CharShape=\"34\"><CHAR>#cols4#</CHAR></TEXT></P>", "#cols4#", cols[4]));
+            sBuf.append("</PARALIST>");
+            sBuf.append("</CELL>");
+            sBuf.append("</ROW>");
+
+            rowCount++;
+        }
+
+        rtnStr = rtnStr.replace("#rowCount#", String.valueOf(rowCount));
+
+        rtnStr = rtnStr.replace("#report0C0010AddRow#", sBuf.toString());
+
+        return rtnStr;
+    }
+
+    public static String getReport0C0020(String src, JSONObject data) {
+        String rtnStr = src;
+        rtnStr = rtnStr.replace("#beforePreFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -2));
+        rtnStr = rtnStr.replace("#preFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -1));
+        rtnStr = rtnStr.replace("#fisYear#", ReportSaveUtil.getXmlStringValue(data.get("fisYear")));
+        
+        rtnStr = rtnStr.replace("#totFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("totFrscCont")));
+        rtnStr = rtnStr.replace("#preInvFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("preInvFrscCont")));
+        rtnStr = rtnStr.replace("#preFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("preFrscCont")));
+        rtnStr = rtnStr.replace("#dmnFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("dmnFrscCont")));
+        rtnStr = rtnStr.replace("#frscCont#", ReportSaveUtil.getXmlStringValue(data.get("frscCont")));
+        rtnStr = rtnStr.replace("#investPlanCont#", ReportSaveUtil.getXmlStringValue(data.get("investPlanCont")));
+
+        rtnStr = rtnStr.replace("#totFrscAmt0#", getAmtStrValue(data.get("totFrscAmt0")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt0#", getAmtStrValue(data.get("preInvFrscAmt0")));
+        rtnStr = rtnStr.replace("#preFrscAmt0#", getAmtStrValue(data.get("preFrscAmt0")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0#", getAmtStrValue(data.get("dmnFrscAmt0")));
+        rtnStr = rtnStr.replace("#frscAmt0#", getAmtStrValue(data.get("frscAmt0")));
+        rtnStr = rtnStr.replace("#investPlan0#", ReportSaveUtil.getAmtStrValue(data.get("investPlan0")));
+
+        rtnStr = rtnStr.replace("#totFrscAmt1#", getAmtStrValue(data.get("totFrscAmt1")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt1#", getAmtStrValue(data.get("preInvFrscAmt1")));
+        rtnStr = rtnStr.replace("#preFrscAmt1#", getAmtStrValue(data.get("preFrscAmt1")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt1#", getAmtStrValue(data.get("dmnFrscAmt1")));
+        rtnStr = rtnStr.replace("#frscAmt1#", getAmtStrValue(data.get("frscAmt1")));
+        rtnStr = rtnStr.replace("#investPlan1#", ReportSaveUtil.getAmtStrValue(data.get("investPlan1")));
+
+        rtnStr = rtnStr.replace("#totFrscAmt2#", getAmtStrValue(data.get("totFrscAmt2")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt2#", getAmtStrValue(data.get("preInvFrscAmt2")));
+        rtnStr = rtnStr.replace("#preFrscAmt2#", getAmtStrValue(data.get("preFrscAmt2")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt2#", getAmtStrValue(data.get("dmnFrscAmt2")));
+        rtnStr = rtnStr.replace("#frscAmt2#", getAmtStrValue(data.get("frscAmt2")));
+        rtnStr = rtnStr.replace("#investPlan2#", ReportSaveUtil.getAmtStrValue(data.get("investPlan2")));
+
+        rtnStr = rtnStr.replace("#totFrscAmt6#", getAmtStrValue(data.get("totFrscAmt6")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt6#", getAmtStrValue(data.get("preInvFrscAmt6")));
+        rtnStr = rtnStr.replace("#preFrscAmt6#", getAmtStrValue(data.get("preFrscAmt6")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt6#", getAmtStrValue(data.get("dmnFrscAmt6")));
+        rtnStr = rtnStr.replace("#frscAmt6#", getAmtStrValue(data.get("frscAmt6")));
+        rtnStr = rtnStr.replace("#investPlan6#", ReportSaveUtil.getAmtStrValue(data.get("investPlan6")));
+
+        return rtnStr;
+    }
+
+    public static String getReport0C0020Add(String src, JSONObject data) {
+        String rtnStr = src;
+        rtnStr = rtnStr.replace("#beforePreFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -2));
+        rtnStr = rtnStr.replace("#preFisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), -1));
+        rtnStr = rtnStr.replace("#fisYearShort#", getYearShort(ReportSaveUtil.getXmlStringValue(data.get("fisYear")), 0));
+        rtnStr = rtnStr.replace("#fisYear#", ReportSaveUtil.getXmlStringValue(data.get("fisYear")));
+        rtnStr = rtnStr.replace("#addTimes#", ReportSaveUtil.getXmlStringValue(data.get("addTimes")));
+
+        rtnStr = rtnStr.replace("#totFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("totFrscCont")));
+        rtnStr = rtnStr.replace("#preInvFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("preInvFrscCont")));
+        rtnStr = rtnStr.replace("#preDefFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("preDefFrscCont")));
+        rtnStr = rtnStr.replace("#dmnFrscCont#", ReportSaveUtil.getXmlStringValue(data.get("dmnFrscCont")));
+        rtnStr = rtnStr.replace("#frscCont#", ReportSaveUtil.getXmlStringValue(data.get("frscCont")));
+        rtnStr = rtnStr.replace("#investPlanCont#", ReportSaveUtil.getXmlStringValue(data.get("investPlanCont")));
+        
+        rtnStr = rtnStr.replace("#totFrscAmt0#", getAmtStrValue(data.get("totFrscAmt0")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt0#", getAmtStrValue(data.get("preInvFrscAmt0")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt0#", getAmtStrValue(data.get("preDefFrscAmt0")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt0#", getAmtStrValue(data.get("dmnFrscAmt0")));
+        rtnStr = rtnStr.replace("#frscAmt0#", getAmtStrValue(data.get("frscAmt0")));
+        rtnStr = rtnStr.replace("#investPlan0#", ReportSaveUtil.getAmtStrValue(data.get("investPlan0")));
+        
+        rtnStr = rtnStr.replace("#totFrscAmt1#", getAmtStrValue(data.get("totFrscAmt1")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt1#", getAmtStrValue(data.get("preInvFrscAmt1")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt1#", getAmtStrValue(data.get("preDefFrscAmt1")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt1#", getAmtStrValue(data.get("dmnFrscAmt1")));
+        rtnStr = rtnStr.replace("#frscAmt1#", getAmtStrValue(data.get("frscAmt1")));
+        rtnStr = rtnStr.replace("#investPlan1#", ReportSaveUtil.getAmtStrValue(data.get("investPlan1")));
+        
+        rtnStr = rtnStr.replace("#totFrscAmt2#", getAmtStrValue(data.get("totFrscAmt2")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt2#", getAmtStrValue(data.get("preInvFrscAmt2")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt2#", getAmtStrValue(data.get("preDefFrscAmt2")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt2#", getAmtStrValue(data.get("dmnFrscAmt2")));
+        rtnStr = rtnStr.replace("#frscAmt2#", getAmtStrValue(data.get("frscAmt2")));
+        rtnStr = rtnStr.replace("#investPlan2#", ReportSaveUtil.getAmtStrValue(data.get("investPlan2")));
+        
+        rtnStr = rtnStr.replace("#totFrscAmt6#", getAmtStrValue(data.get("totFrscAmt6")));
+        rtnStr = rtnStr.replace("#preInvFrscAmt6#", getAmtStrValue(data.get("preInvFrscAmt6")));
+        rtnStr = rtnStr.replace("#preDefFrscAmt6#", getAmtStrValue(data.get("preDefFrscAmt6")));
+        rtnStr = rtnStr.replace("#dmnFrscAmt6#", getAmtStrValue(data.get("dmnFrscAmt6")));
+        rtnStr = rtnStr.replace("#frscAmt6#", getAmtStrValue(data.get("frscAmt6")));
+        rtnStr = rtnStr.replace("#investPlan6#", ReportSaveUtil.getAmtStrValue(data.get("investPlan6")));
+
+        return rtnStr;
+    }
+
+    public static String getReport0C0010Detl(String src, String preStr, JSONObject data) {
+        String rtnStr = src;
+        StringBuffer sBuf = new StringBuffer();
+
+        String amt1 = getAmtStrValue(data.get(preStr + "1"));
+        String amt2 = getAmtStrValue(data.get(preStr + "2"));
+        String amt6 = getAmtStrValue(data.get(preStr + "6"));
+        if (BcjisCommUtil.isNullString(amt2) == false) {
+            sBuf.append(rtnStr.replace("#name#", "국비").replace("#amt#", amt2));
+        }
+
+        if (BcjisCommUtil.isNullString(amt1) == false && (BcjisCommUtil.isNullString(amt2) == false || BcjisCommUtil.isNullString(amt6) == false)) {
+            
+            sBuf.append(rtnStr.replace("#name#", "시비").replace("#amt#", amt1));
+        }
+
+        if (BcjisCommUtil.isNullString(amt6) == false) {
+            sBuf.append(rtnStr.replace("#name#", "기타").replace("#amt#", amt6));
+        }
+
+        return sBuf.toString();
+    }
+
+    public static String getReport0C0010DetlStr() {
+        String report0C0010DetlStr = "";
+
+        try {
+            report0C0010DetlStr = readSrcFile("report0C0010Detl.hml").replaceAll(">\\s+<", "><");
+        } catch (Exception e) {
+            logger.error("getReport0C0010DetlStr()", e);
+
+            report0C0010DetlStr = "";
+        }
+
+        return report0C0010DetlStr;
+    }
+
+}

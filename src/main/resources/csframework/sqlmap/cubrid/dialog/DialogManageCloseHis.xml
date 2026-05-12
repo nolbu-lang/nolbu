@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogManageCloseHis">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+    <select id="DialogManageCloseHis.selectManageCloseHisList" parameterClass="Map" resultClass="egovMap">
+        /*DialogManageCloseHis.selectManageCloseHisList*/
+        SELECT T.FIS_YEAR
+             , T.BGT_DGR
+             , T.HIS_SEQ
+             , T.CLOSE_YN
+             , T.ATCH_FILE_ID
+             , TO_CHAR(T.CLOSE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CLOSE_DATE
+             , TO_CHAR(T.CLOSE_CANCEL_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CLOSE_CANCEL_DATE
+             , (SELECT COUNT(1) FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 1) AS FILE_SN0
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 1) AS FILE_SN1
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 2) AS FILE_SN2
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 3) AS FILE_SN3
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 110) AS FILE_SN110
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 120) AS FILE_SN120
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 130) AS FILE_SN130
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 140) AS FILE_SN140
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 150) AS FILE_SN150
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 155) AS FILE_SN155
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 160) AS FILE_SN160
+             , (SELECT Z.FILE_SN FROM TB_FILE_DETL Z WHERE Z.ATCH_FILE_ID = T.ATCH_FILE_ID AND Z.FILE_SN = 190) AS FILE_SN190
+             , '' AS HIS_VIEW
+          FROM TB_BGTDGRCLOSE_H T
+         WHERE 1 = 1
+           AND T.FIS_YEAR = #fisYear#
+           AND T.BGT_DGR = #bgtDgr#
+         ORDER BY T.HIS_SEQ 
+    </select>
+</sqlMap>

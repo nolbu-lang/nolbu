@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
+    "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoModify.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoModifyReport.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoRegi.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoSort.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoCng.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoTeMngRegi.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrDeptSelt.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgroffice020Sort.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageCloseHis.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageCommcdModify.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageUserRegi.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageUserModify.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogPledgeBiz.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogPledgeInfo.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogPledgeSort.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogReport070OrderYmdModify.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogReport0C0Detl.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogTeMngVeri.xml"/>
+    
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoDbiz.xml"/>
+    
+</sqlMapConfig>

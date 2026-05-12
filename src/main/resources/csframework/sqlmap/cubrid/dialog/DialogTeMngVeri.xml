@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogTeMngVeri">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogTeMngVeri.selectTeMngVeriList" parameterClass="Map" resultClass="egovMap" >
+        /*DialogTeMngVeri.selectTeMngVeriList*/
+        SELECT DECODE(A.CL_CD, 'RP002', '조서', '집계') AS FG_NM
+             , (SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = SUBSTR(A.CL_CD, 1, 2) || '001' AND Z.DETL_CD = A.GROUP_ID AND ROWNUM = 1) AS CL_CD_NM
+             , A.DETL_CD_NM AS DETL_CD_NM
+             , A.CL_CD AS VERI_CL_CD
+             , A.DETL_CD AS VERI_DETL_CD
+             , NVL((SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END 
+                      FROM TB_DGRTEMNGMOKVERI Z 
+                     WHERE Z.FIS_YEAR = #fisYear# 
+                       AND Z.BGT_DGR = #bgtDgr# 
+                       AND Z.TE_MNG_MOK_CD = #teMngMokCd# 
+                       AND Z.VERI_FG = #veriFg#
+                       AND Z.VERI_CL_CD = A.CL_CD
+                       AND Z.VERI_DETL_CD = A.DETL_CD 
+                   )
+               , 'N') AS SEL_YN
+          FROM TB_COMMCDDETL A
+         WHERE 1 = 1
+           AND A.CL_CD IN ('RP002', 'RT002')
+           AND A.USE_YN = 'Y'
+         ORDER BY A.CL_CD, A.LINE_UP_ORD 
+    </select>
+    
+    <delete id="DialogTeMngVeri.deleteTeMngVeri" parameterClass="Map" >
+        /*DialogTeMngVeri.deleteTeMngVeri*/
+        DELETE
+          FROM TB_DGRTEMNGMOKVERI
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_MNG_MOK_CD = #teMngMokCd#
+           AND VERI_FG = #veriFg#
+    </delete>
+    
+    <insert id="DialogTeMngVeri.insertTeMngVeri" parameterClass="Map" >
+        /*DialogTeMngVeri.insertTeMngVeri*/
+        INSERT
+          INTO TB_DGRTEMNGMOKVERI (
+               FIS_YEAR
+             , BGT_DGR
+             , TE_MNG_MOK_CD
+             , VERI_FG
+             , VERI_CL_CD
+             , VERI_DETL_CD
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE
+        )
+        VALUES (
+               #fisYear#
+             , #bgtDgr#
+             , #teMngMokCd#
+             , #veriFg#
+             , #veriClCd#
+             , #veriDetlCd#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+        )
+    </insert>
+    
+</sqlMap>

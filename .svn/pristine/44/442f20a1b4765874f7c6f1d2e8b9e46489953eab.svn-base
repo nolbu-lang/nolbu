@@ -1,0 +1,318 @@
+$(document).ready(function() {
+    var tabId = _reportWrite000TabId;
+    var tabObj = $("#"+tabId);
+    
+    $("#mainBody", tabObj).layout({
+        north__size : 175
+    });
+    
+    var getSearchParam = function(){
+        var reportCd = $("#condReportCd", tabObj).val();
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
+        var deptRankFr = $("#condDeptRankFr", tabObj).val();
+        var deptRankTo = $("#condDeptRankTo", tabObj).val();
+        
+        var param = {reportCd : reportCd,
+                fisYear : fisYear,
+                bgtDgr : bgtDgr,
+                officeCd : officeCd,
+                deptRankFr : deptRankFr,
+                deptRankTo : deptRankTo,
+                fisFgMstCd : '100'
+         };
+        
+        return param;
+    };
+    
+    var doCondInit = function(){
+
+    	$("#condReportMstrGrp", tabObj).csCreatCombo(comboData, {
+            id : 'reportMstrGrp',
+            groupId : 'ALL',
+            selectedValue : '',
+            comboType : 'S',
+            comboTypeValue : ''
+        });
+        
+        //중분류 selectBox 세팅
+        var reportMstrGrp = $("#condReportMstrGrp option:selected", tabObj).val();
+        condReportCdGrpCreateCombo(reportMstrGrp, '');
+        
+        //소분류 selectBox 세팅
+        var reportCdGrp = $("#condReportCdGrp option:selected", tabObj).val();
+        condReportDetlCdGrpCreateCombo(reportCdGrp, '');
+        
+        $("#condReportCd", tabObj).csCreatCombo(comboData, {
+            id : 'reportCd',
+            groupId : 'ALL',
+            selectedValue : '',
+            comboType : 'A',
+            comboTypeValue : ''
+        });
+        
+        var reportCd = $("#condReportCd option:selected", tabObj).val();
+        condReportDetlCdCreateCombo(reportCd, '');
+        
+        $("#condFisYear", tabObj).csCreatCombo(comboData, {
+            id : 'fisYear',
+            groupId : 'ALL',
+            selectedValue : '',
+            comboType : '',
+            comboTypeValue : ''
+        });
+       
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        condBgtDgrCreateCombo(fisYear, '');
+        
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        condOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
+        
+        $("#condDeptCdFr", tabObj).val("");
+        $("#condDeptNmFr", tabObj).val("");
+        $("#condDeptRankFr", tabObj).val("");
+        $("#condDeptCdTo", tabObj).val("");
+        $("#condDeptNmTo", tabObj).val("");
+        $("#condDeptRankTo", tabObj).val("");
+    };
+    
+    $("#condInitBtn", tabObj).click(function() {
+        doCondInit();
+    });
+    
+    $("#saveSheetBtn", tabObj).click(function() {
+        var param = getSearchParam();
+        param["fileNm"] = "집계표";
+        param["reportCd"] = "000";
+        param["reportDetlCd"] = "000";
+        
+        $.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite000SaveSheet.do"
+          , data: param
+        });
+    });
+    
+    $("#saveSheet001Btn", tabObj).click(function() {
+
+        var param = getSearchParam();
+        param["fileNm"] = "기준인건비집계표";
+        param["reportCd"] = "000";
+        param["reportDetlCd"] = "001";
+        
+        $.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite001SaveSheet.do"
+          , data: param
+        });
+    });
+    
+    $("#saveSheet002Btn", tabObj).click(function() {
+
+        /*
+        var condReportCd = $("#condReportCd option:selected", tabObj).val();
+        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
+        if(isEmpty(condReportCd) == true && isEmpty(officeCd) == true){
+            $.csAlert({
+                msg : "조서구분이 전체일 경우는 실국을 선택하셔야 합니다.",
+                callBack : function() {
+                    $("#condOfficeCd", tabObj).focus();
+                }
+            });
+            
+            return;
+        }
+        */
+
+        var param = getSearchParam();
+        
+        param["fileNm"] = "기초자료";
+        param["reportCd"] = "000";
+        param["reportDetlCd"] = "R10";
+        param["condReportCd"] = $("#condReportCd option:selected", tabObj).val();
+        param["condReportDetlCd"] = $("#condReportDetlCd option:selected", tabObj).val();
+        param["amtUnit"] = "1000";
+        
+        $.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite002SaveSheet.do"
+          , data: param
+        });
+    });
+    
+  //대분류 데이터 변경시
+    var doChangeCondReportMstrGrp = function(){
+        var reportMstrGrp = $("#condReportMstrGrp option:selected", tabObj).val();
+        condReportCdGrpCreateCombo(reportMstrGrp, '');
+        doChangeCondReportCdGrp();
+    };
+    
+    //중분류 데이터 변경시
+    var doChangeCondReportCdGrp = function(){
+    	var reportCdGrp = $("#condReportCdGrp option:selected", tabObj).val();
+    	condReportDetlCdGrpCreateCombo(reportCdGrp, '');
+    };
+    
+    var doChangeCondReportCd = function(){
+        var reportCd = $("#condReportCd option:selected", tabObj).val();
+        condReportDetlCdCreateCombo(reportCd, '');
+    };
+    
+    var doChangeCondFisYear = function(){
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        condBgtDgrCreateCombo(fisYear, '');
+        doChageCondBgtDgr();
+
+    };
+    
+    var doChageCondBgtDgr = function(){
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        condOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
+        doChangeCondOfficeCd();
+        
+    };
+    
+    var doChangeCondOfficeCd = function(){
+        $("#condDeptCdFr", tabObj).val("");
+        $("#condDeptNmFr", tabObj).val("");
+        $("#condDeptRankFr", tabObj).val("");
+        $("#condDeptCdTo", tabObj).val("");
+        $("#condDeptNmTo", tabObj).val("");
+        $("#condDeptRankTo", tabObj).val("");
+    };
+    
+    $("#condReportMstrGrp", tabObj).change(function(){
+        doChangeCondReportMstrGrp();
+    });
+    
+    $("#condReportCdGrp", tabObj).change(function(){
+    	doChangeCondReportCdGrp();
+    });
+    
+    $("#condReportCd", tabObj).change(function(){
+        doChangeCondReportCd();
+    });
+    
+    $("#condFisYear", tabObj).change(function(){
+        doChangeCondFisYear();
+    });
+    
+    $("#condBgtDgr", tabObj).change(function(){
+        doChageCondBgtDgr();
+    });
+    
+    $("#condOfficeCd", tabObj).change(function(){
+        doChangeCondOfficeCd();
+    });
+    
+    var openDialogBgtDeptSelt = function(seltFg){
+
+        var fisYear = $("#condFisYear option:selected", tabObj).val();
+        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
+        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
+        
+        $("#dialogDgrDeptSeltCallBackFunction", $("#dialogDgrDeptSeltDiv")).val("reportWrite000DialogDgrDeptSeltCallBack");
+        $("#dialogDgrDeptSeltFisYear", $("#dialogDgrDeptSeltDiv")).val(fisYear);
+        $("#dialogDgrDeptSeltBgtDgr", $("#dialogDgrDeptSeltDiv")).val(bgtDgr);
+        $("#dialogDgrDeptSeltOfficeCd", $("#dialogDgrDeptSeltDiv")).val(officeCd);
+        $("#dialogDgrDeptSeltSeltFg", $("#dialogDgrDeptSeltDiv")).val(seltFg);
+        $("#dialogDgrDeptSeltReportCd", $("#dialogDgrDeptSeltDiv")).val("");
+        $("#dialogDgrDeptSeltUserDeptYn", $("#dialogDgrDeptSeltDiv")).val("N");
+        
+        $("#dialogDgrDeptSeltDiv").dialog('open');
+    };
+    
+    reportWrite000DialogDgrDeptSeltCallBack = function(param){
+        if($("#dialogDgrDeptSeltSeltFg", $("#dialogDgrDeptSeltDiv")).val() == 1){
+            $("#condDeptCdFr", tabObj).val(param.deptCd);
+            $("#condDeptNmFr", tabObj).val(param.deptNm);
+            $("#condDeptRankFr", tabObj).val(param.deptRank);
+            $("#condDeptCdTo", tabObj).val(param.deptCd);
+            $("#condDeptNmTo", tabObj).val(param.deptNm);
+            $("#condDeptRankTo", tabObj).val(param.deptRank);
+        }else{
+            $("#condDeptCdTo", tabObj).val(param.deptCd);
+            $("#condDeptNmTo", tabObj).val(param.deptNm);
+            $("#condDeptRankTo", tabObj).val(param.deptRank);
+        }
+    };
+    
+    $("#openDialogBgtDeptBtnFr", tabObj).click(function(){
+        openDialogBgtDeptSelt(1);
+    });
+    
+    $("#openDialogBgtDeptBtnTo", tabObj).click(function(){
+        openDialogBgtDeptSelt(2);
+    });
+
+    var comboParam = [
+                      {id : "reportCdGrp", codeId : "RP011"},
+                      {id : "reportDetlCdGrp", codeId : "RP012"},
+                      {id : "reportMstrGrp", codeId : "RP010"},
+                      {id : "reportCd", codeId : "RP001"},
+                      {id : "reportDetlCd", codeId : "RP002"},
+                      {id : "fisYear", subQueryId : "FisYear"},
+                      {id : "bgtDgr", subQueryId : "BgtDgr"},
+                      {id : "officeCd", subQueryId : "OfficeCd", userDeptYn : "N"}
+                    ];
+
+    var comboData = jQuery.csComboAjaxCall(comboParam);
+        
+  //대분류 데이터에 따라 중분류 새로 세팅
+    var condReportCdGrpCreateCombo = function(groupId, selectedValue){
+        $("#condReportCdGrp", tabObj).csCreatCombo(comboData
+                , {id: 'reportCdGrp'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: 'S'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+  //중분류 데이터에 따라 소분류 새로 세팅
+    var condReportDetlCdGrpCreateCombo = function(groupId, selectedValue){
+    	$("#condReportDetlCdGrp", tabObj).csCreatCombo(comboData
+    			, {id: 'reportDetlCdGrp'
+    				, groupId: groupId
+    				, selectedValue: selectedValue
+    				, comboType: 'S'
+    				, comboTypeValue: ''
+    	}
+    	);
+    };
+    
+    var condReportDetlCdCreateCombo = function(groupId, selectedValue){
+        $("#condReportDetlCd", tabObj).csCreatCombo(comboData
+                , {id: 'reportDetlCd'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: 'A'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    var condBgtDgrCreateCombo = function(groupId, selectedValue){
+        $("#condBgtDgr", tabObj).csCreatCombo(comboData
+                , {id: 'bgtDgr'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: ''
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    var condOfficeCdCreateCombo = function(groupId, selectedValue){
+        $("#condOfficeCd", tabObj).csCreatCombo(comboData
+                , {id: 'officeCd'
+                  , groupId: groupId
+                  , selectedValue: selectedValue
+                  , comboType: 'A'
+                  , comboTypeValue: ''
+                  }
+        );
+    };
+    
+    doCondInit();
+});

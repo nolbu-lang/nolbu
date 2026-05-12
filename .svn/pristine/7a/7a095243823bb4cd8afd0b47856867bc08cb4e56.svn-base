@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoTeMngRegi">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <insert id="DialogDgrcompoTeMngRegi.insertDgrcompo" parameterClass="Map" >
+        /*DialogDgrcompoTeMngRegi.insertDgrcompo*/
+        INSERT
+          INTO TB_DGRCOMPO(
+               FIS_YEAR 
+             , BGT_DGR 
+             , TE_BGT_COMPO_ID
+             , DEPT_CD 
+             , DBIZ_CD 
+             , TE_MNG_MOK_CD 
+             , TE_MNG_MOK_NM 
+             , TE_BGT_COMPO_SEQ 
+             , DEMAND_COMPO_SORT_SEQ 
+             , DEMAND_COMPO_LEVEL 
+             , DEMAND_COMP_GROUND 
+             , DEMAND_COMP_FORMULAR 
+             , DEMAND_BGT_AMT 
+             , DEMAND_DIFF_AMT 
+             , DEMAND_COMPO_LEVEL_AMT 
+             , DEMAND_FORM_DSP_YN 
+             , COMPO_SORT_SEQ 
+             , COMPO_LEVEL 
+             , COMP_GROUND 
+             , COMP_FORMULAR 
+             , BGT_AMT 
+             , PRE_FORMULAR
+             , PRE_AMT 
+             , DIFF_AMT 
+             , COMPO_LEVEL_AMT 
+             , FORM_DSP_YN 
+             , UP_TE_BGT_COMPO_SEQ
+             , UP_TE_BGT_COMPO_ID
+             , SORT_SEQ
+             , PRE_COMP_FORMULAR
+             , PRE_BGT_AMT
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #deptCd#
+             , #dbizCd#
+             , #teMngMokCd#
+             , #teMngMokNm#
+             , #teBgtCompoSeq#
+             , #sortSeq#
+             , #compoLevel#
+             , #demandCompGround#
+             , ''
+             , 0
+             , 0
+             , 0
+             , 'Y'
+             , #sortSeq#
+             , #compoLevel#
+             , #demandCompGround#
+             , ''
+             , 0
+             , ''
+             , 0
+             , 0
+             , 0
+             , 'Y'
+             , NVL(#upTeBgtCompoSeq#, 0)
+             , DECODE(#upTeBgtCompoId#, NULL, '00000000000', '', '00000000000', #upTeBgtCompoId#)
+             , #sortSeq#
+             , ''
+             , 0
+             , #userId#
+             , SYSTIMESTAMP 
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
+    
+    <update id="DialogDgrcompoTeMngRegi.insertTeMngMok" parameterClass="Map" >
+        /*DialogDgrcompoTeMngRegi.insertTeMngMok*/
+        MERGE INTO TB_DGRTEMNGMOK A
+             USING (SELECT #fisYear# AS FIS_YEAR
+                         , #bgtDgr# AS BGT_DGR
+                         , #teMngMokCd# AS TE_MNG_MOK_CD
+                         , #teMngMokNm# AS TE_MNG_MOK_NM
+                         , 'Y' AS ADD_YN
+                   ) B 
+                ON A.FIS_YEAR = B.FIS_YEAR
+                   AND A.BGT_DGR = B.BGT_DGR
+                   AND A.TE_MNG_MOK_CD = B.TE_MNG_MOK_CD
+              WHEN MATCHED THEN
+                UPDATE 
+                   SET MODI_ID = #userId#
+                     , MODI_DATE = SYSTIMESTAMP
+              WHEN NOT MATCHED THEN 
+                INSERT (A.FIS_YEAR, A.BGT_DGR, A.TE_MNG_MOK_CD, A.TE_MNG_MOK_NM, A.ADD_YN, A.REGI_ID, A.REGI_DATE, A.MODI_ID, A.MODI_DATE)
+                VALUES (B.FIS_YEAR, B.BGT_DGR, B.TE_MNG_MOK_CD, B.TE_MNG_MOK_NM, B.ADD_YN, #userId#, SYSTIMESTAMP, #userId#, SYSTIMESTAMP)
+    </update>
+    
+    
+    <insert id="DialogDgrcompoTeMngRegi.insertDgrcompofrsc" parameterClass="Map" >
+        /*DialogDgrcompoTeMngRegi.insertDgrcompofrsc*/
+        INSERT
+          INTO TB_DGRCOMPOFRSC(
+               FIS_YEAR 
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , FRSC_FG_CD
+             , DMN_DEF_FRSC_AMT
+             , ADJ_DEF_FRSC_AMT
+             , PRE_DEF_FRSC_AMT
+             , PRE_FRSC_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #fisYear# AS FIS_YEAR
+             , #bgtDgr# AS BGT_DGR
+             , #teBgtCompoId# AS TE_BGT_COMPO_ID
+             , A.FRSC_FG_CD AS FRSC_FG_CD
+             , 0 AS DMN_DEF_FRSC_AMT
+             , 0 AS ADJ_DEF_FRSC_AMT
+             , 0 AS PRE_DEF_FRSC_AMT
+             , 0 AS PRE_FRSC_AMT
+             , #teBgtCompoSeq#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_YEARFRSC A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+         ORDER BY A.FRSC_FG_CD
+    </insert>
+    
+    <insert id="DialogDgrcompoTeMngRegi.insertDgrcompochar" parameterClass="Map" >
+        /*DialogDgrcompoTeMngRegi.insertDgrcompochar*/
+        INSERT
+          INTO TB_DGRCOMPOCHAR(
+               FIS_YEAR 
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , CHAR_FG_CD
+             , DMN_DEF_CHAR_AMT
+             , ADJ_DEF_CHAR_AMT
+             , PRE_DEF_CHAR_AMT
+             , PRE_CHAR_AMT
+             , TE_BGT_COMPO_SEQ
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        SELECT #fisYear# AS FIS_YEAR
+             , #bgtDgr# AS BGT_DGR
+             , #teBgtCompoId# AS TE_BGT_COMPO_ID
+             , A.DETL_CD AS CHAR_FG_CD
+             , 0 AS DMN_DEF_CHAR_AMT
+             , 0 AS ADJ_DEF_CHAR_AMT
+             , 0 AS PRE_DEF_CHAR_AMT
+             , 0 AS PRE_CHAR_AMT
+             , #teBgtCompoSeq#
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_COMMCDDETL A
+         WHERE 1 = 1
+           AND A.CL_CD = 'DC001'
+         ORDER BY A.DETL_CD 
+    </insert>
+    
+</sqlMap>

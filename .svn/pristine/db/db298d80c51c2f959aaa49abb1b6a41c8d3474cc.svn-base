@@ -1,0 +1,63 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.springframework.stereotype.Service;
+
+import com.cs.bcjis.report.service.ReportWrite030Service;
+
+
+@Service("reportWrite030Service")
+public class ReportWrite030ServiceImpl  implements ReportWrite030Service {
+    @Resource(name="reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+    
+    @Resource(name="reportWrite030DAO")
+    private ReportWrite030DAO reportWrite030DAO;
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport030List(Map map) throws Exception {
+        return reportWrite030DAO.selectReport030List(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport030ExcelList(Map map) throws Exception {
+        return reportWrite030DAO.selectReport030ExcelList(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport034ExcelList(Map map) throws Exception {
+        return reportWrite030DAO.selectReport034ExcelList(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport030Sheet001List(Map map) throws Exception {
+        return reportWrite030DAO.selectReport030Sheet001List(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void saveReport030(JSONObject jsonParam) throws Exception {        
+        List saveDatas = jsonParam.getJSONArray("saveDatas");
+        JSONObject tempParam = null;
+
+        for (int i = 0; i < saveDatas.size(); i++) {
+            tempParam = (JSONObject) saveDatas.get(i);
+            tempParam.put("userId", jsonParam.get("userId"));
+            tempParam.put("amtUnit", jsonParam.get("amtUnit"));
+
+            String updateReportFlag = (String) tempParam.get("updateReportFlag");
+            
+            //개별속성, 사전절차 수정시 업데이트
+            if(updateReportFlag != null && "Y".equals(updateReportFlag)){
+            	reportCommDAO.updateReport(tempParam);
+            }
+            
+            reportWrite030DAO.updateReport030(tempParam);
+        }
+    }
+}

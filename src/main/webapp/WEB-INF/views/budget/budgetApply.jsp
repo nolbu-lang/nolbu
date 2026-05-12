@@ -1,0 +1,170 @@
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import = "com.cs.bcjis.comm.util.BcjisCommUtil" %>
+<%
+    String tabId = BcjisCommUtil.getStringParameter(request, "tabId", "");
+%>
+<script>
+  _budgetApplyTabId = "<%=tabId%>";
+</script>
+<script src="${pageContext.request.contextPath}/js/budget/budgetApply.js"></script>
+<div class="contents" style="height:100%;">
+  <!--list s-->
+  <div id="mainBody" class="nondiv" style="height:95%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: auto;">
+    <div id="mainNorth" class="pane ui-layout-north" style="border:0px;overflow-x: hidden;">
+      <!--condition s-->
+      <div class="condition">
+        <table>
+          <colgroup>
+            <col width="100px"/>
+            <col width="200px"/>
+            <col width="100px"/>
+            <col width="200px"/>
+            <col width="100px"/>
+            <col width="200px"/>
+          </colgroup>
+          <tbody>
+            <tr>
+              <th>회계년도</th>
+              <td>
+                <select id="condFisYear" name="condFisYear" title="회계년도" style="width:90%;">
+                </select>
+              </td>
+              <th>예산차수</th>
+              <td>
+                <select id="condBgtDgr" name="condBgtDgr" title="예산차수" style="width:90%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <th>회계구분</th>
+              <td>
+                <select id="condFisFgMstCd" name="condFisFgMstCd" title="회계마스터구분" style="width:90%;">
+                </select>
+              </td>
+              <td colspan="2">
+                <select id="condFisFgCd" name="condFisFgCd" title="회계구분" style="width:93%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+              <th>실국</th>
+              <td>
+                <select id="condOfficeCd" name="condOfficeCd" title="실국" style="width:90%;">
+                </select>
+              </td>
+              <th>부서</th>
+              <td colspan="3">
+                <input type="hidden" id="condDeptCdFr"/>
+                <input type="hidden" id="condDeptRankFr"/>
+                <input type="hidden" id="condDeptCdTo"/>
+                <input type="hidden" id="condDeptRankTo"/>
+                <input type="text" id="condDeptNmFr" class="readonly" style="width:35%;" readonly/>
+                <a id="openDialogBgtDeptBtnFr" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>&nbsp;~&nbsp;
+                <input type="text" id="condDeptNmTo" class="readonly" style="width:35%;" readonly/>
+                <a id="openDialogBgtDeptBtnTo" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>
+              </td>
+            </tr>
+            <tr>
+              <th>통계목</th>
+              <td colspan="3">
+                <select id="condTeMngMokCdFr" name="condTeMngMokCdFr" title="통계목" style="width:40%;">
+                </select>&nbsp;~&nbsp;
+                <select id="condTeMngMokCdTo" name="condTeMngMokCdTo" title="통계목" style="width:40%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <th>재원구분</th>
+              <td colspan="3">
+                <select id="condFrscFgCdFr" name="condFrscFgCdFr" title="재원구분" style="width:40%;">
+                </select>&nbsp;~&nbsp;
+                <select id="condFrscFgCdTo" name="condFrscFgCdTo" title="재원구분" style="width:40%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!--condition e-->
+      <div class="btn">
+        <div class="btnR">
+          <!-- <a id="updateAllAmtBtn" class="btnDisabledClass" enabledYn="N" href="#">전체금액조정</a> -->
+          <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
+        </div>
+      </div>
+      <div class="unitDiv">
+        (단위:천원)
+        <input type="hidden" id="condAmtUnit" value="1000"/>
+      </div>
+    </div>
+    <div id="mainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
+      <div id="subMainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;overflow: auto;">
+        <div id="subMainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
+          <div class="btn">
+            <div class="btnL">
+              <a id="selectAllBtn" class="btnDisabledClass" href="#" enabledYn="N">전체선택</a>
+              <a id="unSelectAllBtn" class="btnDisabledClass" href="#" enabledYn="N" style="display:none;">선택해제</a>
+            </div>
+            <div class="btnR">
+            	<a id="regiBtn" class="btnDisabledClass" href="#" enabledYn="N">등록</a>
+         		<a id="modifyBtn" class="btnDisabledClass" href="#" enabledYn="N">수정</a>
+              	<a id="deltDgrcompoDatasBtn" class="btnDisabledClass" href="#" enabledYn="N">삭제</a>
+              	
+              	
+              	<a id="sortBtn" class="btnDisabledClass" href="#" enabledYn="N">정렬순서변경</a>
+              	<a id="mergeBtn" class="btnDisabledClass" href="#" enabledYn="N">병합</a>
+              	<a id="sepBtn" class="btnDisabledClass" href="#" enabledYn="N">분리</a>
+              	<a id="cngHistoryBtn" class="btnDisabledClass" href="#" enabledYn="N">이력관리</a>
+            </div>
+          </div>
+          <div class="ui-widget-header">
+            적용자료
+          </div>
+          <div id="BUDGET_APPLY_DIV" class="csGrid" >
+            <table id="BUDGET_APPLY_GRD" ></table>
+          </div>
+        </div>
+        <div id="subMainWest" class="pane ui-layout-west" style="border:0px;overflow:hidden;">
+          <div class="btn">
+            <div class="btnL">
+              <a id="selectAllRlkBtn" class="btnDisabledClass" href="#" enabledYn="N">전체선택</a>
+              <a id="unSelectAllRlkBtn" class="btnDisabledClass" href="#" enabledYn="N" style="display:none;">선택해제</a>
+            </div>
+            <div class="btnR">
+              <a id="saveDgrcompoDatasBtn" class="btnDisabledClass" href="#" enabledYn="N">적용</a>
+            </div>
+          </div>
+          <div class="ui-widget-header">
+            연계자료
+          </div>
+          <div id="BUDGET_APPLY_RLK_DIV" class="csGrid">
+            <table id="BUDGET_APPLY_RLK_GRD" ></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--list e-->
+</div>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoRegi.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoSep.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoMerge.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoDbiz.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoSort.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngHistoryList.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngModiList.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngLog.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoModifyMerge.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoModifyReport.jsp"%>
+<!--ui-layout-center e-->

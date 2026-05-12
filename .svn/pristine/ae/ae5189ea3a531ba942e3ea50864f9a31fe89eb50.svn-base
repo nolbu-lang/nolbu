@@ -1,0 +1,64 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import net.sf.json.JSONObject;
+
+import org.springframework.stereotype.Service;
+
+import com.cs.bcjis.budget.service.impl.BudgetCommDAO;
+import com.cs.bcjis.report.service.ReportWrite090Service;
+
+
+@Service("reportWrite090Service")
+public class ReportWrite090ServiceImpl  implements ReportWrite090Service {
+    @Resource(name="budgetCommDAO")
+    private BudgetCommDAO budgetCommDAO;
+    
+    @Resource(name="reportCommDAO")
+    private ReportCommDAO reportCommDAO;
+    
+    @Resource(name="reportWrite090DAO")
+    private ReportWrite090DAO reportWrite090DAO;
+
+    @SuppressWarnings("rawtypes")
+    public List selectReport090List(Map map) throws Exception {
+        return reportWrite090DAO.selectReport090List(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport090ExcelList(Map map) throws Exception {
+        return reportWrite090DAO.selectReport090ExcelList(map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void saveReport090(JSONObject jsonParam) throws Exception {        
+        List saveDatas = jsonParam.getJSONArray("saveDatas");
+        JSONObject tempParam = null;
+
+        for (int i = 0; i < saveDatas.size(); i++) {
+            tempParam = (JSONObject) saveDatas.get(i);
+            tempParam.put("userId", jsonParam.get("userId"));
+
+            String updateReportFlag = (String) tempParam.get("updateReportFlag");
+            
+            //개별속성, 사전절차 수정시 업데이트
+            if(updateReportFlag != null && "Y".equals(updateReportFlag)){
+            	reportCommDAO.updateReport(tempParam);
+            }
+            
+            reportWrite090DAO.updateReport090(tempParam);
+            
+            if("Y".equals(tempParam.get("srchValYn")) == true){
+                reportCommDAO.updateSrchValChildReport(tempParam);
+            }
+            
+            if("Y".equals(tempParam.get("reflegFgYn")) == true && "020".equals(tempParam.get("reflectFg")) == true){
+                budgetCommDAO.updateDiffAmtByReflegFg(tempParam);
+            }
+        }
+    }
+}

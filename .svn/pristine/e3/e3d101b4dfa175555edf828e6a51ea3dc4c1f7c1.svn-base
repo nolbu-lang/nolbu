@@ -1,0 +1,21 @@
+package com.cs.bcjis.report.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import com.cs.bcjis.comm.BcjisCommAbstractDAO;
+
+@Repository("reportWrite000DAO")
+public class ReportWrite000DAO extends BcjisCommAbstractDAO {
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetList(Map map) throws Exception {
+        return list("ReportWrite000.selectReport000SheetList", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetListNew(Map map) throws Exception {
+    	return list("ReportWrite000.selectReport000SheetListNew", map);
+    }
+}

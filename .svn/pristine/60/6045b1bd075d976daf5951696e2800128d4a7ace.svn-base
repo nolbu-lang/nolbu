@@ -1,0 +1,52 @@
+package com.cs.bcjis.budget.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import com.cs.bcjis.comm.BcjisCommAbstractDAO;
+
+@Repository("budgetSheetSelectDAO")
+public class BudgetSheetSelectDAO extends BcjisCommAbstractDAO {
+    
+    @SuppressWarnings("rawtypes")
+    public List selectDgrCompoList(Map map) throws Exception{
+        return list("BudgetSheetSelect.selectDgrCompoList", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectSheetKeyList(Map map) throws Exception{
+        return list("BudgetSheetSelect.selectSheetKeyList", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void insertSheet(Map map) throws Exception{
+        insert("BudgetSheetSelect.insertSheet", map);
+        
+        try{
+            map.put("hisFg", "010");
+            insert("BcjisHisComm.insertTbSheetH", map);
+        }catch(Exception e){
+            logger.error("insertSheet(map)", e);
+        }
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void deleteSheet(Map map) throws Exception{
+        try{
+            map.put("hisFg", "030");
+            insert("BcjisHisComm.insertTbSheetH", map);
+        }catch(Exception e){
+            logger.error("deleteSheet(map)", e);
+        }
+        
+        delete("BudgetSheetSelect.deleteSheet", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public int selectSheetCnt(Map map) throws Exception{
+    	return (Integer) selectByPk("BudgetSheetSelect.selectSheetCnt", map);
+    }
+
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgrcompoDbiz">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>    
+    
+    <select id="DialogDgrcompoDbiz.selectDgrcompo" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgrcompoDbiz.selectDgrcompo*/
+        SELECT A.DBIZ_CD
+        	 , B.DBIZ_NM 
+          FROM TB_DGRCOMPO A 
+          LEFT JOIN TB_DGRBIZ B 
+            ON A.FIS_YEAR = B.FIS_YEAR 
+           AND A.BGT_DGR = B.BGT_DGR 
+           AND A.DBIZ_CD = B.DBIZ_CD 
+         WHERE A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.DEPT_CD = #deptCd# 
+         GROUP BY A.DBIZ_CD
+    </select>
+    
+</sqlMap>
