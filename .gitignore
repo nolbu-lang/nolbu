@@ -2,3 +2,7 @@
 target.zip
 src/main/resources/csframework/bcjisProps/globals.properties
 *.war
+
+# 로컬 적재/실행 시 생성되는 로그·에러 파일
+*.log
+csql.err

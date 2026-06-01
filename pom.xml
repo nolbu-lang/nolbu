@@ -17,7 +17,7 @@
     <repositories>
         <repository>
             <id>cubrid.release.repository</id>
-            <url>http://maven.cubrid.org</url>
+            <url>https://maven.cubrid.org</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -27,13 +27,23 @@
         </repository>
         <repository> 
             <id>egovframe</id> 
-            <url>http://www.egovframe.go.kr/maven/</url>
+            <url>https://maven.egovframe.go.kr/maven/</url>
             <releases> 
                 <enabled>true</enabled> 
             </releases> 
             <snapshots> 
                 <enabled>false</enabled> 
             </snapshots> 
+        </repository>
+        <repository>
+            <id>tobesoft.log4sql</id>
+            <url>https://mangosteen.tobesoft.co.kr/nexus/repository/maven-public/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
     
@@ -167,7 +177,7 @@
         <dependency>
         	<groupId>log4sql</groupId>
             <artifactId>log4sql</artifactId>
-            <version>7.8</version>
+            <version>7.0.8</version>
         </dependency>
         
         <dependency>

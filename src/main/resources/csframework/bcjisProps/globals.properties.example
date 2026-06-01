@@ -1,0 +1,26 @@
+#-----------------------------------------------------------------------
+# globals.properties.example
+# 로컬 PC 실행용 템플릿입니다.
+# 1) 이 파일을 globals.properties 로 복사하세요.
+# 2) DB 접속 정보·폴더 경로를 PC 환경에 맞게 수정하세요.
+# (globals.properties 는 .gitignore 대상 — GitHub에 올리지 마세요)
+#-----------------------------------------------------------------------
+
+Globals.SystemName = \uc608\uc0b0\ud3b8\uc131\uc2ec\uc0ac\uc815\ubcf4\uc2dc\uc2a4\ud15c
+Globals.LocalCd = 6260000
+Globals.OsType = WINDOWS
+
+Globals.Jndi = JDBC-CUBRID-BCJIS
+
+crypto.hashed.password=
+crypto_password.algorithm=SHA-256
+crypto.password=
+
+Globals.DbType = cubrid
+Globals.DriverClassName=cubrid.jdbc.driver.CUBRIDDriver
+Globals.Url=jdbc:CUBRID:localhost:33000:bcjis:::?charset=utf8
+Globals.UserName = bcjisapp
+Globals.Password = bcjisapp00
+
+Globals.fileStorePath=C:/bcjis/upload/
+Globals.excelStorePath=C:/bcjis/download/excel/
