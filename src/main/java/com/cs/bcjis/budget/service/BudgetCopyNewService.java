@@ -10,5 +10,11 @@ public interface BudgetCopyNewService {
 
     @SuppressWarnings("rawtypes")
     public void copyReport(Map map) throws Exception;
+
+    @SuppressWarnings("rawtypes")
+    public List selectCopyNewMapList(Map map) throws Exception;
+
+    @SuppressWarnings("rawtypes")
+    public void copyReportBatch(List<Map> mappings) throws Exception;
     
 }

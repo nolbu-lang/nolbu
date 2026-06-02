@@ -2,217 +2,116 @@ $(document).ready(function() {
     var tabId = _budgetCopyTabId;
     var tabObj = $("#"+tabId);
     
-    var gridScrollPosition = 0;
-    var srcGridScrollPosition = 0;
-    var gridHeight = 0;
-    
-    var myCellattr = function (rowId, tv, rowObject, cm, rdata) {
-        return ' style="vertical-align: top;"';
-    };
-    
-    var dgrcompoNmFormatter = function(cellValue, options, rowObject){
-        if(isEmpty(cellValue) == true){
-            cellValue = "";
-        }
-        
-        if(rowObject.teBgtCompoId == "00000000000"){
-            return cellValue;
-        }
-        
-        var demandCont = rowObject.demandCont; 
-        if(isEmpty(demandCont) == true){
-            demandCont = "";
-        }
-        
-        var rVal = '<span id="dgrcompoNmView_'+rowObject.dgrcompoId+'" >' + cellValue + '</span><br>'
-                 + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" class="invisible" style="width:280px;ime-mode:active;min-height:20px;" disabled>'+demandCont+'</textarea>'
-                 + '';
-        
-        return rVal;
-    };
-    
-    var examContFormatter = function(cellValue, options, rowObject){
-        if(rowObject.teBgtCompoId == "00000000000"){
-            return cellValue;
-        }
-        
-        if(isEmpty(cellValue) == true){
-            cellValue = "";
-        }
-        
-        var rVal = '<div>'
-                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" class="invisible" style="width:280px;" disabled>'
-                 + reflectFgCreateCombo('RP003', rowObject.reflectFg)
-                 + '</select>'+'<br>'
-                 + '<textarea id="examCont_'+rowObject.dgrcompoId+'" class="invisible" style="width:280px;ime-mode:active;min-height:20px;" disabled>'+cellValue+'</textarea>'
-                 + '</div>';
-
-        return rVal;
-    };
-    
-  //대분류 그리드fomatter
-    var reportMstrFormatter = function(cellValue, options, rowObject){
-    	
-        if(isEmpty(cellValue) == true){
-            cellValue = "";
-        }
-        
-        if(rowObject.teBgtCompoId == "00000000000" ){
-            return cellValue;
-        }
-        var itemList = comboData['reportMstr'];
-        
-        if(cellValue == "" && isEmpty(rowObject.reportMstr) != true){
-        	cellValue = rowObject.reportMstr;
-        }
-        
-        var rVal = '<div>';
-        for(var i=0 ; i<itemList.length ; i++){
-        	var data = itemList[i];
-        	if(cellValue.includes(data.code)){
-    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    		}
-        }
-        
-        rVal += '</div>';
-
-        return rVal;
-    };
-    
-  //중분류 그리드fomatter
-    var reportCdFormatter = function(cellValue, options, rowObject){
-    	
-    	if(isEmpty(cellValue) == true){
-    		cellValue = "";
-    	}
-    	
-    	if(rowObject.teBgtCompoId == "00000000000" ){
-    		return cellValue;
-    	}
-    	var itemList = comboData['reportCd'];
-
-    	if(cellValue == "" && isEmpty(rowObject.reportCd) != true){
-        	cellValue = rowObject.reportCd;
-        }
-    	
-    	var rVal = '<div>';
-    	for(var i=0 ; i<itemList.length ; i++){
-    		var data = itemList[i];
-    		if(cellValue.includes(data.code)){
-    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    		}
-    	}
-    	
-    	rVal += '</div>';
-    	
-    	return rVal;
-    };
-    
-  //소분류 그리드fomatter
-    var reportDetlCdFormatter = function(cellValue, options, rowObject){
-    	
-    	if(isEmpty(cellValue) == true){
-    		cellValue = "";
-    	}
-    	
-    	if(rowObject.teBgtCompoId == "00000000000" ){
-    		return cellValue;
-    	}
-    	var itemList = comboData['reportDetlCd'];
-
-    	if(cellValue == "" && isEmpty(rowObject.reportDetlCd) != true){
-        	cellValue = rowObject.reportDetlCd;
-        }
-    	
-    	var rVal = '<div>';
-    	for(var i=0 ; i<itemList.length ; i++){
-    		var data = itemList[i];
-    		if(cellValue.includes(data.code)){
-    			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    		}
-    	}
-    	
-    	rVal += '</div>';
-    	
-    	return rVal;
-    };
-    
-    var colNames = ['', '구분(회계-실-부서-세부-통계목)','통계목', '증감액', '예산액', '증감액', '예산액', '예산액', '검토내용', '재원정보',
-                    'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'demandCont', 'examCont', 'reflectFg', 'orderYmdSeq'
+    // [경량] 평면 목록: 제목 + 조정액. 적용에 필요한 키는 hidden 으로 보관.
+    var colNames = ['구분(부서 &gt; 사업 &gt; 통계목 &gt; 산출근거)', '조정액',
+                    'teBgtCompoId', 'teBgtCompoSeq', 'reportCd', 'reportDetlCd', 'fisYear', 'bgtDgr', 'orderYmdSeq'
                    ];
-    
-    var colModel = [ {name : 'selYn', index:'selYn', width: 30, align:'center', sortable : false, fixed : true, frozen: true,
-                            formatter: function (cellValue, option, rowObject) {
-                                if(rowObject.teBgtCompoId == "00000000000"){
-                                    return '<input type="radio" name="radio_' + option.gid + '" style="display:none;" />';
-                                }
-                                
-                                return '<input type="radio" name="radio_' + option.gid + '"  />';
-                            }
-                        },
-                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 400, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
-                            formatter:dgrcompoNmFormatter
-                        },
-                        {name : 'teMngMokNm', index : 'teMngMokNm', width : 100, sortable : false, fixed : true, align : 'left', cellattr: myCellattr},
-                        {name : 'demandDiffAmt', index : 'demandDiffAmt', width : 80, sortable : false, fixed : true, align : 'right', cellattr: myCellattr, formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'demandBgtAmt', index : 'demandBgtAmt', width : 80, sortable : false, fixed : true, align : 'right', cellattr: myCellattr, formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'diffAmt', index : 'diffAmt', width : 80, sortable : false, fixed : true, align : 'right', cellattr: myCellattr, formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'bgtAmt', index : 'bgtAmt', width : 80, sortable : false, fixed : true, align : 'right', cellattr: myCellattr, formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'preBgtAmt', index : 'preBgtAmt', width : 80, sortable : false, fixed : true, align : 'right', cellattr: myCellattr, formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        
-                        {name : 'examContView', index : 'examContView', width : 290, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
-                            formatter:examContFormatter
-                        },
-                        {name : 'frsces', index : 'frsces', width : 250, sortable : false, fixed : true, align : 'left', cellattr: myCellattr},
-                        {name : 'dgrcompoId', index : 'dgrcompoId', width : 0, sortable : false, hidden : true, key: true},
-                        {name : 'upDgrcompoId', index : 'upDgrcompoId', width : 0, sortable : false, hidden : true},
-                        {name : 'fisYear', index : 'fisYear', width : 0, sortable : false, hidden : true},
-                        {name : 'bgtDgr', index : 'bgtDgr', width : 0, sortable : false, hidden : true},
+
+    var colModel = [
+                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 520, sortable : false, align : 'left'},
+                        {name : 'adjAmt', index : 'adjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'teBgtCompoId', index : 'teBgtCompoId', width : 0, sortable : false, hidden : true, key: true},
+                        {name : 'teBgtCompoSeq', index : 'teBgtCompoSeq', width : 0, sortable : false, hidden : true},
                         {name : 'reportCd', index : 'reportCd', width : 0, sortable : false, hidden : true},
                         {name : 'reportDetlCd', index : 'reportDetlCd', width : 0, sortable : false, hidden : true},
-                        {name : 'dgrLevel', index : 'dgrLevel', width : 0, sortable : false, hidden : true},
-                        {name : 'teBgtCompoId', index : 'teBgtCompoId', width : 0, sortable : false, hidden : true},
-                        {name : 'teBgtCompoSeq', index : 'teBgtCompoSeq', width : 0, sortable : false, hidden : true},
-                        {name : 'demandCont', index : 'demandCont', width : 0, sortable : false, hidden : true},
-                        {name : 'examCont', index : 'examCont', width : 0, sortable : false, hidden : true},
-                        {name : 'reflectFg', index : 'reflectFg', width : 0, sortable : false, hidden : true},
+                        {name : 'fisYear', index : 'fisYear', width : 0, sortable : false, hidden : true},
+                        {name : 'bgtDgr', index : 'bgtDgr', width : 0, sortable : false, hidden : true},
                         {name : 'orderYmdSeq', index : 'orderYmdSeq', width : 0, sortable : false, hidden : true}
                     ];
+
+    // 매핑 목록(전년도 -> 적용대상) 그리드 컬럼
+    var mapColNames = ['전년도 제목', '전년도조정액', '적용대상', '적용대상 조정액',
+                       'srcReportCd', 'srcReportDetlCd', 'srcFisYear', 'srcBgtDgr', 'srcTeBgtCompoId', 'srcOrderYmdSeq',
+                       'reportCd', 'reportDetlCd', 'fisYear', 'bgtDgr', 'teBgtCompoId', 'orderYmdSeq'
+                      ];
+
+    var mapColModel = [
+                        {name : 'srcDgrcompoNm', index : 'srcDgrcompoNm', width : 480, sortable : false, align : 'left'},
+                        {name : 'srcAdjAmt', index : 'srcAdjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'tgtDgrcompoNm', index : 'tgtDgrcompoNm', width : 480, sortable : false, align : 'left'},
+                        {name : 'tgtAdjAmt', index : 'tgtAdjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'srcReportCd', index : 'srcReportCd', width : 0, sortable : false, hidden : true},
+                        {name : 'srcReportDetlCd', index : 'srcReportDetlCd', width : 0, sortable : false, hidden : true},
+                        {name : 'srcFisYear', index : 'srcFisYear', width : 0, sortable : false, hidden : true},
+                        {name : 'srcBgtDgr', index : 'srcBgtDgr', width : 0, sortable : false, hidden : true},
+                        {name : 'srcTeBgtCompoId', index : 'srcTeBgtCompoId', width : 0, sortable : false, hidden : true},
+                        {name : 'srcOrderYmdSeq', index : 'srcOrderYmdSeq', width : 0, sortable : false, hidden : true},
+                        {name : 'reportCd', index : 'reportCd', width : 0, sortable : false, hidden : true},
+                        {name : 'reportDetlCd', index : 'reportDetlCd', width : 0, sortable : false, hidden : true},
+                        {name : 'fisYear', index : 'fisYear', width : 0, sortable : false, hidden : true},
+                        {name : 'bgtDgr', index : 'bgtDgr', width : 0, sortable : false, hidden : true},
+                        {name : 'teBgtCompoId', index : 'teBgtCompoId', width : 0, sortable : false, hidden : true, key: true},
+                        {name : 'orderYmdSeq', index : 'orderYmdSeq', width : 0, sortable : false, hidden : true}
+                      ];
     
-    var getGridHeight = function (){
-    	var height = $("#mainCenter", tabObj).height() - 125 > 200 ? $("#mainCenter", tabObj).height() - 125 : 200;
-    	if(isEmpty($("#BUDGET_COPY_SRC_GRD", tabObj)) == false){
-	    	$("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", height - 220);
-    	}
-    	if(isEmpty($("#BUDGET_COPY_GRD", tabObj)) == false){
-    		$("#BUDGET_COPY_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", height - 220);
-    	}
-        return height;
+    // 전년도/적용대상 목록 그리드 높이: 패널 실제 높이에서 제목·조건·버튼 영역을 제외
+    var getListGridHeight = function(paneId){
+        var pane = $("#" + paneId, tabObj);
+        if(isEmpty(pane) == true || pane.height() < 80){
+            return 150;
+        }
+
+        var overhead = 0;
+        pane.children().each(function(){
+            if($(this).hasClass("csGrid") == false){
+                overhead += $(this).outerHeight(true) || 0;
+            }
+        });
+
+        var h = pane.height() - overhead - 6;
+        return h > 120 ? h : 120;
+    };
+
+    var resizeListGrid = function(gridSel, paneId){
+        if(isEmpty($(gridSel, tabObj)) == true){
+            return;
+        }
+
+        var bodyH = getListGridHeight(paneId);
+        $(gridSel, tabObj).setGridHeight(bodyH);
+        $(gridSel, tabObj).setGridWidth($("#" + paneId, tabObj).width());
+        $(gridSel, tabObj).closest(".ui-jqgrid-bdiv").css({"max-height" : bodyH, "overflow-y" : "auto"});
     };
     
+    // 매핑 그리드: 남쪽 영역 너비를 채우고, 행이 늘면 세로 스크롤되도록 높이 제한
+    var mapGridResize = function(){
+        if(isEmpty($("#BUDGET_MAP_GRD", tabObj)) == true){
+            return;
+        }
+
+        var southW = $("#mainSouth", tabObj).width();
+        var southH = $("#mainSouth", tabObj).height();
+        if(isEmpty(southW) == false && southW > 0){
+            $("#BUDGET_MAP_GRD", tabObj).setGridWidth(southW - 4);
+        }
+        // 헤더/버튼 영역(약 70px)을 제외한 높이만큼만 표시하고 초과 시 스크롤
+        var bodyH = (southH > 0 ? southH : 320) - 70;
+        if(bodyH < 80){ bodyH = 80; }
+        $("#BUDGET_MAP_GRD", tabObj).closest(".ui-jqgrid-bdiv").css({"max-height" : bodyH, "overflow-y" : "auto"});
+    };
+
     var mainBodyResize = function(){
         $("#subMainBody", tabObj).width($("#mainCenter", tabObj).width());
         $("#subMainBody", tabObj).layout().resizeAll();
+        subMainBodyResize();
+        mapGridResize();
     };
     
     var subMainBodyResize = function(){
         $("#subMainCenterCond", tabObj).width($("#subMainCenter", tabObj).width()-20);
         $("#subMainWestCond", tabObj).width($("#subMainWest", tabObj).width()-20);
-        if(isEmpty($("#BUDGET_COPY_SRC_GRD", tabObj)) == false){
-            $("#BUDGET_COPY_SRC_GRD", tabObj).setGridHeight(getGridHeight());
-            $("#BUDGET_COPY_SRC_GRD", tabObj).setGridWidth($("#subMainWest", tabObj).width());
-        }
-        
-        if(isEmpty($("#BUDGET_COPY_GRD", tabObj)) == false){
-            $("#BUDGET_COPY_GRD", tabObj).setGridHeight(getGridHeight());
-            $("#BUDGET_COPY_GRD", tabObj).setGridWidth($("#subMainCenter", tabObj).width());
-        }
+        resizeListGrid("#BUDGET_COPY_SRC_GRD", "subMainWest");
+        resizeListGrid("#BUDGET_COPY_GRD", "subMainCenter");
     };
     
     bcjisCommMainObj["mainBodyResize_"+tabId] = mainBodyResize;
     
     $("#mainBody", tabObj).layout({
-        north__size : 100,
+        south__size : 240,
+        south__minSize : 160,
+        south__maxSize : 400,
+        south__resizable : true,
+        south__onresize: mainBodyResize,
         center__onresize: mainBodyResize
     });
     
@@ -223,9 +122,39 @@ $(document).ready(function() {
     
     subMainBodyResize();
 
-    var budgetCopySrcGrid = $("#BUDGET_COPY_SRC_GRD", tabObj);
-    var budgetCopyGrid = $("#BUDGET_COPY_GRD", tabObj);
-    
+    // 선택된 행 추적 (전년도/올해)
+    var selectedSrcRowId = "";
+    var selectedTgtRowId = "";
+
+    // 평면 그리드 1회 생성 (조회 시 데이터만 갱신)
+    var budgetCopySrcGrid = $.csGrid({
+        id : "BUDGET_COPY_SRC",
+        colNames : colNames,
+        colModel : colModel,
+        rowNum : 100000,
+        defaultRows : 0,
+        onSelectRow : function(rowId){ selectedSrcRowId = rowId; }
+    });
+
+    var budgetCopyGrid = $.csGrid({
+        id : "BUDGET_COPY",
+        colNames : colNames,
+        colModel : colModel,
+        rowNum : 100000,
+        defaultRows : 0,
+        onSelectRow : function(rowId){ selectedTgtRowId = rowId; }
+    });
+
+    var budgetMapGrid = $.csGrid({
+        id : "BUDGET_MAP",
+        colNames : mapColNames,
+        colModel : mapColModel,
+        rowNum : 100000,
+        defaultRows : 0
+    });
+
+    mapGridResize();
+
     var doSearchSrcCallBack = function(data){
         if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
             $.csAlert({
@@ -235,41 +164,11 @@ $(document).ready(function() {
             return;
         }
 
-        $("#BUDGET_COPY_SRC_GRD", tabObj).GridUnload();
-        budgetCopySrcGrid = $("#BUDGET_COPY_SRC_GRD", tabObj);
-        budgetCopySrcGrid.csTreeGrid({
-            datastr : data,
-            height : getGridHeight(),
-            colNames : colNames,
-            colModel : colModel,
-            ExpandColumn : "dgrcompoNm",
-            jsonReader : {
-                repeatitems : false,
-                root : "dataList"
-            },
-            onSelectRow: function(rowId){
-            },
-            loadComplete: function() {
-                $('textarea', tabObj).autogrow();
-                $('textarea', tabObj).keyup();
-            }
-        });
-        
-        //$("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", 300);
-        $("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", getGridHeight() - 220);
-        
-        budgetCopySrcGrid.jqGrid('setGroupHeaders', {
-            useColSpanStyle : true,
-            groupHeaders : [
-               {startColumnName : 'reportMstr',numberOfColumns : 3, titleText : '분류'},
-               {startColumnName : 'demandDiffAmt', numberOfColumns : 2, titleText : '요구'}, 
-               {startColumnName : 'diffAmt', numberOfColumns : 2, titleText : '조정'},
-               {startColumnName : 'preBgtAmt', numberOfColumns : 1, titleText : '전년도'}
-            ]
-        });
-        
-        $("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop(srcGridScrollPosition);
-        
+        selectedSrcRowId = "";
+        $("#BUDGET_COPY_SRC_GRD", tabObj).clearGridData();
+        budgetCopySrcGrid.addCsJsonData(data);
+        resizeListGrid("#BUDGET_COPY_SRC_GRD", "subMainWest");
+
         data = null;
     };
     
@@ -282,208 +181,89 @@ $(document).ready(function() {
             return;
         }
 
-        $("#BUDGET_COPY_GRD", tabObj).jqGrid('GridUnload');
-        budgetCopyGrid = $("#BUDGET_COPY_GRD", tabObj);
-        budgetCopyGrid.csTreeGrid({
-            datastr : data,
-            height : getGridHeight(),
-            colNames : colNames,
-            colModel : colModel,
-            ExpandColumn : "dgrcompoNm",
-            jsonReader : {
-                repeatitems : false,
-                root : "dataList"
-            },
-            onSelectRow: function(rowId){
-            },
-            loadComplete: function() {
-                $('textarea', tabObj).autogrow();
-                $('textarea', tabObj).keyup();
-            }
-        });
-        
-        $("#BUDGET_COPY_GRD", tabObj).closest(".ui-jqgrid-bdiv").css("max-height", getGridHeight() - 220);
-        
-        budgetCopyGrid.jqGrid('setGroupHeaders', {
-            useColSpanStyle : true,
-            groupHeaders : [
-               {startColumnName : 'reportMstr',numberOfColumns : 3, titleText : '분류'},
-               {startColumnName : 'demandDiffAmt', numberOfColumns : 2, titleText : '요구'}, 
-               {startColumnName : 'diffAmt', numberOfColumns : 2, titleText : '조정'},
-               {startColumnName : 'preBgtAmt', numberOfColumns : 1, titleText : '전년도'} 
-            ]
-        });
-        
-        $("#BUDGET_COPY_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop(gridScrollPosition);
-        
+        selectedTgtRowId = "";
+        $("#BUDGET_COPY_GRD", tabObj).clearGridData();
+        budgetCopyGrid.addCsJsonData(data);
+        resizeListGrid("#BUDGET_COPY_GRD", "subMainCenter");
+
         data = null;
     };
     
-    var doSearchSrc = function(){
-        var reportMstr = $("#condSrcReportMstr option:selected", tabObj).val();
-        var reportCd = $("#condSrcReportCd option:selected", tabObj).val();
-        var reportDetlCd = $("#condSrcReportDetlCd option:selected", tabObj).val();
-        var fisYear = $("#condSrcFisYear option:selected", tabObj).val();
-        var bgtDgr = $("#condSrcBgtDgr option:selected", tabObj).val();
-        var fisFgMstCd = $("#condSrcFisFgMstCd option:selected", tabObj).val();
-        var fisFgCd = $("#condSrcFisFgCd option:selected", tabObj).val();
-        var officeCd = $("#condSrcOfficeCd option:selected", tabObj).val();
-        var deptRankFr = $("#condSrcDeptRankFr", tabObj).val();
-        var deptRankTo = $("#condSrcDeptRankTo", tabObj).val();
-        var teMngMokCdFr = $("#condSrcTeMngMokCdFr", tabObj).val();
-        var teMngMokCdTo = $("#condSrcTeMngMokCdTo", tabObj).val();
-        var frscFgCdFr = $("#condSrcFrscFgCdFr", tabObj).val();
-        var frscFgCdTo = $("#condSrcFrscFgCdTo", tabObj).val();
-        var frscFrCdYn = "N";
-        if(isEmpty(frscFgCdFr) == false || isEmpty(frscFgCdTo) == false){
-            frscFrCdYn = "Y";
+    var buildMapSearchData = function(condPrefix){
+        var p = condPrefix || "";
+        var reportDetlCd = $("#cond" + p + "ReportDetlCd option:selected", tabObj).val();
+        if(isEmpty(reportDetlCd) == true){
+            reportDetlCd = "";
         }
-        var amtUnit = $("#condAmtUnit", tabObj).val();
-        var orderYmdSeq = '';
-        
-        if(isEmpty(reportMstr) == true){
+
+        var data = {
+            reportCd : $("#cond" + p + "ReportCd option:selected", tabObj).val(),
+            reportDetlCd : reportDetlCd,
+            fisYear : $("#cond" + p + "FisYear option:selected", tabObj).val(),
+            bgtDgr : $("#cond" + p + "BgtDgr option:selected", tabObj).val(),
+            fisFgMstCd : $("#cond" + p + "FisFgMstCd option:selected", tabObj).val(),
+            fisFgCd : $("#cond" + p + "FisFgCd option:selected", tabObj).val(),
+            officeCd : $("#cond" + p + "OfficeCd option:selected", tabObj).val(),
+            deptRankFr : $("#cond" + p + "DeptRankFr", tabObj).val(),
+            deptRankTo : $("#cond" + p + "DeptRankTo", tabObj).val(),
+            amtUnit : $("#condAmtUnit", tabObj).val(),
+            orderYmdSeq : ""
+        };
+
+        if(p === "Src"){
+            data.userDeptYn = "N";
+        }
+
+        return data;
+    };
+
+    var validateMapSearchCond = function(condPrefix){
+        var p = condPrefix || "";
+
+        if(isEmpty($("#cond" + p + "ReportMstr option:selected", tabObj).val()) == true){
             $.csAlert({
                 msg : "대분류를 선택해주세요.",
                 callBack : function() {
-                    $("#condSrcReportMstr", tabObj).focus();
+                    $("#cond" + p + "ReportMstr", tabObj).focus();
                 }
             });
-            
+            return false;
+        }
+
+        if(isEmpty($("#cond" + p + "ReportCd option:selected", tabObj).val()) == true){
+            $.csAlert({
+                msg : "중분류를 선택해주세요.",
+                callBack : function() {
+                    $("#cond" + p + "ReportCd", tabObj).focus();
+                }
+            });
+            return false;
+        }
+
+        return true;
+    };
+
+    var doSearchSrc = function(){
+        if(validateMapSearchCond("Src") == false){
             return;
         }
-        
-        if(isEmpty(reportCd) == true){
-        	$.csAlert({
-        		msg : "중분류를 선택해주세요.",
-        		callBack : function() {
-        			$("#condSrcReportCd", tabObj).focus();
-        		}
-        	});
-        	
-        	return;
-        }
-        
-        if(isEmpty(reportDetlCd) == true){
-        	reportDetlCd = '';
-        }
-        
-        srcGridScrollPosition = $("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop();
 
-        var tmp = {reportCd : reportCd,
-                reportDetlCd : reportDetlCd,
-                fisYear : fisYear,
-                bgtDgr : bgtDgr,
-                fisFgMstCd : fisFgMstCd,
-                fisFgCd : fisFgCd,
-                officeCd : officeCd,
-                deptRankFr : deptRankFr,
-                deptRankTo : deptRankTo,
-                teMngMokCdFr : teMngMokCdFr,
-                teMngMokCdTo : teMngMokCdTo,
-                frscFgCdFr : frscFgCdFr,
-                frscFgCdTo : frscFgCdTo,
-                frscFrCdYn : frscFrCdYn,
-                amtUnit : amtUnit,
-                orderYmdSeq : orderYmdSeq,
-                userDeptYn : "N"
-         };
-        
         $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyNewList.do",
-            data: {reportCd : reportCd,
-                   reportDetlCd : reportDetlCd,
-                   fisYear : fisYear,
-                   bgtDgr : bgtDgr,
-                   fisFgMstCd : fisFgMstCd,
-                   fisFgCd : fisFgCd,
-                   officeCd : officeCd,
-                   deptRankFr : deptRankFr,
-                   deptRankTo : deptRankTo,
-                   teMngMokCdFr : teMngMokCdFr,
-                   teMngMokCdTo : teMngMokCdTo,
-                   frscFgCdFr : frscFgCdFr,
-                   frscFgCdTo : frscFgCdTo,
-                   frscFrCdYn : frscFrCdYn,
-                   amtUnit : amtUnit,
-                   orderYmdSeq : orderYmdSeq,
-                   userDeptYn : "N"
-            },
+            url : "/budget/ajaxBudgetCopyNewMapList.do",
+            data : buildMapSearchData("Src"),
             async : true,
             callBack : doSearchSrcCallBack
         });
-        
     };
     
     var doSearch = function(){
-    	var reportMstr = $("#condReportMstr option:selected", tabObj).val();
-        var reportCd = $("#condReportCd option:selected", tabObj).val();
-        var reportDetlCd = $("#condReportDetlCd option:selected", tabObj).val();
-        var fisYear = $("#condFisYear option:selected", tabObj).val();
-        var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
-        var fisFgMstCd = $("#condFisFgMstCd option:selected", tabObj).val();
-        var fisFgCd = $("#condFisFgCd option:selected", tabObj).val();
-        var officeCd = $("#condOfficeCd option:selected", tabObj).val();
-        var deptRankFr = $("#condDeptRankFr", tabObj).val();
-        var deptRankTo = $("#condDeptRankTo", tabObj).val();
-        var teMngMokCdFr = $("#condTeMngMokCdFr", tabObj).val();
-        var teMngMokCdTo = $("#condTeMngMokCdTo", tabObj).val();
-        var frscFgCdFr = $("#condFrscFgCdFr", tabObj).val();
-        var frscFgCdTo = $("#condFrscFgCdTo", tabObj).val();
-        var frscFrCdYn = "N";
-        if(isEmpty(frscFgCdFr) == false || isEmpty(frscFgCdTo) == false){
-            frscFrCdYn = "Y";
-        }
-        var amtUnit = $("#condAmtUnit", tabObj).val();
-        var orderYmdSeq = '';
-
-        
-        if(isEmpty(reportMstr) == true){
-            $.csAlert({
-                msg : "대분류를 선택해주세요.",
-                callBack : function() {
-                    $("#condReportMstr", tabObj).focus();
-                }
-            });
-            
+        if(validateMapSearchCond("") == false){
             return;
         }
-        
-        if(isEmpty(reportCd) == true){
-        	$.csAlert({
-        		msg : "중분류를 선택해주세요.",
-        		callBack : function() {
-        			$("#condReportCd", tabObj).focus();
-        		}
-        	});
-        	
-        	return;
-        }
-        
-        if(isEmpty(reportDetlCd) == true){
-        	reportDetlCd = '';
-        }
-        
-        gridScrollPosition = $("#BUDGET_COPY_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop();
-        
+
         $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyNewList.do",
-            data: {reportCd : reportCd,
-                   reportDetlCd : reportDetlCd,
-                   fisYear : fisYear,
-                   bgtDgr : bgtDgr,
-                   fisFgMstCd : fisFgMstCd,
-                   fisFgCd : fisFgCd,
-                   officeCd : officeCd,
-                   deptRankFr : deptRankFr,
-                   deptRankTo : deptRankTo,
-                   teMngMokCdFr : teMngMokCdFr,
-                   teMngMokCdTo : teMngMokCdTo,
-                   frscFgCdFr : frscFgCdFr,
-                   frscFgCdTo : frscFgCdTo,
-                   frscFrCdYn : frscFrCdYn,
-                   amtUnit : amtUnit,
-                   orderYmdSeq : orderYmdSeq
-            },
+            url : "/budget/ajaxBudgetCopyNewMapList.do",
+            data : buildMapSearchData(""),
             async : true,
             callBack : doSearchCallBack
         });
@@ -525,25 +305,12 @@ $(document).ready(function() {
         var fisFgMstCd = $("#condSrcFisFgMstCd option:selected", tabObj).val();
         condSrcFisFgCdCreateCombo(fisYear + '_' + fisFgMstCd, '');
         
-        condSrcTeMngMokCdFrCreateCombo(fisYear + '_' + bgtDgr, '');
-        condSrcTeMngMokCdToCreateCombo(fisYear + '_' + bgtDgr, '');
-        
-        condSrcFrscFgCdFrCreateCombo(fisYear, '');
-        condSrcFrscFgCdToCreateCombo(fisYear, '');
-        
-        condSrcOrderYmdSeqCreateCombo(fisYear + '_' + bgtDgr, '');
-        
         $("#condSrcDeptCdFr", tabObj).val("");
         $("#condSrcDeptNmFr", tabObj).val("");
         $("#condSrcDeptRankFr", tabObj).val("");
         $("#condSrcDeptCdTo", tabObj).val("");
         $("#condSrcDeptNmTo", tabObj).val("");
         $("#condSrcDeptRankTo", tabObj).val("");
-        $("#condSrcTeMngMokCdFr", tabObj).val("");
-        $("#condSrcTeMngMokCdTo", tabObj).val("");
-        $("#condSrcFrscFgCdFr", tabObj).val("");
-        $("#condSrcFrscFgCdTo", tabObj).val("");
-        $("#condSrcOrderYmdSeq", tabObj).val("");
     };
     
     $("#condSrcInitBtn", tabObj).click(function() {
@@ -586,25 +353,12 @@ $(document).ready(function() {
         var fisFgMstCd = $("#condFisFgMstCd option:selected", tabObj).val();
         condFisFgCdCreateCombo(fisYear + '_' + fisFgMstCd, '');
         
-        condTeMngMokCdFrCreateCombo(fisYear + '_' + bgtDgr, '');
-        condTeMngMokCdToCreateCombo(fisYear + '_' + bgtDgr, '');
-        
-        condFrscFgCdFrCreateCombo(fisYear, '');
-        condFrscFgCdToCreateCombo(fisYear, '');
-        
-        condOrderYmdSeqCreateCombo(fisYear + '_' + bgtDgr, '');
-        
         $("#condDeptCdFr", tabObj).val("");
         $("#condDeptNmFr", tabObj).val("");
         $("#condDeptRankFr", tabObj).val("");
         $("#condDeptCdTo", tabObj).val("");
         $("#condDeptNmTo", tabObj).val("");
         $("#condDeptRankTo", tabObj).val("");
-        $("#condTeMngMokCdFr", tabObj).val("");
-        $("#condTeMngMokCdTo", tabObj).val("");
-        $("#condFrscFgCdFr", tabObj).val("");
-        $("#condFrscFgCdTo", tabObj).val("");
-        $("#condOrderYmdSeq", tabObj).val("");
     };
     
     $("#condInitBtn", tabObj).click(function() {
@@ -612,153 +366,177 @@ $(document).ready(function() {
     });
     
     $("#srcSearchBtn", tabObj).click(function() {
-        srcGridScrollPosition = 0;
-        
-        var reportCd = $("#condReportCd option:selected", tabObj).val();
-        var orderYmdSeq = $("#condSrcOrderYmdSeq option:selected", tabObj).val();
-        if(reportCd == "070" && isEmpty(orderYmdSeq) == true){
-            $.csAlert({
-                msg : "지시사항 조치계획 서식은 지시일자를 선택하셔야 합니다.",
-                callBack : function() {
-                    $("#condSrcOrderYmdSeq", tabObj).focus();
-                }
-            });
-            
-            return;
-        }
-        
         doSearchSrc();
     });
     
     $("#searchBtn", tabObj).click(function() {
-        gridScrollPosition = 0;
-        
-        var reportCd = $("#condReportCd option:selected", tabObj).val();
-        var orderYmdSeq = $("#condOrderYmdSeq option:selected", tabObj).val();
-        if(reportCd == "070" && isEmpty(orderYmdSeq) == true){
-            $.csAlert({
-                msg : "지시사항 조치계획 서식은 지시일자를 선택하셔야 합니다.",
-                callBack : function() {
-                    $("#condOrderYmdSeq", tabObj).focus();
-                }
-            });
-            
-            return;
-        }
-        
         doSearch();
     });
 
-    var getSelectedRowId = function(gridNm){
-        var $selRadio = $('input[name=radio_' + gridNm + '_GRD]:checked'), $tr;
-        if ($selRadio.length > 0) {
-            $tr = $selRadio.closest('tr');
-            if ($tr.length > 0) {
-                return $tr.attr('id');
-            }
-        }
-            
-        return "";
-    };
-    
-    var applyParam = {};
-    
-    var doApply = function(params){
-        if(params.confirmData != "Y"){
-            return;
-        }
-        
-        var data = $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyCopyReport.do",
-            data : applyParam
-        });
-        
-        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
-            $.csAlert({
-                msg : data.bcjisMessage
-            });
-            
-            return;
-        }
-        
-        $.csAlert({
-            msg : data.bcjisMessage,
-            callBack : function() {
-                //doSearch();
-            }
-        });
-    };
-    
-    $("#applyBtn", tabObj).click(function() {
+    // ===== 매핑(전년도 -> 올해) 추가/삭제/일괄적용 =====
+
+    // 매핑추가: 선택된 전년도 1건 + 올해 1건을 매핑 목록에 담는다.
+    $("#mapAddBtn", tabObj).click(function() {
         if($(this).attr("enabledYn") != "Y"){
             return;
         }
-        
-        var srcRowId = getSelectedRowId('BUDGET_COPY_SRC');
-        if(isEmpty(srcRowId) == true){
-            $.csAlert({
-                msg : "적용할 자료를 선택하여 주십시오."
-            });
-            
-            return;
-        }
-        
-        var rowId = getSelectedRowId('BUDGET_COPY');
-        if(isEmpty(rowId) == true){
-            $.csAlert({
-                msg : "적용할 대상을 선택하여 주십시오."
-            });
-            
+
+        if(isEmpty(selectedSrcRowId) == true){
+            $.csAlert({ msg : "전년도 예산(왼쪽)에서 적용할 자료를 선택하여 주십시오." });
             return;
         }
 
-        var srcRowData = budgetCopySrcGrid.getRowData(srcRowId);
-        if(srcRowData.teBgtCompoId == "00000000000"){
-            $.csAlert({
-                msg : "세세목 이하 예산편성을 선택하여 주십시오."
-            });
-            
+        if(isEmpty(selectedTgtRowId) == true){
+            $.csAlert({ msg : "적용대상(올해)에서 적용할 대상을 선택하여 주십시오." });
             return;
         }
 
-        var rowData = budgetCopyGrid.getRowData(rowId);
-        if(rowData.teBgtCompoId == "00000000000"){
-            $.csAlert({
-                msg : "세세목 이하 예산편성을 선택하여 주십시오."
-            });
-            
-            return;
-        }
-        
-        if(srcRowData.reportCd != rowData.reportCd){
-            $.csAlert({
-                msg : "동일한 조서만 적용 할 수 있습니다."
-            });
-            
-            return;
-        }
-        
-        applyParam = {};
-        applyParam["srcReportCd"] = srcRowData.reportCd;
-        applyParam["srcReportDetlCd"] = srcRowData.reportDetlCd;
-        applyParam["srcFisYear"] = srcRowData.fisYear;
-        applyParam["srcBgtDgr"] = srcRowData.bgtDgr;
-        applyParam["srcTeBgtCompoId"] = srcRowData.teBgtCompoId;
-        applyParam["srcOrderYmdSeq"] = srcRowData.orderYmdSeq;
-        applyParam["reportCd"] = rowData.reportCd;
-        applyParam["reportDetlCd"] = rowData.reportDetlCd;
-        applyParam["fisYear"] = rowData.fisYear;
-        applyParam["bgtDgr"] = rowData.bgtDgr;
-        applyParam["teBgtCompoId"] = rowData.teBgtCompoId;
-        applyParam["orderYmdSeq"] = rowData.orderYmdSeq;
+        var srcRowData = budgetCopySrcGrid.getRowData(selectedSrcRowId);
+        var tgtRowData = budgetCopyGrid.getRowData(selectedTgtRowId);
 
+        if(isEmpty(srcRowData) == true || isEmpty(srcRowData.teBgtCompoId) == true
+           || isEmpty(tgtRowData) == true || isEmpty(tgtRowData.teBgtCompoId) == true){
+            $.csAlert({ msg : "세세목 이하 예산편성을 선택하여 주십시오." });
+            return;
+        }
+
+        if(srcRowData.reportCd != tgtRowData.reportCd){
+            $.csAlert({ msg : "동일한 조서만 적용 할 수 있습니다." });
+            return;
+        }
+
+        // 동일 대상(올해 세세목)이 이미 매핑되어 있으면 중복 추가 방지
+        var existRow = budgetMapGrid.getRowData(tgtRowData.teBgtCompoId);
+        if(isEmpty(existRow) == false && isEmpty(existRow.teBgtCompoId) == false){
+            $.csAlert({ msg : "이미 매핑된 적용대상입니다. (대상은 한 번만 매핑할 수 있습니다)" });
+            return;
+        }
+
+        var applyParam = {
+            srcReportCd : srcRowData.reportCd,
+            srcReportDetlCd : srcRowData.reportDetlCd,
+            srcFisYear : srcRowData.fisYear,
+            srcBgtDgr : srcRowData.bgtDgr,
+            srcTeBgtCompoId : srcRowData.teBgtCompoId,
+            srcOrderYmdSeq : srcRowData.orderYmdSeq,
+            reportCd : tgtRowData.reportCd,
+            reportDetlCd : tgtRowData.reportDetlCd,
+            fisYear : tgtRowData.fisYear,
+            bgtDgr : tgtRowData.bgtDgr,
+            teBgtCompoId : tgtRowData.teBgtCompoId,
+            orderYmdSeq : tgtRowData.orderYmdSeq
+        };
+
+        // 마감여부 확인(기존 단건 적용과 동일한 검증)
         if(checkCloseYn(applyParam) == false){
             return;
         }
-        
+
+        var mapRow = $.extend({}, applyParam);
+        mapRow.srcDgrcompoNm = srcRowData.dgrcompoNm;
+        mapRow.srcAdjAmt = srcRowData.adjAmt;
+        mapRow.tgtDgrcompoNm = tgtRowData.dgrcompoNm;
+        mapRow.tgtAdjAmt = tgtRowData.adjAmt;
+
+        budgetMapGrid.insertData(tgtRowData.teBgtCompoId, mapRow);
+        mapGridResize();
+
+        $("#batchApplyBtn", tabObj).btnChangeState(true);
+    });
+
+    // 매핑삭제: 선택된 매핑 1건 삭제
+    $("#mapDelBtn", tabObj).click(function() {
+        var selRowId = budgetMapGrid.getGridParam("selrow");
+        if(isEmpty(selRowId) == true){
+            $.csAlert({ msg : "삭제할 매핑을 선택하여 주십시오." });
+            return;
+        }
+
+        budgetMapGrid.jqGrid("delRowData", selRowId);
+        mapGridResize();
+    });
+
+    // 전체삭제
+    $("#mapClearBtn", tabObj).click(function() {
+        $("#BUDGET_MAP_GRD", tabObj).clearGridData();
+        mapGridResize();
+    });
+
+    // 매핑 목록을 적용 파라미터 배열로 수집
+    var getMappings = function(){
+        var mappings = [];
+        var rows = $("#BUDGET_MAP_GRD", tabObj)[0].rows;
+        var rowData;
+        for(var i = 0; i < rows.length; i++){
+            rowData = budgetMapGrid.getRowData(rows[i].id);
+            if(isEmpty(rowData) == true || isEmpty(rowData.teBgtCompoId) == true){
+                continue;
+            }
+
+            mappings.push({
+                srcReportCd : rowData.srcReportCd,
+                srcReportDetlCd : rowData.srcReportDetlCd,
+                srcFisYear : rowData.srcFisYear,
+                srcBgtDgr : rowData.srcBgtDgr,
+                srcTeBgtCompoId : rowData.srcTeBgtCompoId,
+                srcOrderYmdSeq : rowData.srcOrderYmdSeq,
+                reportCd : rowData.reportCd,
+                reportDetlCd : rowData.reportDetlCd,
+                fisYear : rowData.fisYear,
+                bgtDgr : rowData.bgtDgr,
+                teBgtCompoId : rowData.teBgtCompoId,
+                orderYmdSeq : rowData.orderYmdSeq
+            });
+        }
+
+        return mappings;
+    };
+
+    var doBatchApply = function(params){
+        if(params.confirmData != "Y"){
+            return;
+        }
+
+        var mappings = getMappings();
+        if(isEmpty(mappings) == true || mappings.length < 1){
+            $.csAlert({ msg : "적용할 매핑이 존재하지 않습니다." });
+            return;
+        }
+
+        var data = $.csAjaxCall({
+            url : "/budget/ajaxBudgetCopyNewCopyReportBatch.do",
+            data : { mappings : mappings }
+        });
+
+        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+            $.csAlert({ msg : (isEmpty(data) == true ? "적용 중 오류가 발생했습니다." : data.bcjisMessage) });
+            return;
+        }
+
+        $.csAlert({
+            msg : data.bcjisMessage,
+            callBack : function() {
+                $("#BUDGET_MAP_GRD", tabObj).clearGridData();
+                mapGridResize();
+            }
+        });
+    };
+
+    // 일괄적용: 매핑 목록 전체를 한 번에 적용
+    $("#batchApplyBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+
+        var mappings = getMappings();
+        if(isEmpty(mappings) == true || mappings.length < 1){
+            $.csAlert({ msg : "적용할 매핑이 존재하지 않습니다." });
+            return;
+        }
+
         $.csConfirm({
-            msg : "적용하시겠습니까?",
-            callBack : doApply
+            msg : mappings.length + "건을 일괄 적용하시겠습니까?",
+            callBack : doBatchApply
         });
     });
     
@@ -794,9 +572,6 @@ $(document).ready(function() {
         condSrcFisFgMstCdCreateCombo(fisYear, '');
         doChageCondSrcBgtDgr();
         doChageCondSrcFisFgMstCd();
-        
-        condSrcFrscFgCdFrCreateCombo(fisYear, '');
-        condSrcFrscFgCdToCreateCombo(fisYear, '');
     };
     
     var doChangeCondFisYear = function(){
@@ -805,9 +580,6 @@ $(document).ready(function() {
         condFisFgMstCdCreateCombo(fisYear, '');
         doChageCondBgtDgr();
         doChageCondFisFgMstCd();
-        
-        condFrscFgCdFrCreateCombo(fisYear, '');
-        condFrscFgCdToCreateCombo(fisYear, '');
     };
     
     var doChageCondSrcBgtDgr = function(){
@@ -815,11 +587,6 @@ $(document).ready(function() {
         var bgtDgr = $("#condSrcBgtDgr option:selected", tabObj).val();
         condSrcOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
         doChangeCondSrcOfficeCd();
-        
-        condSrcTeMngMokCdFrCreateCombo(fisYear + '_' + bgtDgr, '');
-        condSrcTeMngMokCdToCreateCombo(fisYear + '_' + bgtDgr, '');
-
-        condSrcOrderYmdSeqCreateCombo(fisYear + '_' + bgtDgr, '');
     };
     
     var doChageCondBgtDgr = function(){
@@ -827,11 +594,6 @@ $(document).ready(function() {
         var bgtDgr = $("#condBgtDgr option:selected", tabObj).val();
         condOfficeCdCreateCombo(fisYear + '_' + bgtDgr, '');
         doChangeCondOfficeCd();
-        
-        condTeMngMokCdFrCreateCombo(fisYear + '_' + bgtDgr, '');
-        condTeMngMokCdToCreateCombo(fisYear + '_' + bgtDgr, '');
-        
-        condOrderYmdSeqCreateCombo(fisYear + '_' + bgtDgr, '');
     };
     
     var doChageCondSrcFisFgMstCd = function(){
@@ -910,22 +672,6 @@ $(document).ready(function() {
     
     $("#condOfficeCd", tabObj).change(function(){
         doChangeCondOfficeCd();
-    });
-    
-    $("#condSrcTeMngMokCdFr", tabObj).change(function(){
-        $("#condSrcTeMngMokCdTo", tabObj).val($("#condSrcTeMngMokCdFr option:selected", tabObj).val());
-    });
-    
-    $("#condTeMngMokCdFr", tabObj).change(function(){
-        $("#condTeMngMokCdTo", tabObj).val($("#condTeMngMokCdFr option:selected", tabObj).val());
-    });
-    
-    $("#condSrcFrscFgCdFr", tabObj).change(function(){
-        $("#condSrcFrscFgCdTo", tabObj).val($("#condSrcFrscFgCdFr option:selected", tabObj).val());
-    });
-    
-    $("#condFrscFgCdFr", tabObj).change(function(){
-        $("#condFrscFgCdTo", tabObj).val($("#condFrscFgCdFr option:selected", tabObj).val());
     });
     
     var openDialogBgtDeptSrcSelt = function(seltFg){
@@ -1017,11 +763,7 @@ $(document).ready(function() {
                       {id : "fisFgMstCd", subQueryId : "FisFgMstCd"},
                       {id : "fisFgCd", subQueryId : "FisFgCd"},
                       {id : "officeCdAll", subQueryId : "OfficeCd", userDeptYn : "N"},
-                      {id : "officeCd", subQueryId : "OfficeCd"},
-                      {id : "teMngMokCd", subQueryId : "TeMngMokCd"},
-                      {id : "frscFgCd", subQueryId : "FrscFgCd"},
-                      {id : "reflectFg", codeId : "RP003"},
-                      {id : "orderYmdSeq", subQueryId : "OrderYmdSeq"}
+                      {id : "officeCd", subQueryId : "OfficeCd"}
                     ];
 
     var comboData = jQuery.csComboAjaxCall(comboParam);
@@ -1073,17 +815,6 @@ $(document).ready(function() {
         );
     };
         
-    /*var condReportDetlCdCreateCombo = function(groupId, selectedValue){
-        $("#condReportDetlCd", tabObj).csCreatCombo(comboData
-                , {id: 'reportDetlCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: ''
-                  , comboTypeValue: ''
-                  }
-        );
-    };*/
-    
     var condSrcBgtDgrCreateCombo = function(groupId, selectedValue){
         $("#condSrcBgtDgr", tabObj).csCreatCombo(comboData
                 , {id: 'bgtDgr'
@@ -1172,129 +903,9 @@ $(document).ready(function() {
         );
     };
     
-    var condSrcTeMngMokCdFrCreateCombo = function(groupId, selectedValue){
-        $("#condSrcTeMngMokCdFr", tabObj).csCreatCombo(comboData
-                , {id: 'teMngMokCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condTeMngMokCdFrCreateCombo = function(groupId, selectedValue){
-        $("#condTeMngMokCdFr", tabObj).csCreatCombo(comboData
-                , {id: 'teMngMokCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condSrcTeMngMokCdToCreateCombo = function(groupId, selectedValue){
-        $("#condSrcTeMngMokCdTo", tabObj).csCreatCombo(comboData
-                , {id: 'teMngMokCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condTeMngMokCdToCreateCombo = function(groupId, selectedValue){
-        $("#condTeMngMokCdTo", tabObj).csCreatCombo(comboData
-                , {id: 'teMngMokCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condSrcFrscFgCdFrCreateCombo = function(groupId, selectedValue){
-        $("#condSrcFrscFgCdFr", tabObj).csCreatCombo(comboData
-                , {id: 'frscFgCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condFrscFgCdFrCreateCombo = function(groupId, selectedValue){
-        $("#condFrscFgCdFr", tabObj).csCreatCombo(comboData
-                , {id: 'frscFgCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condSrcFrscFgCdToCreateCombo = function(groupId, selectedValue){
-        $("#condSrcFrscFgCdTo", tabObj).csCreatCombo(comboData
-                , {id: 'frscFgCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condFrscFgCdToCreateCombo = function(groupId, selectedValue){
-        $("#condFrscFgCdTo", tabObj).csCreatCombo(comboData
-                , {id: 'frscFgCd'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'A'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condSrcOrderYmdSeqCreateCombo = function(groupId, selectedValue){
-        $("#condSrcOrderYmdSeq", tabObj).csCreatCombo(comboData
-                , {id: 'orderYmdSeq'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'S'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-    
-    var condOrderYmdSeqCreateCombo = function(groupId, selectedValue){
-        $("#condOrderYmdSeq", tabObj).csCreatCombo(comboData
-                , {id: 'orderYmdSeq'
-                  , groupId: groupId
-                  , selectedValue: selectedValue
-                  , comboType: 'S'
-                  , comboTypeValue: ''
-                  }
-        );
-    };
-        
-    var reflectFgCreateCombo = function(groupId, selectedValue){
-        return getCsComboStr(comboData
-                , {id: 'reflectFg'
-                    , groupId: groupId
-                    , selectedValue: selectedValue
-                    , comboType: 'S'
-                    , comboTypeValue: ''
-                    });
-    };
-    
     doCondSrcInit();
     doCondInit();
     
-    $("#applyBtn", tabObj).btnChangeState(true);
+    $("#mapAddBtn", tabObj).btnChangeState(true);
     
 });

@@ -60,13 +60,22 @@ foreach ($f in $files) {
 Write-Host "데이터 적재 완료"
 
 # 성능 개선용 인덱스 생성 (loaddb 는 인덱스/PK 를 만들지 않으므로 적재 후 반드시 수행)
-$csql = Join-Path $CubridBin "csql.exe"
-$indexSql = Join-Path $PSScriptRoot "create-indexes.sql"
-if (Test-Path $indexSql) {
-    Write-Host "인덱스 생성 중: $indexSql ..."
-    # 이미 존재하는 인덱스는 개별 문에서 오류가 나도 무시하고 계속 진행한다(IF NOT EXISTS 미지원).
-    & $csql -u $User -p $Password --no-single-line -i $indexSql $DbName
+$applyIdx = Join-Path $PSScriptRoot "apply-indexes.ps1"
+if (Test-Path $applyIdx) {
+    Write-Host "인덱스 생성 중: apply-indexes.ps1 ..."
+    & $applyIdx
     Write-Host "인덱스 생성 단계 완료"
 } else {
-    Write-Warning "인덱스 스크립트를 찾을 수 없습니다: $indexSql"
+    Write-Warning "인덱스 스크립트를 찾을 수 없습니다: $applyIdx"
+}
+
+# TB_COMM_SEQ 시드 (loaddb 후 채번 테이블이 비어 있으면 모든 ajax가 실패)
+$csql = Join-Path $CubridBin "csql.exe"
+$seedSql = Join-Path $PSScriptRoot "seed-comm-seq.sql"
+if (Test-Path $seedSql) {
+    Write-Host "TB_COMM_SEQ 시드 적재: $seedSql ..."
+    & $csql -u $User -p $Password --no-single-line -i $seedSql $DbName
+    Write-Host "TB_COMM_SEQ 시드 완료"
+} else {
+    Write-Warning "시드 스크립트를 찾을 수 없습니다: $seedSql"
 }

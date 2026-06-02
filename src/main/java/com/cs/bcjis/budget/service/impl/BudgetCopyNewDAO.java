@@ -13,8 +13,12 @@ public class BudgetCopyNewDAO extends BcjisCommAbstractDAO {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
     public List selectCopyReportList(Map map) throws Exception {
 
-        map.put("reportTableNm", "TB_REPORT" + map.get("reportCd"));
-
         return list("BudgetCopyNew.selectCopyReportList", map);
+    }
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+    public List selectCopyNewMapList(Map map) throws Exception {
+
+        return list("BudgetCopyNew.selectCopyNewMapList", map);
     }
 }

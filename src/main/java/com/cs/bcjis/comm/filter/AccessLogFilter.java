@@ -110,20 +110,30 @@ public class AccessLogFilter implements Filter {
                 jsonParam = new JSONObject();
             }
 
-            Map<String, String> map = new HashMap<String, String>();
-
-            map.put("logId",  traceLogIdStrategy.getNextStringId());
-            map.put("url", userWhere);
-            map.put("userId", bcjisUserVO.getUserId());
-            map.put("sessionId", hRequest.getSession().getId());
-            byte[] reqParamByte = jsonParam.toString().getBytes();
-            map.put("reqParam", new String(reqParamByte, 0, reqParamByte.length > 3500 ? 3500 : reqParamByte.length));
-            bcjisCommDAO.insertTracelog(map);
-
+            // 본문 스트림은 위에서 이미 소비되어 컨트롤러가 재차 읽을 수 없으므로,
+            // 파싱 결과를 접속로그 적재(부가기능)보다 먼저 request 속성에 보관한다.
             hRequest.setAttribute(BcjisCommUtil.JSON_PARAM_NM, jsonParam);
-            
+
+            // 접속로그 적재는 부가기능이므로 실패(채번/DB 오류 등)하더라도 요청 처리는 계속 진행한다.
+            try{
+                Map<String, String> map = new HashMap<String, String>();
+
+                map.put("logId",  traceLogIdStrategy.getNextStringId());
+                map.put("url", userWhere);
+                map.put("userId", bcjisUserVO.getUserId());
+                map.put("sessionId", hRequest.getSession().getId());
+                byte[] reqParamByte = jsonParam.toString().getBytes();
+                map.put("reqParam", new String(reqParamByte, 0, reqParamByte.length > 3500 ? 3500 : reqParamByte.length));
+                bcjisCommDAO.insertTracelog(map);
+            }catch(Exception logEx){
+                logger.error("doFilter - 접속로그(tracelog) 적재 실패: 요청은 계속 진행함", logEx);
+            }
+
         }catch(Exception e){
             logger.error("doFilter(ServletRequest, ServletResponse, FilterChain)", e);
+            if(hRequest.getAttribute(BcjisCommUtil.JSON_PARAM_NM) == null){
+                hRequest.setAttribute(BcjisCommUtil.JSON_PARAM_NM, new JSONObject());
+            }
         }
         
         chain.doFilter(request, response);

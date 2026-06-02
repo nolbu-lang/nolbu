@@ -238,5 +238,83 @@
                 , NVL(T.TE_MNG_MOK_CD, '00000')
                 , NVL(T.SORT_SEQ, 0)
     </select> 
-    
+
+    <!-- [경량] 매핑용 세세목 평면 목록: 제목 + 조정액(ADJ_AMT)만 조회.
+         6레벨 트리전개/FRSCES/CHILD_CNT 제거. 통계목은 JOIN 1회(TB_DGRTEMNGMOK). -->
+    <select id="BudgetCopyNew.selectCopyNewMapList" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectCopyNewMapList*/
+        SELECT A.FIS_YEAR        AS FIS_YEAR
+             , A.BGT_DGR         AS BGT_DGR
+             , A.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , E.REPORT_CD       AS REPORT_CD
+             , E.REPORT_DETL_CD  AS REPORT_DETL_CD
+             , 0                 AS ORDER_YMD_SEQ
+             , TRIM(NVL(B.DEPT_NM, '')
+                || ' &gt; ' || NVL(C.DBIZ_NM, '')
+                || ' &gt; ' || DECODE(A.TE_MNG_MOK_CD, NULL, '', '00000', '', SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4)) || ' '
+                || NVL(T.TE_MNG_MOK_NM, '')
+                || CASE WHEN NVL(A.COMP_GROUND, '') = '' THEN '' ELSE ' &gt; ' || A.COMP_GROUND END) AS DGRCOMPO_NM
+             , CAST((NVL(A.DIFF_AMT, 0) / DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS ADJ_AMT
+          FROM $reportTableNm$ E
+             , TB_DGRCOMPO A
+             , TB_DGRDEPT B
+             , TB_DGRBIZ C
+             , TB_DGRTEMNGMOK T
+         WHERE 1 = 1
+           AND E.REPORT_CD = #reportCd#
+           <isNotEmpty prepend="" property="reportDetlCd">
+             AND E.REPORT_DETL_CD = #reportDetlCd#
+           </isNotEmpty>
+           AND E.FIS_YEAR = #fisYear#
+           AND E.BGT_DGR = #bgtDgr#
+           AND A.COMPO_LEVEL = '1'
+           AND A.FIS_YEAR = E.FIS_YEAR
+           AND A.BGT_DGR = E.BGT_DGR
+           AND A.TE_BGT_COMPO_ID = E.TE_BGT_COMPO_ID
+           AND B.FIS_YEAR = A.FIS_YEAR
+           AND B.BGT_DGR = A.BGT_DGR
+           AND B.DEPT_CD = A.DEPT_CD
+           AND C.FIS_YEAR = A.FIS_YEAR
+           AND C.BGT_DGR = A.BGT_DGR
+           AND C.DBIZ_CD = A.DBIZ_CD
+           AND T.FIS_YEAR (+) = A.FIS_YEAR
+           AND T.BGT_DGR (+) = A.BGT_DGR
+           AND T.TE_MNG_MOK_CD (+) = A.TE_MNG_MOK_CD
+           AND (A.CNG_TYPE IS NULL OR A.CNG_TYPE = 'CH02' OR (A.CNG_TYPE = 'CH01' AND A.GRP_LVL != '2'))
+           <isNotEmpty prepend="" property="fisFgCd">
+             AND C.FIS_FG_CD = #fisFgCd#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="fisFgMstCd">
+             AND C.FIS_FG_MST_CD = #fisFgMstCd#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="officeCd">
+             AND B.OFFICE_CD = #officeCd#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="deptRankFr">
+             AND B.DEPT_RANK <![CDATA[>=]]> #deptRankFr#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="deptRankTo">
+             AND B.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="teMngMokCdFr">
+             AND A.TE_MNG_MOK_CD <![CDATA[>=]]> #teMngMokCdFr#
+           </isNotEmpty>
+           <isNotEmpty prepend="" property="teMngMokCdTo">
+             AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
+           </isNotEmpty>
+           <isEqual prepend="" property="userDeptYn" compareValue="Y">
+             AND EXISTS (SELECT 1 FROM TB_USERDEPT Z
+                          WHERE Z.USER_ID = #userId# AND Z.DEPT_CD = A.DEPT_CD AND Z.USE_YN = 'Y' AND ROWNUM = 1)
+           </isEqual>
+         ORDER BY NVL(B.OFFICE_RANK, 0)
+                , NVL(B.DEPT_RANK, 0)
+                , NVL(C.PBIZ_RANK, 0)
+                , NVL(C.UBIZ_RANK, 0)
+                , NVL(C.DBIZ_RANK, 0)
+                , A.TE_MNG_MOK_CD
+                , NVL(A.SORT_SEQ, 0)
+                , A.TE_BGT_COMPO_ID
+    </select>
+
 </sqlMap>

@@ -11,7 +11,7 @@
 <script src="${pageContext.request.contextPath}/js/budget/budgetCopyNew.js"></script>
 <div class="contents" style="height:100%;">
   <!--list s-->
-  <div id="mainBody" class="nondiv" style="height:90%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: auto;">
+  <div id="mainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: hidden;">
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
       <div id="subMainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;overflow: auto;">
         <div id="subMainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
@@ -98,35 +98,13 @@
                   <td>&nbsp;</td>
                   <td>&nbsp;</td>
                 </tr>
-                <tr>
-                  <th>통계목</th>
-                  <td colspan="3">
-                    <select id="condTeMngMokCdFr" name="condTeMngMokCdFr" title="통계목" style="width:40%;">
-                    </select>&nbsp;~&nbsp;
-                    <select id="condTeMngMokCdTo" name="condTeMngMokCdTo" title="통계목" style="width:40%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <th>재원구분</th>
-                  <td colspan="3">
-                    <select id="condFrscFgCdFr" name="condFrscFgCdFr" title="재원구분" style="width:40%;">
-                    </select>&nbsp;~&nbsp;
-                    <select id="condFrscFgCdTo" name="condFrscFgCdTo" title="재원구분" style="width:40%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
               </tbody>
             </table>
           </div>
           <!--condition e-->
           <div class="btn">
             <div class="btnR">
-              <a id="applyBtn" class="btnDisabledClass" href="#" enabledYn="N">적용</a>
+              <a id="mapAddBtn" class="btnDisabledClass" href="#" enabledYn="N">매핑추가</a>
               <a id="searchBtn" class="btnClass" href="#">조회</a>
               <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
             </div>
@@ -218,28 +196,6 @@
                   <td>&nbsp;</td>
                   <td>&nbsp;</td>
                 </tr>
-                <tr>
-                  <th>통계목</th>
-                  <td colspan="3">
-                    <select id="condSrcTeMngMokCdFr" name="condSrcTeMngMokCdFr" title="통계목" style="width:45%;">
-                    </select>&nbsp;~&nbsp;
-                    <select id="condSrcTeMngMokCdTo" name="condSrcTeMngMokCdTo" title="통계목" style="width:45%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <th>재원구분</th>
-                  <td colspan="3">
-                    <select id="condSrcFrscFgCdFr" name="condSrcFrscFgCdFr" title="재원구분" style="width:45%;">
-                    </select>&nbsp;~&nbsp;
-                    <select id="condSrcFrscFgCdTo" name="condSrcFrscFgCdTo" title="재원구분" style="width:45%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
               </tbody>
             </table>
           </div>
@@ -254,6 +210,21 @@
             <table id="BUDGET_COPY_SRC_GRD" ></table>
           </div>
         </div>
+      </div>
+    </div>
+    <div id="mainSouth" class="pane ui-layout-south" style="border:0px;overflow:hidden;">
+      <div class="ui-widget-header">
+        매핑 목록 (전년도 → 올해)
+      </div>
+      <div class="btn">
+        <div class="btnR">
+          <a id="batchApplyBtn" class="btnDisabledClass" href="#" enabledYn="N">일괄적용</a>
+          <a id="mapDelBtn" class="btnClass" href="#">매핑삭제</a>
+          <a id="mapClearBtn" class="btnClass" href="#">전체삭제</a>
+        </div>
+      </div>
+      <div id="BUDGET_MAP_DIV" class="csGrid">
+        <table id="BUDGET_MAP_GRD"></table>
       </div>
     </div>
   </div>
