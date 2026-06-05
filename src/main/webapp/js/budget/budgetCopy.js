@@ -129,6 +129,48 @@ $(document).ready(function() {
 
     var budgetCopySrcGrid = $("#BUDGET_COPY_SRC_GRD", tabObj);
     var budgetCopyGrid = $("#BUDGET_COPY_GRD", tabObj);
+
+    // 경량 map 목록 → 기존 트리 그리드 colModel 형식으로 변환 (화면 구성은 기존 유지)
+    var mapListToTreePayload = function(data){
+        if(isEmpty(data) == true || isEmpty(data.dataList) == true){
+            return data;
+        }
+
+        var treeRows = [];
+        var list = data.dataList;
+        var r;
+        for(var i = 0; i < list.length; i++){
+            r = list[i];
+            treeRows.push({
+                selYn : '',
+                dgrcompoNm : r.dgrcompoNm || '',
+                demandCompFormular : '',
+                demandBgtAmt : '',
+                compFormular : '',
+                bgtAmt : r.adjAmt || 0,
+                preBgtAmt : r.adjAmt || 0,
+                diffAmt : '',
+                examContView : '',
+                frsces : '',
+                dgrcompoId : r.teBgtCompoId,
+                upDgrcompoId : '',
+                fisYear : r.fisYear,
+                bgtDgr : r.bgtDgr,
+                reportCd : r.reportCd,
+                reportDetlCd : r.reportDetlCd,
+                dgrLevel : '1',
+                teBgtCompoId : r.teBgtCompoId,
+                teBgtCompoSeq : r.teBgtCompoSeq,
+                demandCont : '',
+                examCont : '',
+                reflectFg : '',
+                orderYmdSeq : r.orderYmdSeq || '0'
+            });
+        }
+
+        data.dataList = treeRows;
+        return data;
+    };
     
     var doSearchSrcCallBack = function(data){
         if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
@@ -138,6 +180,8 @@ $(document).ready(function() {
             
             return;
         }
+
+        data = mapListToTreePayload(data);
 
         $("#BUDGET_COPY_SRC_GRD", tabObj).GridUnload();
         budgetCopySrcGrid = $("#BUDGET_COPY_SRC_GRD", tabObj);
@@ -180,6 +224,8 @@ $(document).ready(function() {
             
             return;
         }
+
+        data = mapListToTreePayload(data);
 
         $("#BUDGET_COPY_GRD", tabObj).jqGrid('GridUnload');
         budgetCopyGrid = $("#BUDGET_COPY_GRD", tabObj);
@@ -238,7 +284,7 @@ $(document).ready(function() {
         srcGridScrollPosition = $("#BUDGET_COPY_SRC_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop();
 
         $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyReportList.do",
+            url : "/budget/ajaxBudgetCopyNewMapList.do",
             data: {reportCd : reportCd,
                    reportDetlCd : reportDetlCd,
                    fisYear : fisYear,
@@ -287,7 +333,7 @@ $(document).ready(function() {
         gridScrollPosition = $("#BUDGET_COPY_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop();
         
         $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyReportList.do",
+            url : "/budget/ajaxBudgetCopyNewMapList.do",
             data: {reportCd : reportCd,
                    reportDetlCd : reportDetlCd,
                    fisYear : fisYear,

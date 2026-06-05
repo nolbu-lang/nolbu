@@ -303,6 +303,21 @@
            <isNotEmpty prepend="" property="teMngMokCdTo">
              AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
            </isNotEmpty>
+           <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+             AND EXISTS (SELECT 1
+                           FROM TB_DGRCOMPOFRSC Z
+                          WHERE Z.FIS_YEAR = A.FIS_YEAR
+                            AND Z.BGT_DGR = A.BGT_DGR
+                            AND Z.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                            AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0
+                          <isNotEmpty prepend="" property="frscFgCdFr">
+                            AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                          </isNotEmpty>
+                          <isNotEmpty prepend="" property="frscFgCdTo">
+                            AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                          </isNotEmpty>
+                        )
+           </isEqual>
            <isEqual prepend="" property="userDeptYn" compareValue="Y">
              AND EXISTS (SELECT 1 FROM TB_USERDEPT Z
                           WHERE Z.USER_ID = #userId# AND Z.DEPT_CD = A.DEPT_CD AND Z.USE_YN = 'Y' AND ROWNUM = 1)
