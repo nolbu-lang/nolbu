@@ -8,8 +8,8 @@ $(document).ready(function() {
                    ];
 
     var colModel = [
-                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 520, sortable : false, align : 'left'},
-                        {name : 'adjAmt', index : 'adjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 400, sortable : false, align : 'left'},
+                        {name : 'adjAmt', index : 'adjAmt', width : 121, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
                         {name : 'teBgtCompoId', index : 'teBgtCompoId', width : 0, sortable : false, hidden : true, key: true},
                         {name : 'teBgtCompoSeq', index : 'teBgtCompoSeq', width : 0, sortable : false, hidden : true},
                         {name : 'reportCd', index : 'reportCd', width : 0, sortable : false, hidden : true},
@@ -26,10 +26,10 @@ $(document).ready(function() {
                       ];
 
     var mapColModel = [
-                        {name : 'srcDgrcompoNm', index : 'srcDgrcompoNm', width : 480, sortable : false, align : 'left'},
-                        {name : 'srcAdjAmt', index : 'srcAdjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'tgtDgrcompoNm', index : 'tgtDgrcompoNm', width : 480, sortable : false, align : 'left'},
-                        {name : 'tgtAdjAmt', index : 'tgtAdjAmt', width : 110, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'srcDgrcompoNm', index : 'srcDgrcompoNm', width : 350, sortable : false, align : 'left'},
+                        {name : 'srcAdjAmt', index : 'srcAdjAmt', width : 121, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
+                        {name : 'tgtDgrcompoNm', index : 'tgtDgrcompoNm', width : 350, sortable : false, align : 'left'},
+                        {name : 'tgtAdjAmt', index : 'tgtAdjAmt', width : 121, sortable : false, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
                         {name : 'srcReportCd', index : 'srcReportCd', width : 0, sortable : false, hidden : true},
                         {name : 'srcReportDetlCd', index : 'srcReportDetlCd', width : 0, sortable : false, hidden : true},
                         {name : 'srcFisYear', index : 'srcFisYear', width : 0, sortable : false, hidden : true},
