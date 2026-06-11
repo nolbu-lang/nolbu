@@ -1,0 +1,223 @@
+/* AI 예산편성 도우미 챗 위젯 */
+#aiChatDock {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+    width: 720px;
+    max-width: 96%;
+    z-index: 99990;
+    font-family: "맑은 고딕", "Malgun Gothic", dotum, sans-serif;
+    font-size: 13px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #c9c9c9;
+    border-bottom: none;
+}
+
+#aiChatDock.ai-collapsed #aiChatBody {
+    display: none;
+}
+
+#aiChatHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #2b4f81;
+    color: #fff;
+    padding: 8px 14px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#aiChatHeader .ai-title {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+#aiChatHeader .ai-title .ai-badge {
+    display: inline-block;
+    background: #f26c4f;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 10px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+#aiChatHeader .ai-toggle {
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+#aiChatBody {
+    display: flex;
+    flex-direction: column;
+    height: 420px;
+    background: #f4f6f9;
+}
+
+#aiChatMessages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.ai-msg {
+    margin-bottom: 10px;
+    display: flex;
+}
+
+.ai-msg.ai-user {
+    justify-content: flex-end;
+}
+
+.ai-msg .ai-bubble {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.ai-msg.ai-bot .ai-bubble {
+    background: #ffffff;
+    border: 1px solid #dcdfe5;
+    color: #222;
+    border-top-left-radius: 2px;
+}
+
+.ai-msg.ai-user .ai-bubble {
+    background: #2b4f81;
+    color: #fff;
+    border-top-right-radius: 2px;
+}
+
+.ai-msg.ai-bot.ai-loading .ai-bubble {
+    color: #888;
+    font-style: italic;
+}
+
+.ai-result-table-wrap {
+    margin-top: 8px;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #dcdfe5;
+    background: #fff;
+    border-radius: 6px;
+}
+
+.ai-result-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12px;
+}
+
+.ai-result-table th,
+.ai-result-table td {
+    border: 1px solid #e4e7ec;
+    padding: 4px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.ai-result-table th {
+    background: #eef2f7;
+    position: sticky;
+    top: 0;
+}
+
+.ai-result-table tr:nth-child(even) td {
+    background: #fafbfc;
+}
+
+.ai-sql-toggle {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #2b4f81;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.ai-sql-box {
+    margin-top: 4px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 8px;
+    border-radius: 6px;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none;
+}
+
+#aiChatInputArea {
+    flex: 0 0 auto;
+    display: flex;
+    border-top: 1px solid #dcdfe5;
+    background: #fff;
+    padding: 8px;
+    gap: 8px;
+}
+
+#aiChatInput {
+    flex: 1 1 auto;
+    resize: none;
+    border: 1px solid #c9cdd4;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 13px;
+    height: 44px;
+    font-family: inherit;
+}
+
+#aiChatSendBtn {
+    flex: 0 0 auto;
+    background: #2b4f81;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0 18px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+#aiChatSendBtn:disabled {
+    background: #9aa7b8;
+    cursor: default;
+}
+
+.ai-examples {
+    padding: 0 12px 8px 12px;
+}
+
+.ai-examples .ai-chip {
+    display: inline-block;
+    background: #e7eef7;
+    color: #2b4f81;
+    border: 1px solid #c9d7e8;
+    border-radius: 14px;
+    padding: 3px 10px;
+    margin: 3px 4px 0 0;
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    box-sizing: border-box;
+}
+
+.ai-examples .ai-chip:hover {
+    background: #d8e5f5;
+}

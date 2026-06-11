@@ -24,3 +24,19 @@ Globals.Password = bcjisapp00
 
 Globals.fileStorePath=C:/bcjis/upload/
 Globals.excelStorePath=C:/bcjis/download/excel/
+
+#-----------------------------------------------------------------------
+# AI \ucc57\ubd07 (Gemini) \uc124\uc815
+# - Gemini API \ud0a4\ub294 https://aistudio.google.com/app/apikey \uc5d0\uc11c \ubc1c\uae09\ubc1b\uc73c\uc138\uc694.
+# - GeminiApiKey \uac00 \ube44\uc5b4\uc788\uc73c\uba74 \ucc57\ubd07 \uae30\ub2a5\uc740 \ube44\ud65c\uc131\ud654\ub429\ub2c8\ub2e4(\uc2dc\uc2a4\ud15c\uc740 \uc815\uc0c1 \uad6c\ub3d9).
+#-----------------------------------------------------------------------
+Globals.GeminiApiKey =
+Globals.GeminiModel = gemini-2.5-flash
+# \uae30\ubcf8 \ubaa8\ub378 \ucffc\ud130 \uc18c\uc9c4(429) \uc2dc \uc790\ub3d9 \uc0ac\uc6a9\ud560 \uc608\ube44 \ubaa8\ub378
+Globals.GeminiFallbackModel = gemini-2.5-flash-lite
+# \uacb0\uacfc \ud589 \uc81c\ud55c (\ud14d\uc2a4\ud2b8\u2192SQL \uc870\ud68c \uc2dc \ucd5c\ub300 \ud589 \uc218)
+Globals.GeminiMaxRows = 200
+# Gemini \uc751\ub2f5 \ub300\uae30 \uc2dc\uac04(ms)
+Globals.GeminiTimeoutMs = 60000
+# \uc2ec\uc0ac\uc870\uc11c(\uacbd\uc0c1/\ud22c\uc790) \uc9c8\ubb38 \uc2dc AI \ucee8\ud14d\uc2a4\ud2b8\ub85c \ub118\uae38 \ucd5c\ub300 \uc0ac\uc5c5 \uac74\uc218
+Globals.GeminiMaxReportBlocks = 20

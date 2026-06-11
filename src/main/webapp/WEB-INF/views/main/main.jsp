@@ -92,4 +92,6 @@
 <%@include file="/WEB-INF/views/dialog/dialogDgrDeptSelt.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoModify.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogManageCloseHis.jsp"%>
+<%-- AI 예산편성 도우미 (모든 화면 하단 중앙 공통 표시) --%>
+<%@include file="/WEB-INF/views/ai/aiChat.jsp"%>
 <%@include file="/jsp/comm/commFooter.jsp"%>
