@@ -46,7 +46,7 @@ import org.springframework.stereotype.Component;
  * 살아있는 IP 로 SNI 를 유지한 채 직접 HTTPS 요청을 보내는 우회 경로를 사용한다.
  */
 @Component("geminiClient")
-public class GeminiClient {
+public class GeminiClient implements LlmClient {
 
     private static final Logger logger = Logger.getLogger(GeminiClient.class);
 
@@ -73,6 +73,10 @@ public class GeminiClient {
 
     public boolean isEnabled() {
         return getApiKey().length() > 0;
+    }
+
+    public String getProviderName() {
+        return "gemini";
     }
 
     public String getApiKey() {

@@ -6,8 +6,8 @@
 | 작성일 | 2026. 6. 11. |
 | 대상 시스템 | 예산편성 심사정보시스템 (eGovFrame / Spring MVC / CUBRID) |
 | 샘플(데모) 주소 | http://99.1.21.27:8080/bcjis-webapp/ (사내망 전용, 담당자 PC가 서버) |
-| 현재 LLM | Google Gemini 2.5 Flash (무료 API, 테스트용) |
-| 목표 LLM | **네이버 하이퍼클로바 X (CLOVA Studio API, 시 계약분)** |
+| 테스트 LLM | Google Gemini 2.5 Flash (무료 API, 개인 PC 검증용) |
+| 운영 LLM | **네이버 하이퍼클로바 X (CLOVA Studio API, 시 계약분)** — `Globals.AiProvider=hyperclova` 로 전환 |
 
 ---
 
@@ -22,7 +22,7 @@
 1. **내부 데이터만 사용**: AI는 심사정보시스템 CUBRID DB에서 조회한 데이터만 근거로 답변 (외부 지식으로 지어내기 금지)
 2. **LLM에 DB 직접 접근 금지**: LLM은 ① 질문 해석과 ② 조회된 결과의 요약·서식화만 담당. DB 조회는 서버(Java)가 파라미터 바인딩된 안전한 SQL로만 수행
 3. **읽기 전용**: 어떤 경로로도 INSERT/UPDATE/DELETE/DDL 불가 (서버단 검증)
-4. **LLM 교체 용이성**: LLM 호출부를 단일 클라이언트 클래스로 분리하여, Gemini → 하이퍼클로바 교체 시 해당 클래스만 수정하면 되는 구조
+4. **LLM 교체 용이성**: `LlmClient` 인터페이스 + `AiLlmRouter` 로 Gemini/HyperCLOVA 전환. RAG 서비스는 `aiLlmClient` 빈만 의존하며, 운영 전환은 `globals.properties` 설정 변경으로 완료
 
 ### 1.3 데모 시연 방법
 1. 사내망 PC 브라우저에서 `http://99.1.21.27:8080/bcjis-webapp/` 접속 → 로그인
@@ -43,8 +43,10 @@
 │ (화면 하단 위젯) │                  │   └ AiChatServiceImpl  ── RAG 파이프라인
 │                  │ ◀─────────────── │        │ ②질문분류  ⑤답변생성        │   LLM API
 │ 답변 말풍선 + 표 │   ⑥ 응답(JSON)   │        ▼                            │ ◀──────────▶
-└──────────────────┘                  │   GeminiClient (LLM 호출부, 교체대상)│  (현재 Gemini,
-                                      │        │ ③검색(SQL)                  │   목표 HyperCLOVA X)
+└──────────────────┘                  │   AiLlmRouter (aiLlmClient)          │  Gemini(테스트)
+                                      │     ├ GeminiClient                 │  HyperCLOVA(운영)
+                                      │     └ HyperClovaClient               │
+                                      │        │ ③검색(SQL)                  │
                                       │        ▼                            │
                                       │   CUBRID DB (심사조서 테이블)        │
                                       │        │ ④컨텍스트 변환              │
@@ -63,9 +65,12 @@
 | 컨트롤러 | `java/com/cs/bcjis/ai/web/AiChatController.java` | REST 엔드포인트 `/ai/ajaxAiChat.do` |
 | 서비스 | `java/com/cs/bcjis/ai/service/impl/AiChatServiceImpl.java` | **RAG 파이프라인 본체** (질문분류→검색→컨텍스트→답변) |
 | 컨텍스트 | `java/com/cs/bcjis/ai/AiReportContextBuilder.java` | DB 행 → AI 맞춤형 텍스트 뭉치 변환 유틸리티 |
-| LLM 호출 | `java/com/cs/bcjis/ai/GeminiClient.java` | **LLM API 클라이언트 (하이퍼클로바 교체 지점)** |
+| LLM 공통 | `java/com/cs/bcjis/ai/LlmClient.java` | LLM 호출 공통 인터페이스 |
+| LLM 라우터 | `java/com/cs/bcjis/ai/AiLlmRouter.java` | `Globals.AiProvider` 에 따라 Gemini/HyperCLOVA 선택 |
+| LLM (테스트) | `java/com/cs/bcjis/ai/GeminiClient.java` | Gemini API 클라이언트 |
+| LLM (운영) | `java/com/cs/bcjis/ai/HyperClovaClient.java` | CLOVA Studio v3 API 클라이언트 |
 | 스키마 | `java/com/cs/bcjis/ai/AiSchemaProvider.java` | DB 스키마 설명(일반 통계질문의 Text-to-SQL용) |
-| 설정 | `resources/csframework/bcjisProps/globals.properties` | API 키·모델명·행수 제한 등 |
+| 설정 | `resources/csframework/bcjisProps/globals.properties` | `AiProvider`, API 키, 모델명, RAG 건수 제한 등 |
 
 ---
 
@@ -110,7 +115,8 @@ Content-Type: application/json
   - 모든 검색조건은 **PreparedStatement 파라미터 바인딩** (SQL 인젝션 원천 차단)
   - **행정운영경비(기본경비·인력운영비) 사업 자동 제외**
   - 결과 0건이면 키워드 범위를 검토의견·검색태그까지 **자동 확장하여 2차 검색**
-  - 최대 20건(설정값) 제한, 무거운 재원상세 집계는 최종 결과에만 수행(성능 최적화)
+  - 최대 50건(설정값 `Globals.AiMaxReportBlocks`) 제한, 무거운 재원상세 집계는 최종 결과에만 수행(성능 최적화)
+  - 시행주관 질문: `demand_cont`(요구내용)에서 기관명 검색, `implKeyword` 자동 추출
 
 #### ③ AI 맞춤형 컨텍스트 변환 (`AiReportContextBuilder`)
 - 심사조서는 병합 셀·재원 교차 구조라 원시 데이터를 그대로 주면 LLM이 오해함
@@ -137,8 +143,9 @@ Content-Type: application/json
 
 #### ④ 답변 생성 (LLM 2차 호출)
 - **system_instruction(시스템 지침)** 으로 페르소나·출력 서식을 강제:
-  - "부산시 예산담당관실에서 2013년부터 예산편성업무를 한 최고수준 전문가 AI 도우미"
-  - 보고서 서식 고정: `[부서명] → [사업명] → [차수별 예산(국비/시비)] → [검토의견]`
+  - 사업 1건마다 4항목: `[사업명(통계목)]`, `[소관부서]`, `[차수별 예산내역(재원)]`, `[차수별 요구·검토]`
+  - 검색된 사업은 건수와 관계없이 모두 동일 서식으로 표시 (일부 생략 금지)
+  - '요구액'·'전년도예산'·'시행주관'은 명시 요청 시에만 추가
   - 심사조서에 있는 내용만 표시(종합의견·총평 금지), 데이터에 없는 내용 생성 금지
 - 사용자 질문 + ③의 컨텍스트를 본문 프롬프트로 전달
 
@@ -216,16 +223,25 @@ curl -X POST 'https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-007'
   }'
 ```
 
-### 4.3 소스코드 수정사항 (예상 공수: 2~3일)
+### 4.3 소스코드 수정사항 (구현 완료)
 
-| 순번 | 수정 항목 | 내용 | 공수 |
+| 순번 | 수정 항목 | 상태 | 비고 |
 |---|---|---|---|
-| 1 | `HyperClovaClient.java` 신규 작성 | `GeminiClient`와 동일한 메서드 시그니처(`generate(systemInstruction, prompt)`)로 CLOVA Studio v3 호출 구현. 기존의 TLS1.2 설정, 타임아웃, 503 재시도 로직 재사용 | 1일 |
-| 2 | LLM 공급자 전환 설정 | `globals.properties`에 `Globals.AiProvider = hyperclova` 추가, `AiChatServiceImpl`이 설정값에 따라 Gemini/HyperCLOVA 클라이언트를 선택하도록 분기 (운영=하이퍼클로바, 개발테스트=Gemini 병행 가능) | 0.5일 |
-| 3 | 설정 항목 추가 | `Globals.ClovaApiKey`, `Globals.ClovaEndpoint`(공공존 대비 도메인 설정화), `Globals.ClovaModel`(HCX-007 등), `Globals.ClovaMaxTokens` | 포함 |
-| 4 | 질문 분류 단계 JSON 안정화 | 1차 호출(질문분류)은 JSON 출력이 필수 → CLOVA **Structured Outputs**(JSON Schema) 적용 권장. 미적용 시 현재의 JSON 추출·검증 로직(코드펜스 제거, 파싱 실패 시 안전 폴백)이 그대로 동작하므로 필수는 아님 | 0.5일 |
-| 5 | 토큰 한도 검토 | 컨텍스트(심사조서 최대 20건, 건당 약 1~3KB)와 모델별 최대 입력/출력 토큰을 비교하여 `Globals.GeminiMaxReportBlocks`(현 20건) 조정. HCX-DASH 계열 사용 시 블록 수 축소 필요 가능 | 0.5일 |
-| 6 | 통합 테스트 | 데모 질문 세트(차수별 추이, 키워드 검색, 부서별, 태그 검색)로 회귀 테스트 | 0.5일 |
+| 1 | `LlmClient.java` + `HyperClovaClient.java` | **완료** | CLOVA Studio v3, TLS1.2, 503 재시도 |
+| 2 | `AiLlmRouter.java` (`aiLlmClient`) | **완료** | `AiChatServiceImpl`은 `LlmClient`만 주입 |
+| 3 | `globals.properties` 설정 항목 | **완료** | `AiProvider`, `ClovaApiKey`, `AiMaxReportBlocks=50` 등 |
+| 4 | 질문 분류 JSON 안정화 | 선택 | Structured Outputs 권장, 미적용 시 기존 파싱 로직 사용 |
+| 5 | 토큰 한도 | **완료** | 기본 50건, `ContextOptions`로 경량화 |
+| 6 | 통합 테스트 | 진행 중 | 개인 PC에서 Gemini로 입력·출력 검증 후 업무서버 배포 |
+
+**운영 전환 절차 (업무서버)**
+
+```properties
+Globals.AiProvider = hyperclova
+Globals.ClovaApiKey = {시 계약 API 키}
+Globals.ClovaModel = HCX-007
+Globals.AiMaxReportBlocks = 50
+```
 
 > 프롬프트(페르소나·서식·데이터 컨텍스트)는 모델 중립적으로 작성되어 있어 **수정 없이 재사용** 가능. 다만 모델별 어투 차이가 있으므로 시범 운영 중 페르소나 문구 미세조정 권장.
 
@@ -244,16 +260,16 @@ curl -X POST 'https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-007'
 
 ### 4.5 운영 전환 시 권장 사항
 
-1. **이중화 기간 운영**: 설정 전환 방식(`Globals.AiProvider`)을 이용해 하이퍼클로바를 기본, Gemini를 개발용으로 병행 후 안정화되면 Gemini 키 폐기
-2. **요청 로그**: 질문/생성SQL/응답요약을 기존 `TB_TRACELOG` 체계에 기록하여 사용량·품질 모니터링
+1. **설정 전환**: 개인 PC 테스트=`gemini`, 업무서버 운영=`hyperclova` (설정만 변경, 코드 배포 동일)
+2. **요청 로그**: `AI RAG[report]` 로그에 provider·rows·contextChars 기록 (추후 `TB_TRACELOG` 연동 가능)
 3. **키 보안**: API 키는 `globals.properties`(서버 내부)에만 보관, 화면·로그 노출 금지
-4. **부하 보호**: 현재 행수 제한(20건)·토큰 제한 유지, 필요시 사용자별 호출 횟수 제한 추가
+4. **부하 보호**: `AiMaxReportBlocks`(기본 50건)·토큰 제한 유지, 필요시 사용자별 호출 횟수 제한 추가
 
 ---
 
 ## 5. 맺음말
 
-- 본 샘플은 **"LLM은 해석·요약만, 데이터는 내부 DB에서 안전하게"** 라는 구조로 구현되어, LLM 공급자 교체가 클라이언트 클래스 1개 수준의 작업으로 가능하도록 설계되어 있음
+- 본 샘플은 **"LLM은 해석·요약만, 데이터는 내부 DB에서 안전하게"** 라는 구조로 구현되어, LLM 공급자 교체는 `globals.properties`의 `AiProvider` 설정 변경으로 완료됨
 - 하이퍼클로바 X의 Chat Completions v3는 현재 사용 중인 Gemini API와 메시지 구조가 사실상 1:1로 대응되므로, **연동의 기술적 난이도는 낮음**
 - 관건은 코드보다 **계약 형태 확인(엔드포인트), 업무망 방화벽 허용, 보안성 검토** 등 행정 절차이므로, 4.4 체크리스트 기준으로 담당부서와 협의를 요청드림
 

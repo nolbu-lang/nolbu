@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 import com.cs.bcjis.ai.AiReportContextBuilder;
 import com.cs.bcjis.ai.AiSchemaProvider;
-import com.cs.bcjis.ai.GeminiClient;
+import com.cs.bcjis.ai.LlmClient;
 import com.cs.bcjis.ai.service.AiChatService;
 
 /**
@@ -47,8 +47,8 @@ public class AiChatServiceImpl implements AiChatService {
     @Qualifier("config")
     private Properties config;
 
-    @Resource(name = "geminiClient")
-    private GeminiClient geminiClient;
+    @Resource(name = "aiLlmClient")
+    private LlmClient llmClient;
 
     @Resource(name = "aiSchemaProvider")
     private AiSchemaProvider aiSchemaProvider;
@@ -59,23 +59,43 @@ public class AiChatServiceImpl implements AiChatService {
      * (질문 분류/SQL 생성 단계에는 적용하지 않는다 - JSON 출력이 필요하므로)
      */
     private static final String SYSTEM_PERSONA =
-            "너는 부산시 예산담당관실에서 2013년부터 예산편성업무를 한 최고수준의 전문가 능력을 가진 AI 도우미다.\n"
-            + "단답형으로 수치만 제공하지 말고, 반드시 아래 보고서 서식으로 답변을 구성하라.\n"
+            "너는 부산시 예산담당관실 예산편성 전문 AI 도우미다. 반드시 간결한 보고서 서식으로만 답하라.\n"
             + "\n"
-            + "[답변 보고서 서식 - 사업 1건마다 아래 항목 순서를 반드시 지킬 것]\n"
-            + "1. [부서명] : 소관 실국·부서명\n"
-            + "2. [사업명] : 세부사업명만 표시 (정책사업·단위사업·통계목 등 부가 정보는 표시하지 말 것)\n"
-            + "3. [차수별 예산] : 차수별 예산반영액을 표기하고 금액 뒤 괄호에 재원구성을 붙일 것.\n"
-            + "   예) 본예산: 309백만원 (국비 100백만원, 시비 209백만원) / 1회추경: 50백만원 (시비 50백만원)\n"
-            + "4. [검토의견] : 요구내용(○)과 검토의견(◈)의 핵심만 원문 표현을 살려 간략히 요약\n"
+            + "[기본 답변 서식 - 사업 1건마다 아래 4항목만 작성. 그 외 항목 절대 추가 금지]\n"
+            + "1. [사업명(통계목)] : 사업명 뒤 통계목코드만 괄호 표기. 예) 일상돌봄 서비스사업 ( 308-13)\n"
+            + "   - '통계목:' 문구·통계목 명칭 전체는 절대 표시하지 말 것.\n"
+            + "2. [소관부서]\n"
+            + "3. [차수별 예산내역(재원표시)] : 차수별 조정액+재원별 금액 필수. 예) 본예산:547백만원(국비500, 시비47) / 1회추경:50백만원(시비50)\n"
+            + "   - (국비,시비)처럼 재원명만 쓰지 말고 반드시 재원별 백만원 금액을 괄호 안에 표기.\n"
+            + "4. [차수별 요구, 검토의견] : 차수별 ○요구 ◈검토 핵심 1~2문장만\n"
+            + "\n"
+            + "[명시적 요청이 있을 때만 3번에 추가 표시]\n"
+            + "- '요구액' 요청 → [차수별 예산내역]에 요구액 포함 (예: 본예산:요구350,547백만원(국비500, 시비47))\n"
+            + "- '전년도예산' 요청 → [차수별 예산내역]에 전년도예산 포함\n"
+            + "- '시행주관/시행주체' 요청 → [구분] 항목을 2번과 3번 사이에 추가\n"
+            + "\n"
+            + "[절대 표시하지 말 것 - 명시 요청 없는 경우]\n"
+            + "조서구분, 총사업비, 조건검색어, 전년도예산, 요구액, 종합의견, 총평, 해설, 부가 설명\n"
             + "\n"
             + "[공통 규칙]\n"
-            + "- 같은 연도에 같은 사업이 여러 차수(본예산·1회추경 등)에 반영된 경우, 절대 차수별로 따로 목록을 만들지 말고 사업 1건으로 묶어서 [차수별 예산]과 [검토의견] 안에서 차수별로 구분해 표시한다.\n"
-            + "- 심사조서(경상사업심사조서·투자사업심사조서)에 있는 내용만 표시한다. 종합의견·총평·해설 등 추가 단락은 절대 작성하지 않는다.\n"
-            + "- 금액을 말할 때는 반드시 '백만원' 단위를 명시한다.\n"
-            + "- 여러 사업이 해당되면 사업별로 번호를 붙여 위 서식을 반복한다.\n"
-            + "- 제공된 데이터에 없는 내용은 절대 지어내지 않는다. 데이터가 없으면 없다고 안내하고 연도·차수·키워드 변경을 제안한다.\n"
-            + "- 보고서 문체(개조식)로 최대한 간결하게 작성한다.";
+            + "- 같은 사업의 여러 차수는 사업 1건으로 묶어 3·4번 안에서 차수별 구분.\n"
+            + "- 검색된 해당 사업은 건수와 관계없이 모두 동일한 4항목 서식으로 빠짐없이 표시한다. 일부만 상세·나머지 생략하지 말 것.\n"
+            + "- 금액은 '백만원' 단위. 데이터 없으면 없다고 안내.\n"
+            + "- 제공 데이터에 없는 내용 지어내지 말 것.";
+
+    /** 시행주관 관련 질문어 — [구분] 필드(요구내용) 검색에 사용 */
+    private static final String[] IMPL_ORG_KEYWORDS = {
+            "시행주관", "시행주체", "시행처", "시행기관", "사업기관", "사업자",
+            "시행 주관", "시행 주체", "시행 기관"
+    };
+
+    /** 질문에서 시행주관 기관명 추출 패턴 (예: '테크노파크가 시행주관인') */
+    private static final Pattern[] IMPL_EXTRACT_PATTERNS = {
+            Pattern.compile("[\"'「]([^\"'」]+)[\"'」]"),
+            Pattern.compile("([\\uAC00-\\uD7A3A-Za-z0-9()（）\\-\\.]+?)\\s*(?:가|이|을|를)\\s*시행(?:주관|주체|처|기관)"),
+            Pattern.compile("시행(?:주관|주체|처|기관)(?:\\s*(?:인|이))?\\s*([\\uAC00-\\uD7A3A-Za-z0-9()（）\\-\\.]+?)(?:\\s*(?:인|임|인\\s*사업|사업|을|를|에서|중|으로))"),
+            Pattern.compile("([\\uAC00-\\uD7A3A-Za-z0-9()（）\\-\\.]+?)\\s*시행(?:주관|주체|처|기관)")
+    };
 
     private static final String[] FORBIDDEN_KEYWORDS = {
             "insert", "update", "delete", "drop", "alter", "create",
@@ -92,7 +112,11 @@ public class AiChatServiceImpl implements AiChatService {
 
     /** 심사조서 RAG 시 컨텍스트로 넘길 최대 사업(블록) 수 */
     private int getMaxReportBlocks() {
-        return getIntProp("Globals.GeminiMaxReportBlocks", 20);
+        int v = getIntProp("Globals.AiMaxReportBlocks", -1);
+        if (v > 0) {
+            return v;
+        }
+        return getIntProp("Globals.GeminiMaxReportBlocks", 50);
     }
 
     private int getIntProp(String key, int defaultValue) {
@@ -115,13 +139,18 @@ public class AiChatServiceImpl implements AiChatService {
             return result;
         }
 
-        if (!geminiClient.isEnabled()) {
-            result.put("answer", "AI 챗봇이 아직 설정되지 않았습니다. 관리자에게 globals.properties 의 Globals.GeminiApiKey 등록을 요청하세요.");
+        if (!llmClient.isEnabled()) {
+            result.put("answer", "AI 챗봇 API가 설정되지 않았습니다.\n"
+                    + "globals.properties 에 Globals.AiProvider 와 API 키를 등록하세요.\n"
+                    + "  · 테스트: AiProvider=gemini, Globals.GeminiApiKey\n"
+                    + "  · 운영: AiProvider=hyperclova, Globals.ClovaApiKey");
             return result;
         }
 
-        // 1) 질문 분류 및 계획 수립
-        String planRaw = geminiClient.generate(buildPlanPrompt(question));
+        result.put("aiProvider", llmClient.getProviderName());
+
+        // 1) 질문 분류 및 계획 수립 (JSON — system_instruction 미사용)
+        String planRaw = llmClient.generate(buildPlanPrompt(question));
         JSONObject plan = parseJsonFromModel(planRaw);
 
         String mode = plan.optString("mode", "");
@@ -151,6 +180,15 @@ public class AiChatServiceImpl implements AiChatService {
         String bizKeyword = plan.optString("bizKeyword", "").trim();
         String deptKeyword = plan.optString("deptKeyword", "").trim();
         String tagKeyword = plan.optString("tagKeyword", "").trim();
+        String implKeyword = plan.optString("implKeyword", "").trim();
+        if (implKeyword.length() == 0) {
+            implKeyword = extractImplKeyword(question);
+        }
+        // 시행주관 질문인데 Gemini가 기관명을 bizKeyword로 넣은 경우 → [구분] 검색으로 전환
+        if (implKeyword.length() == 0 && containsImplOrgQuestion(question) && bizKeyword.length() > 0) {
+            implKeyword = bizKeyword;
+            bizKeyword = "";
+        }
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.setMaxRows(getMaxReportBlocks());
@@ -180,21 +218,40 @@ public class AiChatServiceImpl implements AiChatService {
 
         // 1차 조회: 사업명/부서/태그 조건
         List<Object> args = new ArrayList<Object>();
-        String sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword, false, args);
+        String sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes,
+                bizKeyword, deptKeyword, tagKeyword, implKeyword, false, args);
         List<Map<String, Object>> rows = queryReport(jdbcTemplate, sql, args);
 
         // 2차 조회(완화): 사업명 키워드를 검토의견·검색태그까지 확장
         if (rows.isEmpty() && bizKeyword.length() > 0) {
             args = new ArrayList<Object>();
-            sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword, true, args);
+            sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes,
+                    bizKeyword, deptKeyword, tagKeyword, implKeyword, true, args);
             rows = queryReport(jdbcTemplate, sql, args);
         }
 
-        // 사업 단위 'AI 맞춤형 텍스트 뭉치' 생성
-        String context = AiReportContextBuilder.buildReportContext(rows);
+        // 3차 조회: 시행주관 질문 — [구분](요구내용)에서 기관명 재검색
+        if (rows.isEmpty() && containsImplOrgQuestion(question)) {
+            String retryImpl = implKeyword.length() > 0 ? implKeyword : extractImplKeyword(question);
+            if (retryImpl.length() > 0) {
+                args = new ArrayList<Object>();
+                sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes,
+                        "", deptKeyword, tagKeyword, retryImpl, true, args);
+                rows = queryReport(jdbcTemplate, sql, args);
+            }
+        }
+
+        // 사업 단위 경량 컨텍스트 생성 (질문 유형에 맞게 포함 필드·건수 제한)
+        AiReportContextBuilder.ContextOptions ctxOpts = buildContextOptions(question, tagKeyword);
+        ctxOpts.maxBlocks = getMaxReportBlocks();
+        String context = AiReportContextBuilder.buildReportContext(rows, fisYear, dgr, ctxOpts);
+
+        logger.info("AI RAG[report] provider=" + llmClient.getProviderName()
+                + " year=" + fisYear + " rows=" + rows.size()
+                + " contextChars=" + context.length());
 
         // RAG 답변 생성 (예산 심사관 페르소나 + 보고서 서식 강제)
-        String answer = geminiClient.generate(SYSTEM_PERSONA, buildReportAnswerPrompt(question, context));
+        String answer = llmClient.generate(SYSTEM_PERSONA, buildReportAnswerPrompt(question, context));
         if (answer == null || answer.trim().length() == 0) {
             answer = rows.isEmpty()
                     ? "조건에 해당하는 심사조서 데이터를 찾지 못했습니다. 연도·차수·사업명을 바꾸어 다시 질문해 주세요."
@@ -257,7 +314,8 @@ public class AiChatServiceImpl implements AiChatService {
      * @param broadKeyword true 면 사업명 키워드를 검토의견/검색태그까지 확장(OR)하여 재검색
      */
     private String buildReportSql(String reportCd, String fisYear, String bgtCompoFg, int addTimes,
-            String bizKeyword, String deptKeyword, String tagKeyword, boolean broadKeyword, List<Object> args) {
+            String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
+            boolean broadKeyword, List<Object> args) {
 
         boolean both = !"010".equals(reportCd) && !"020".equals(reportCd);
 
@@ -333,6 +391,30 @@ public class AiChatServiceImpl implements AiChatService {
             sb.append("  AND W.srch_val LIKE ?\n");
             args.add("%" + tagKeyword.replaceAll("#", "") + "%");
         }
+        // 시행주관·시행주체·시행처 등 → [구분] 필드(요구내용·검토내용) 검색
+        if (implKeyword.length() > 0) {
+            String[] implKws = implKeyword.split("[,;]");
+            StringBuilder implSql = new StringBuilder();
+            for (int i = 0; i < implKws.length; i++) {
+                String kw = implKws[i].trim();
+                if (kw.length() == 0) {
+                    continue;
+                }
+                String like = "%" + kw + "%";
+                if (implSql.length() > 0) {
+                    implSql.append(" OR ");
+                }
+                // gubun = demand_cont(심사조서 [구분] 목록의 요구내용)
+                implSql.append("W.gubun LIKE ? OR W.demand_cont LIKE ? OR W.exam_cont LIKE ? OR W.invest_plan LIKE ?");
+                args.add(like);
+                args.add(like);
+                args.add(like);
+                args.add(like);
+            }
+            if (implSql.length() > 0) {
+                sb.append("  AND (").append(implSql).append(")\n");
+            }
+        }
 
         // 같은 사업의 차수별 행이 인접하도록 사업 기준으로 정렬 (차수는 마지막)
         sb.append("ORDER BY W.office_nm, W.dept_nm, W.dbiz_nm, W.te_mng_mok_cd, W.bgt_dgr\n");
@@ -365,9 +447,12 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("     , C.te_mng_mok_cd AS te_mng_mok_cd\n");
         sb.append("     , C.te_mng_mok_nm AS te_mng_mok_nm\n");
         sb.append("     , C.pre_amt AS pre_amt\n");
+        sb.append("     , C.pre_bgt_amt AS pre_bgt_amt\n");
         sb.append("     , C.demand_bgt_amt AS demand_bgt_amt\n");
         sb.append("     , C.bgt_amt AS bgt_amt\n");
         sb.append("     , C.diff_amt AS diff_amt\n");
+        sb.append("     , NVL(R.demand_cont, '') AS gubun\n");
+        sb.append("     , NVL(R.invest_plan, '') AS invest_plan\n");
         sb.append("     , NVL(R.demand_cont, '') AS demand_cont\n");
         sb.append("     , NVL(R.exam_cont, '') AS exam_cont\n");
         sb.append("     , NVL(R.srch_val, '') AS srch_val\n");
@@ -386,6 +471,7 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("             , MIN(te_mng_mok_cd) AS te_mng_mok_cd\n");
         sb.append("             , MIN(te_mng_mok_nm) AS te_mng_mok_nm\n");
         sb.append("             , SUM(NVL(pre_amt, 0)) AS pre_amt\n");
+        sb.append("             , SUM(NVL(pre_bgt_amt, 0)) AS pre_bgt_amt\n");
         sb.append("             , SUM(NVL(demand_bgt_amt, 0)) AS demand_bgt_amt\n");
         sb.append("             , SUM(NVL(bgt_amt, 0)) AS bgt_amt\n");
         sb.append("             , SUM(NVL(diff_amt, 0)) AS diff_amt\n");
@@ -439,14 +525,122 @@ public class AiChatServiceImpl implements AiChatService {
     /** 심사조서 RAG 최종 답변 프롬프트 (페르소나·서식은 system_instruction 으로 별도 고정) */
     private String buildReportAnswerPrompt(String question, String context) {
         StringBuilder sb = new StringBuilder();
-        sb.append("아래 [심사조서 데이터]만을 근거로 [사용자 질문]에 답하라.\n");
-        sb.append("\n[데이터 해석 지침]\n");
-        sb.append("- 같은 사업이 여러 차수(본예산/추경)에 걸쳐 있으면 차수별 예산 추이를 비교해 정리할 것.\n");
-        sb.append("- 질문에 차수 구분이 없으면 해당 연도의 모든 차수 데이터가 포함되어 있음을 감안할 것.\n");
-        sb.append("- 해당 사업이 10건을 넘으면 질문과 가장 관련 있는 사업 위주로 보고서 서식으로 상세히 작성하고, 나머지는 '사업명: 조정액(백만원)'만 간단히 목록으로 정리할 것. 답변이 중간에 끊기지 않도록 분량을 조절할 것.\n");
+        sb.append("아래 [심사조서 데이터]만 근거로 [사용자 질문]에 답하라.\n");
+        sb.append("\n[답변 규칙]\n");
+        sb.append("- 기본: [사업명(통계목)]→[소관부서]→[차수별 예산내역(재원표시)]→[차수별 요구, 검토의견] 4항목만.\n");
+        sb.append("- 1번: 사업명 ( 통계목코드) 형식. '통계목:'·통계목 명칭 표시 금지. 예) 일상돌봄 서비스사업 ( 308-13)\n");
+        sb.append("- 3번: 본예산:547백만원(국비500, 시비47) 형식. 재원명만 나열 금지, 괄호 안에 재원별 금액 필수.\n");
+        sb.append("- 3번 기본은 조정액(반영액)+재원금액. 요구액·전년도예산은 사용자가 명시했을 때만 3번에 추가.\n");
+        sb.append("- 검토의견은 차수당 1~2문장 핵심 요약. 원문 전체 복사 금지.\n");
+        sb.append("- 제공된 데이터의 모든 사업을 동일 4항목 서식으로 빠짐없이 표시. 생략·요약 목록으로 대체하지 말 것.\n");
+
+        String explicitHint = buildExplicitFieldHint(question);
+        if (explicitHint.length() > 0) {
+            sb.append("- ").append(explicitHint).append("\n");
+        }
+        if (containsImplOrgQuestion(question)) {
+            sb.append("- 시행주관 관련 질문이므로 [구분]을 2번과 3번 사이에 간략히 추가.\n");
+        } else {
+            sb.append("- [구분][조건검색어][총사업비][전년도예산][요구액] 등은 표시하지 말 것.\n");
+        }
+
         sb.append("\n[사용자 질문]\n").append(question).append("\n");
         sb.append("\n[심사조서 데이터]\n").append(context).append("\n");
         return sb.toString();
+    }
+
+    /** 질문 유형에 따른 AI 컨텍스트 포함 옵션 (토큰·비용 절감) */
+    private AiReportContextBuilder.ContextOptions buildContextOptions(String question, String tagKeyword) {
+        AiReportContextBuilder.ContextOptions opts = AiReportContextBuilder.ContextOptions.defaults();
+        opts.includeGubun = containsImplOrgQuestion(question);
+        opts.includePreYearAmt = wantsPreYearAmt(question);
+        opts.includeDemandAmt = wantsDemandAmt(question);
+        opts.includeTags = tagKeyword != null && tagKeyword.trim().length() > 0;
+        opts.maxReviewLength = 300;
+        return opts;
+    }
+
+    private boolean wantsDemandAmt(String question) {
+        if (question == null) return false;
+        return question.indexOf("요구액") > -1;
+    }
+
+    private boolean wantsPreYearAmt(String question) {
+        if (question == null) return false;
+        return question.indexOf("전년도") > -1 || question.indexOf("전년") > -1
+                || question.indexOf("기정액") > -1;
+    }
+
+    /** 질문에서 시행주관 기관명 추출 (구분/요구내용 필드 검색용) */
+    private String extractImplKeyword(String question) {
+        if (question == null) {
+            return "";
+        }
+        if (!containsImplOrgQuestion(question)) {
+            return "";
+        }
+        String q = question.trim();
+        for (int i = 0; i < IMPL_EXTRACT_PATTERNS.length; i++) {
+            Matcher m = IMPL_EXTRACT_PATTERNS[i].matcher(q);
+            if (m.find()) {
+                String kw = m.group(1).trim();
+                kw = kw.replaceAll("(?:에서|중에서|중|으로|를|을|이|가)$", "").trim();
+                if (kw.length() >= 2 && !isImplOrgWord(kw)) {
+                    return kw;
+                }
+            }
+        }
+        return "";
+    }
+
+    private boolean isImplOrgWord(String word) {
+        for (int i = 0; i < IMPL_ORG_KEYWORDS.length; i++) {
+            if (word.indexOf(IMPL_ORG_KEYWORDS[i]) > -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsImplOrgQuestion(String question) {
+        if (question == null) {
+            return false;
+        }
+        for (int i = 0; i < IMPL_ORG_KEYWORDS.length; i++) {
+            if (question.indexOf(IMPL_ORG_KEYWORDS[i]) > -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** 사용자가 명시적으로 요청한 금액 항목 힌트 생성 */
+    private String buildExplicitFieldHint(String question) {
+        if (question == null) {
+            return "";
+        }
+        StringBuilder hint = new StringBuilder();
+        hint.append("명시 요청 항목: ");
+        boolean found = false;
+
+        if (wantsDemandAmt(question)) {
+            hint.append("[요구액] ");
+            found = true;
+        }
+        if (question.indexOf("반영액") > -1 || question.indexOf("조정액") > -1) {
+            hint.append("[반영액] ");
+            found = true;
+        }
+        if (wantsPreYearAmt(question)) {
+            hint.append("[전년도예산] ");
+            found = true;
+        }
+
+        if (!found) {
+            return "";
+        }
+        hint.append("→ [차수별 예산내역(재원표시)]에 차수별로 포함.");
+        return hint.toString();
     }
 
     // ------------------------------------------------------------------
@@ -484,7 +678,10 @@ public class AiChatServiceImpl implements AiChatService {
         JSONArray dataList = new JSONArray();
         buildResultJson(rows, columns, dataList);
 
-        String finalAnswer = geminiClient.generate(SYSTEM_PERSONA, buildSummaryPrompt(question, sql, rows));
+        logger.info("AI RAG[sql] provider=" + llmClient.getProviderName()
+                + " rows=" + rows.size());
+
+        String finalAnswer = llmClient.generate(SYSTEM_PERSONA, buildSummaryPrompt(question, sql, rows));
         if (finalAnswer == null || finalAnswer.trim().length() == 0) {
             finalAnswer = "총 " + rows.size() + "건의 결과를 조회했습니다. 아래 표를 확인해 주세요.";
         }
@@ -516,6 +713,9 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("- bizKeyword: 사업명에서 검색할 핵심 키워드. 여러 개면 쉼표로 구분 (예: \"유가보조금,유류비,연료비\"). 없으면 빈 문자열.\n");
         sb.append("- deptKeyword: 부서/실국 이름 키워드 (예: \"복지\"). 없으면 빈 문자열.\n");
         sb.append("- tagKeyword: #으로 시작하는 검색태그 키워드 (예: \"민생\"). 없으면 빈 문자열.\n");
+        sb.append("- implKeyword: 시행주관·시행주체·시행처·시행기관·사업기관 관련 질문일 때 [구분](요구내용)에서 검색할 기관/주체 키워드. 없으면 빈 문자열.\n");
+        sb.append("  (예: '테크노파크가 시행주관인 사업' → implKeyword: \"테크노파크\", bizKeyword: \"\")\n");
+        sb.append("  ※ 시행주관 질문의 기관명은 bizKeyword가 아니라 implKeyword로 넣을 것.\n");
         sb.append("\n[sql 모드 규칙]\n");
         sb.append("- 반드시 조회(SELECT) 질의만 생성. INSERT/UPDATE/DELETE/DDL 절대 금지.\n");
         sb.append("- CUBRID SQL 문법. 행 수 제한은 LIMIT 사용. 존재하는 테이블/컬럼만 사용.\n");
@@ -523,7 +723,7 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("\n");
         sb.append(aiSchemaProvider.getSchemaText());
         sb.append("\n[출력 형식] 아래 JSON 한 개만 출력하고 다른 설명은 하지 마세요.\n");
-        sb.append("{\"mode\": \"report|sql|chat\", \"fisYear\": \"\", \"dgr\": \"\", \"reportCd\": \"\", \"bizKeyword\": \"\", \"deptKeyword\": \"\", \"tagKeyword\": \"\", \"needData\": true, \"sql\": \"(sql 모드일 때 SELECT 문)\", \"answer\": \"(chat 모드일 때 한국어 답변)\"}\n");
+        sb.append("{\"mode\": \"report|sql|chat\", \"fisYear\": \"\", \"dgr\": \"\", \"reportCd\": \"\", \"bizKeyword\": \"\", \"deptKeyword\": \"\", \"tagKeyword\": \"\", \"implKeyword\": \"\", \"needData\": true, \"sql\": \"(sql 모드일 때 SELECT 문)\", \"answer\": \"(chat 모드일 때 한국어 답변)\"}\n");
         sb.append("\n[사용자 질문]\n").append(question).append("\n");
         return sb.toString();
     }

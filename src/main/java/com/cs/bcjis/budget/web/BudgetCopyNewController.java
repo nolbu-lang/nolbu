@@ -80,8 +80,8 @@ public class BudgetCopyNewController {
         if (logger.isDebugEnabled()) {
             logger.debug("budgetCopy(Map, ModelMap, HttpServletRequest) - end");
         }
-        // 기존 메뉴·URL 호환: 화면 구성은 budgetCopy.jsp(기존 레이아웃), 조회·적용은 개선 API 사용
-        return "budget/budgetCopy";
+        // 전년도예산조서적용[신규] — 개선 화면(budgetCopyNew.jsp: 매핑·일괄적용)
+        return "budget/budgetCopyNew";
     }
     
     @RequestMapping("/budget/ajaxBudgetCopyNewList.do")

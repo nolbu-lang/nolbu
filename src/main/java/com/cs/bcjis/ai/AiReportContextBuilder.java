@@ -19,35 +19,70 @@ import java.util.Map;
  */
 public class AiReportContextBuilder {
 
-    /** 비정형 텍스트(요구내용/검토의견) 1건당 최대 길이 (프롬프트 폭주 방지) */
-    private static final int MAX_CONT_LENGTH = 1500;
+    /** 비정형 텍스트(요구/검토) 기본 최대 길이 */
+    private static final int MAX_CONT_LENGTH = 400;
+
+    /** [구분] 필드 최대 길이 (요구내용 원문이 길어 토큰 폭주 방지) */
+    private static final int MAX_GUBUN_LENGTH = 300;
 
     private static final long MILLION = 1000000L;
+
+    /**
+     * AI 컨텍스트 생성 옵션 — 질문 유형에 따라 포함 필드를 줄여 속도·비용을 절감한다.
+     */
+    public static class ContextOptions {
+        public boolean includeGubun;
+        public boolean includePreYearAmt;
+        public boolean includeDemandAmt;
+        public boolean includeTags;
+        public int maxBlocks = 50;
+        public int maxReviewLength = MAX_CONT_LENGTH;
+
+        public static ContextOptions defaults() {
+            return new ContextOptions();
+        }
+    }
 
     private AiReportContextBuilder() {
     }
 
     /**
-     * 조서 행 목록(사업 1건 = 1 row)을 AI 컨텍스트 텍스트로 변환한다.
+     * 조서 행 목록을 사업 단위 AI 컨텍스트 텍스트로 변환한다.
      *
      * 필요한 컬럼(별칭 기준, 대소문자 무관):
      *   report_nm, fis_year, bgt_dgr, bgt_compo_fg, add_times,
      *   office_nm, dept_nm, pbiz_nm, ubiz_nm, dbiz_nm, fis_fg_nm,
-     *   te_mng_mok_cd, te_mng_mok_nm,
-     *   pre_amt, demand_bgt_amt, bgt_amt, diff_amt   (원 단위)
+     *   te_mng_mok_cd, te_mng_mok_nm, gubun(구분),
+     *   pre_amt, pre_bgt_amt, demand_bgt_amt, bgt_amt, diff_amt   (원 단위)
      *   tot_biz_amt, frsc_gov_amt, frsc_si_amt, frsc_etc_amt (투자조서, 원 단위)
      *   demand_cont, exam_cont, srch_val
      */
     public static String buildReportContext(List<Map<String, Object>> rows) {
+        return buildReportContext(rows, "", "", ContextOptions.defaults());
+    }
+
+    public static String buildReportContext(List<Map<String, Object>> rows, String queryYear, String queryDgr) {
+        return buildReportContext(rows, queryYear, queryDgr, ContextOptions.defaults());
+    }
+
+    /**
+     * @param queryYear 질문에서 추출한 회계연도
+     * @param queryDgr  질문에서 추출한 차수구분
+     * @param options   포함 필드·건수 제한 (속도·비용 절감)
+     */
+    public static String buildReportContext(List<Map<String, Object>> rows, String queryYear, String queryDgr,
+            ContextOptions options) {
+        if (options == null) {
+            options = ContextOptions.defaults();
+        }
         StringBuilder sb = new StringBuilder();
 
-        sb.append("[심사조서 데이터 안내]\n");
-        sb.append("- 아래 ■ 블록 하나가 '사업 1건'의 완전한 심사조서 맥락입니다. 블록 간 내용을 섞지 마세요.\n");
-        sb.append("- 같은 사업이 여러 차수(본예산·추경)에 반영된 경우, 하나의 ■ 블록 안에 [차수] 단위로 묶어 두었습니다.\n");
-        sb.append("- 모든 금액 단위는 '백만원'으로 통일했습니다(원 단위에서 반올림).\n");
-        sb.append("- 재원의 구분: '국비'는 국고보조금·교부세 등 국가 재원을 통합한 값, '시비'는 자체 재원, '기타'는 지방채·채무 등입니다.\n");
-        sb.append("- 차수의 구별: '본예산', 'N회추경'으로 표기합니다. 질문에 차수 구분이 없으면 해당 연도의 모든 차수가 포함되어 있습니다.\n");
-        sb.append("- '사업명'은 세부사업명을 기본으로 하고, 통계목·세세사업 명칭도 함께 표기합니다.\n");
+        sb.append("[심사조서 데이터] 연도:").append(queryYear.length() > 0 ? queryYear : "-");
+        sb.append(" 차수:").append(queryDgr.length() > 0 ? queryDgr : "전체").append("\n");
+        sb.append("- ■ 블록 1건 = 사업 1건. 금액 단위 백만원. 재원=국비/시비/기타.\n");
+        if (options.includeGubun) {
+            sb.append("- [구분] 포함(시행주관·시행주체 관련 질문).\n");
+        }
         sb.append("\n");
 
         if (rows == null || rows.isEmpty()) {
@@ -55,14 +90,14 @@ public class AiReportContextBuilder {
             return sb.toString();
         }
 
-        // 같은 사업(연도+조서+부서+사업명+통계목)을 하나로 묶는다. (차수만 다른 행들을 그룹화)
+        // [사업명] 기준으로 묶는다. (같은 사업의 차수별 행을 하나의 블록으로 조립)
         LinkedHashMap<String, List<Map<String, Object>>> groups = new LinkedHashMap<String, List<Map<String, Object>>>();
         for (Iterator<Map<String, Object>> it = rows.iterator(); it.hasNext();) {
             Map<String, Object> row = it.next();
+            String bizNm = getBizNm(row);
             String key = getStr(row, "report_nm") + "|" + getStr(row, "fis_year")
                     + "|" + getStr(row, "office_nm") + "|" + getStr(row, "dept_nm")
-                    + "|" + getStr(row, "dbiz_nm") + "|" + getStr(row, "te_mng_mok_cd")
-                    + "|" + getStr(row, "te_mng_mok_nm");
+                    + "|" + bizNm + "|" + getStr(row, "te_mng_mok_cd");
             List<Map<String, Object>> group = groups.get(key);
             if (group == null) {
                 group = new ArrayList<Map<String, Object>>();
@@ -73,9 +108,13 @@ public class AiReportContextBuilder {
 
         int seq = 0;
         for (Iterator<List<Map<String, Object>>> it = groups.values().iterator(); it.hasNext();) {
+            if (seq >= options.maxBlocks) {
+                sb.append("... (총 ").append(groups.size()).append("건 중 상위 ").append(options.maxBlocks).append("건만 표시)\n");
+                break;
+            }
             List<Map<String, Object>> group = it.next();
             seq++;
-            sb.append(buildOneBizBlock(seq, group));
+            sb.append(buildOneBizBlock(seq, group, options));
             sb.append("\n");
         }
 
@@ -87,136 +126,160 @@ public class AiReportContextBuilder {
      * 사업 공통 정보(사업명·부서 등)는 한 번만 쓰고, 차수별 내역을 그 아래에 나열한다.
      */
     public static String buildOneBizBlock(int seq, List<Map<String, Object>> group) {
+        return buildOneBizBlock(seq, group, ContextOptions.defaults());
+    }
+
+    public static String buildOneBizBlock(int seq, List<Map<String, Object>> group, ContextOptions options) {
         StringBuilder sb = new StringBuilder();
 
         Map<String, Object> first = group.get(0);
+        String bizLabel = buildBizLabel(first);
 
-        String reportNm = getStr(first, "report_nm");
+        sb.append("■").append(seq).append(" [사업명(통계목)] ").append(bizLabel).append("\n");
+
+        // 소관부서 — 사업당 1회만
+        StringBuilder dept = new StringBuilder();
         String officeNm = getStr(first, "office_nm");
         String deptNm = getStr(first, "dept_nm");
-        String pbizNm = getStr(first, "pbiz_nm");
-        String ubizNm = getStr(first, "ubiz_nm");
-        String dbizNm = getStr(first, "dbiz_nm");
-        String fisFgNm = getStr(first, "fis_fg_nm");
-        String mokCd = getStr(first, "te_mng_mok_cd");
-        String mokNm = getStr(first, "te_mng_mok_nm");
-
-        sb.append("■ 사업 ").append(seq).append("\n");
-
-        if (reportNm.length() > 0) {
-            sb.append("- 조서구분: ").append(reportNm).append("\n");
-        }
-
-        // 사업명 (세부사업/통계목/세세사업 계층을 함께 제공)
-        sb.append("- 사업명: ").append(dbizNm.length() > 0 ? dbizNm : mokNm);
-        StringBuilder bizDetail = new StringBuilder();
-        if (pbizNm.length() > 0) {
-            bizDetail.append("정책사업: ").append(pbizNm);
-        }
-        if (ubizNm.length() > 0) {
-            if (bizDetail.length() > 0) bizDetail.append(" / ");
-            bizDetail.append("단위사업: ").append(ubizNm);
-        }
-        if (mokNm.length() > 0) {
-            if (bizDetail.length() > 0) bizDetail.append(" / ");
-            bizDetail.append("통계목: ");
-            if (mokCd.length() >= 5) {
-                bizDetail.append(mokCd.substring(0, 3)).append("-").append(mokCd.substring(3)).append(" ");
-            }
-            bizDetail.append(mokNm);
-        }
-        if (bizDetail.length() > 0) {
-            sb.append(" (").append(bizDetail).append(")");
-        }
-        sb.append("\n");
-
-        // 소관부서
-        StringBuilder dept = new StringBuilder();
-        if (officeNm.length() > 0) {
-            dept.append(officeNm);
-        }
+        if (officeNm.length() > 0) dept.append(officeNm);
         if (deptNm.length() > 0) {
             if (dept.length() > 0) dept.append(" ");
             dept.append(deptNm);
         }
-        sb.append("- 소관부서: ").append(dept.length() > 0 ? dept.toString() : "(미상)").append("\n");
+        sb.append("  [소관부서] ").append(dept.length() > 0 ? dept.toString() : "-").append("\n");
 
-        if (fisFgNm.length() > 0) {
-            sb.append("- 회계구분: ").append(fisFgNm).append("\n");
+        if (options.includeGubun) {
+            String gubun = getStr(first, "gubun");
+            if (gubun.length() == 0) gubun = getStr(first, "invest_plan");
+            if (gubun.length() > 0) {
+                sb.append("  [구분] ").append(truncateTo(gubun, MAX_GUBUN_LENGTH)).append("\n");
+            }
         }
 
-        // 차수별 내역 (같은 사업이 본예산·추경 등 여러 차수에 걸치면 모두 나열)
-        sb.append("- 차수별 내역").append(group.size() > 1 ? " (총 " + group.size() + "개 차수)" : "").append(":\n");
         for (int i = 0; i < group.size(); i++) {
-            sb.append(buildDgrSection(group.get(i)));
+            sb.append(buildDgrSection(group.get(i), options));
         }
 
         return sb.toString();
     }
 
-    /** 한 차수의 예산·재원·검토의견 내역 */
-    private static String buildDgrSection(Map<String, Object> row) {
+    /** 사업명(통계목) 표기: 세부사업명 + 통계목코드만 (예: 일상돌봄 서비스사업 ( 308-13)) */
+    public static String buildBizLabel(Map<String, Object> row) {
+        String dbizNm = getStr(row, "dbiz_nm");
+        String mokCd = getStr(row, "te_mng_mok_cd");
+        String mokNm = getStr(row, "te_mng_mok_nm");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(dbizNm.length() > 0 ? dbizNm : mokNm);
+        String mokCodeLabel = formatMokCode(mokCd);
+        if (mokCodeLabel.length() > 0) {
+            sb.append(" ( ").append(mokCodeLabel).append(")");
+        }
+        return sb.toString();
+    }
+
+    /** 통계목코드 → 308-13 형식 */
+    public static String formatMokCode(String mokCd) {
+        if (mokCd == null || mokCd.trim().length() == 0) {
+            return "";
+        }
+        String cd = mokCd.trim();
+        if (cd.length() >= 5) {
+            return cd.substring(0, 3) + "-" + cd.substring(3);
+        }
+        return cd;
+    }
+
+    /** 사업 블록에 포함된 차수구분 요약 */
+    private static String buildGroupDgrSummary(List<Map<String, Object>> group) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < group.size(); i++) {
+            Map<String, Object> row = group.get(i);
+            String label = buildDgrLabel(getStr(row, "fis_year"), getStr(row, "bgt_compo_fg"),
+                    getLong(row, "add_times"), getStr(row, "bgt_dgr"));
+            if (label.length() == 0) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(label);
+        }
+        return sb.length() > 0 ? sb.toString() : "미상";
+    }
+
+    private static String getBizNm(Map<String, Object> row) {
+        String dbizNm = getStr(row, "dbiz_nm");
+        return dbizNm.length() > 0 ? dbizNm : getStr(row, "te_mng_mok_nm");
+    }
+
+    /** 한 차수의 경량 세트: 예산·검토 (답변 4항목에 필요한 최소 정보만) */
+    private static String buildDgrSection(Map<String, Object> row, ContextOptions options) {
         StringBuilder sb = new StringBuilder();
 
         String dgrLabel = buildDgrLabel(getStr(row, "fis_year"), getStr(row, "bgt_compo_fg"),
                 getLong(row, "add_times"), getStr(row, "bgt_dgr"));
 
-        sb.append("  [").append(dgrLabel).append("]\n");
-
-        // 예산액 — 단위: 백만원
-        long preAmt = getLong(row, "pre_amt");
         long demandAmt = getLong(row, "demand_bgt_amt");
         long bgtAmt = getLong(row, "bgt_amt");
-        long diffAmt = getLong(row, "diff_amt");
+        String frscDetail = formatFrscForRow(row);
+        String shortDgr = buildShortDgrLabel(getStr(row, "bgt_compo_fg"),
+                getLong(row, "add_times"), getStr(row, "bgt_dgr"));
 
-        sb.append("  · 예산액(단위: 백만원): ");
-        sb.append("기정액 ").append(toMillion(preAmt));
-        sb.append(", 예산요구액 ").append(toMillion(demandAmt));
-        sb.append(", 조정액(반영액) ").append(toMillion(bgtAmt));
-        sb.append(", 증감액 ").append(toMillionSigned(diffAmt));
+        // [차수별 예산내역] — 답변 서식과 동일: 본예산:547백만원(국비500, 시비47)
+        sb.append("  · [차수별 예산내역] ");
+        sb.append(shortDgr.length() > 0 ? shortDgr : (dgrLabel.length() > 0 ? dgrLabel : "차수미상"));
+        sb.append(":");
+        if (options.includePreYearAmt) {
+            long preBgtAmt = getLong(row, "pre_bgt_amt");
+            long preAmt = getLong(row, "pre_amt");
+            long prevYearAmt = preBgtAmt != 0 ? preBgtAmt : preAmt;
+            sb.append("전년").append(toMillion(prevYearAmt)).append("백만원,");
+        }
+        if (options.includeDemandAmt) {
+            sb.append("요구").append(toMillion(demandAmt)).append("백만원,");
+        }
+        sb.append(toMillion(bgtAmt)).append("백만원");
+        if (frscDetail.length() > 0) {
+            sb.append("(").append(frscDetail).append(")");
+        }
         sb.append("\n");
 
-        // 반영액의 재원구성 (국비/시비/기타 - 원 단위 상세를 백만원으로 합산)
-        String frscDetail = formatFrscDetail(getStr(row, "frsc_detail"));
-        if (frscDetail.length() > 0) {
-            sb.append("  · 반영액 재원구성(단위: 백만원): ").append(frscDetail).append("\n");
-        }
-
-        // 투자조서: 총사업비 + 재원의 구분 (국비 통합 / 시비 / 기타)
-        long totBiz = getLong(row, "tot_biz_amt");
-        long frscGov = getLong(row, "frsc_gov_amt");
-        long frscSi = getLong(row, "frsc_si_amt");
-        long frscEtc = getLong(row, "frsc_etc_amt");
-        if (totBiz != 0 || frscGov != 0 || frscSi != 0 || frscEtc != 0) {
-            sb.append("  · 총사업비(단위: 백만원): 합계 ").append(toMillion(totBiz));
-            sb.append(" [국비(국비 종류 통합) ").append(toMillion(frscGov));
-            sb.append(", 시비 ").append(toMillion(frscSi));
-            sb.append(", 기타(지방채·채무 등) ").append(toMillion(frscEtc));
-            sb.append("]\n");
-        }
-
-        // 검토의견 및 추진상황 (비정형 텍스트 — 원문 유지)
-        String demandCont = truncate(getStr(row, "demand_cont"));
-        String examCont = truncate(getStr(row, "exam_cont"));
+        // [차수별 요구·검토의견] — 핵심만 축약
+        String demandCont = truncateTo(getStr(row, "demand_cont"), options.maxReviewLength);
+        String examCont = truncateTo(getStr(row, "exam_cont"), options.maxReviewLength);
         if (demandCont.length() > 0 || examCont.length() > 0) {
-            sb.append("  · 검토의견 및 추진상황:\n");
+            sb.append("    검토: ");
             if (demandCont.length() > 0) {
-                sb.append("    ○ 요구내용:\n");
-                sb.append(indent(demandCont)).append("\n");
+                sb.append("○").append(compactOneLine(demandCont));
             }
             if (examCont.length() > 0) {
-                sb.append("    ◈ 검토의견:\n");
-                sb.append(indent(examCont)).append("\n");
+                if (demandCont.length() > 0) sb.append(" ");
+                sb.append("◈").append(compactOneLine(examCont));
             }
+            sb.append("\n");
         }
 
-        // 조건검색어 (#태그)
-        String srchVal = getStr(row, "srch_val");
-        if (srchVal.length() > 0) {
-            sb.append("  · 조건검색어: ").append(formatTags(srchVal)).append("\n");
+        if (options.includeTags) {
+            String srchVal = getStr(row, "srch_val");
+            if (srchVal.length() > 0) {
+                sb.append("    태그: ").append(formatTags(srchVal)).append("\n");
+            }
         }
 
         return sb.toString();
+    }
+
+    /** 여러 줄 텍스트를 한 줄로 압축 */
+    private static String compactOneLine(String s) {
+        return s.replaceAll("\\s+", " ").trim();
+    }
+
+    private static String truncateTo(String s, int maxLen) {
+        if (s.length() <= maxLen) {
+            return s;
+        }
+        return s.substring(0, maxLen) + "...";
     }
 
     /**
@@ -266,11 +329,40 @@ public class AiReportContextBuilder {
         return String.format("%,d", v);
     }
 
+    /** 차수 라벨(연도 제외): 본예산, 1회추경 등 */
+    public static String buildShortDgrLabel(String bgtCompoFg, long addTimes, String bgtDgr) {
+        if ("10".equals(bgtCompoFg)) {
+            return "본예산";
+        }
+        if ("20".equals(bgtCompoFg)) {
+            if (addTimes > 0) {
+                return addTimes + "회추경";
+            }
+            return "추경";
+        }
+        if (bgtDgr != null && bgtDgr.trim().length() > 0) {
+            return bgtDgr.trim() + "차수";
+        }
+        return "";
+    }
+
+    /** 행 단위 재원 표기 (frsc_detail 우선, 없으면 투자조서 합산 컬럼 사용) */
+    public static String formatFrscForRow(Map<String, Object> row) {
+        String detail = formatFrscDetail(getStr(row, "frsc_detail"));
+        if (detail.length() > 0) {
+            return detail;
+        }
+        long gov = getLong(row, "frsc_gov_amt");
+        long si = getLong(row, "frsc_si_amt");
+        long etc = getLong(row, "frsc_etc_amt");
+        return formatFrscAmounts(gov, si, etc);
+    }
+
     /**
      * 재원별 편성액 상세 문자열을 국비/시비/기타 백만원 합산으로 정리한다.
      *
      * 입력 형식: "재원명:금액원|재원명:금액원" (예: "국고보조금:100000000|자체수입:209000000")
-     * 출력 예시: "국비 100, 시비 209"
+     * 출력 예시: "국비500, 시비47"
      *
      * 분류 규칙: 재원명 첫 글자 '국'/'균' → 국비(국비 종류 통합),
      *            '자'/'시' → 시비, 그 외 → 기타
@@ -312,17 +404,26 @@ public class AiReportContextBuilder {
             }
         }
 
+        return formatFrscAmounts(gov, si, etc);
+    }
+
+    /** 국비/시비/기타 금액을 답변 서식으로 조합 (예: 국비500, 시비47) */
+    public static String formatFrscAmounts(long gov, long si, long etc) {
         StringBuilder sb = new StringBuilder();
         if (gov != 0) {
-            sb.append("국비 ").append(toMillion(gov));
+            sb.append("국비").append(toMillion(gov));
         }
         if (si != 0) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append("시비 ").append(toMillion(si));
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append("시비").append(toMillion(si));
         }
         if (etc != 0) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append("기타 ").append(toMillion(etc));
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append("기타").append(toMillion(etc));
         }
         return sb.toString();
     }
@@ -348,10 +449,7 @@ public class AiReportContextBuilder {
     }
 
     private static String truncate(String s) {
-        if (s.length() <= MAX_CONT_LENGTH) {
-            return s;
-        }
-        return s.substring(0, MAX_CONT_LENGTH) + " ...(이하 생략)";
+        return truncateTo(s, MAX_CONT_LENGTH);
     }
 
     /** 여러 줄 텍스트를 블록 내부 들여쓰기로 정리 */
