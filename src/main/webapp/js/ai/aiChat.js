@@ -31,7 +31,7 @@
     }
 
     function appendUser(text) {
-        var html = '<div class="ai-msg ai-user"><div class="ai-bubble">' + nl2br(text) + '</div></div>';
+        var html = '<div class="ai-msg ai-user"><div class="ai-bubble ai-pre">' + nl2br(text) + '</div></div>';
         $("#aiChatMessages").append(html);
         scrollToBottom();
     }
@@ -68,7 +68,7 @@
 
     function appendBotAnswer($loadingEl, data) {
         var answer = (data && data.answer) ? data.answer : "응답이 없습니다.";
-        var inner = '<div class="ai-bubble">' + nl2br(answer);
+        var inner = '<div class="ai-bubble ai-pre">' + nl2br(answer);
 
         if (data && data.columns && data.dataList) {
             var tableHtml = buildResultTable(data.columns, data.dataList);
@@ -92,7 +92,7 @@
     }
 
     function appendBotError($loadingEl, msg) {
-        $loadingEl.removeClass("ai-loading").html('<div class="ai-bubble">' + nl2br(msg) + '</div>');
+        $loadingEl.removeClass("ai-loading").html('<div class="ai-bubble ai-pre">' + nl2br(msg) + '</div>');
         scrollToBottom();
     }
 

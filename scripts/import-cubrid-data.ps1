@@ -79,3 +79,10 @@ if (Test-Path $seedSql) {
 } else {
     Write-Warning "시드 스크립트를 찾을 수 없습니다: $seedSql"
 }
+
+# TB_DGRCOMPOFRSC — loaddb 패키지에 없음. 비어 있으면 조정액 기준 보완(로컬 검증용)
+$bootstrapFrscPs1 = Join-Path $PSScriptRoot "bootstrap-dgrcompofrsc.ps1"
+if (Test-Path $bootstrapFrscPs1) {
+    Write-Host "TB_DGRCOMPOFRSC 보완: bootstrap-dgrcompofrsc.ps1 ..."
+    & $bootstrapFrscPs1
+}

@@ -4,7 +4,7 @@
   - 내부 심사정보시스템(CUBRID) 데이터만 사용
   - Gemini 로 자연어 질문 -> 조회 -> 결과 출력
 --%>
-<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css" />
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css?v=20260614c" />
 
 <div id="aiChatDock" class="ai-collapsed">
   <div id="aiChatHeader">
@@ -13,10 +13,8 @@
   </div>
   <div id="aiChatBody">
     <div id="aiChatMessages">
-      <div class="ai-msg ai-bot">
-        <div class="ai-bubble">안녕하세요. 심사정보시스템 데이터를 조회해 드리는 AI 예산편성 도우미입니다.<br/>
-          예) "2026년 경상 및 투자사업 중에서 <b>유가보조금, 유류비</b> 관련 사업을 찾아서 <b>차수별 예산 추이와 심사의견 요약</b>을 정리해줘"
-        </div>
+      <div class="ai-msg ai-bot ai-guide-msg">
+        <div class="ai-bubble ai-guide"><div class="ai-guide-line">안녕하세요. 심사정보시스템 데이터를 조회해 드리는 AI 예산편성 도우미입니다.</div><div class="ai-guide-line"><span class="ai-guide-mark">▸</span><span class="ai-guide-label">사업·분야</span> "2026년 경상사업 및 투자사업에서 <b>일상돌봄</b> 사업을 찾아줘"</div><div class="ai-guide-line"><span class="ai-guide-mark">▸</span><span class="ai-guide-label">비정형</span> [구분]·[검토내용] 목록을 명시해 주세요.</div><div class="ai-guide-line ai-guide-sub">"2026년 경상사업 및 투자사업에서 <b>[구분]</b>에 있는 내용 중 <b>테크노파크</b>가 시행처인 사업을 찾아서 정리해줘"</div><div class="ai-guide-line ai-guide-sub">"2026년 경상사업 및 투자사업에서 <b>[검토내용]</b>에 있는 내용 중 <b>마무리</b> 사업을 찾아서 정리해줘"</div></div>
       </div>
     </div>
     <div id="aiChatInputArea">
