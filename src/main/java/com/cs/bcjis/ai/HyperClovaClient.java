@@ -8,11 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Properties;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
@@ -21,25 +16,25 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
- * 네이버 HyperCLOVA X (CLOVA Studio Chat Completions v3) 호출 클라이언트.
+ * 부산시 내부 행정 AI (LLM Studio) 호출 클라이언트.
  *
- * 운영 환경용. globals.properties 의 ClovaApiKey·ClovaModel 등으로 설정한다.
- * GeminiClient 와 동일한 generate(systemInstruction, prompt) 시그니처를 제공한다.
+ * 외부망(네이버 CLOVA Studio 등)은 사용하지 않는다.
+ * globals.properties:
+ *   Globals.ClovaEndpoint = http://{내부서버}/llm-studio/v1/api/task/generate/syncapi/{project}/{task}
+ * 요청: POST {"prompt":"..."}
+ * 응답: llm_result.answer
  */
 @Component("hyperClovaClient")
 public class HyperClovaClient implements LlmClient {
 
     private static final Logger logger = Logger.getLogger(HyperClovaClient.class);
 
-    private static final String DEFAULT_ENDPOINT =
-            "https://clovastudio.stream.ntruss.com/v3/chat-completions";
-
     @Autowired
     @Qualifier("config")
     private Properties config;
 
     public boolean isEnabled() {
-        return getApiKey().length() > 0;
+        return getEndpoint().length() > 0;
     }
 
     public String getProviderName() {
@@ -53,70 +48,37 @@ public class HyperClovaClient implements LlmClient {
     public String generate(String systemInstruction, String prompt) throws Exception {
         if (!isEnabled()) {
             throw new IllegalStateException(
-                    "HyperCLOVA API 키가 설정되어 있지 않습니다. (globals.properties 의 Globals.ClovaApiKey)");
+                    "내부 행정 AI(LLM Studio) 엔드포인트가 설정되어 있지 않습니다. "
+                    + "(globals.properties 의 Globals.ClovaEndpoint)");
         }
 
-        JSONArray messages = new JSONArray();
+        String url = getEndpoint();
+        String bodyJson = buildRequestBody(systemInstruction, prompt);
+        String responseText = postWithRetry(url, bodyJson);
+        return extractAnswer(responseText);
+    }
 
+    private String buildRequestBody(String systemInstruction, String prompt) {
+        StringBuilder combined = new StringBuilder();
         if (systemInstruction != null && systemInstruction.trim().length() > 0) {
-            JSONObject sys = new JSONObject();
-            sys.put("role", "system");
-            sys.put("content", systemInstruction);
-            messages.add(sys);
+            combined.append(systemInstruction.trim()).append("\n\n");
         }
-
-        JSONObject user = new JSONObject();
-        user.put("role", "user");
-        user.put("content", prompt);
-        messages.add(user);
-
+        combined.append(prompt == null ? "" : prompt);
         JSONObject body = new JSONObject();
-        body.put("messages", messages);
-        body.put("temperature", 0.2);
-        body.put("maxTokens", getMaxTokens());
-        body.put("topP", 0.8);
-        body.put("repetitionPenalty", 1.1);
-
-        String url = buildUrl();
-        String responseText = postWithRetry(url, body.toString());
-        return extractText(responseText);
-    }
-
-    private String getApiKey() {
-        String key = config.getProperty("Globals.ClovaApiKey");
-        return key == null ? "" : key.trim();
-    }
-
-    private String getModel() {
-        String model = config.getProperty("Globals.ClovaModel");
-        if (model == null || model.trim().length() == 0) {
-            return "HCX-007";
-        }
-        return model.trim();
+        body.put("prompt", combined.toString());
+        return body.toString();
     }
 
     private String getEndpoint() {
         String ep = config.getProperty("Globals.ClovaEndpoint");
         if (ep == null || ep.trim().length() == 0) {
-            return DEFAULT_ENDPOINT;
+            return "";
         }
         String s = ep.trim();
         while (s.endsWith("/")) {
             s = s.substring(0, s.length() - 1);
         }
         return s;
-    }
-
-    private int getMaxTokens() {
-        try {
-            String v = config.getProperty("Globals.ClovaMaxTokens");
-            if (v != null && v.trim().length() > 0) {
-                return Integer.parseInt(v.trim());
-            }
-        } catch (Exception e) {
-            // ignore
-        }
-        return 4096;
     }
 
     private int getTimeoutMs() {
@@ -128,11 +90,7 @@ public class HyperClovaClient implements LlmClient {
         } catch (Exception e) {
             // ignore
         }
-        return 60000;
-    }
-
-    private String buildUrl() {
-        return getEndpoint() + "/" + getModel();
+        return 120000;
     }
 
     private String postWithRetry(String urlStr, String jsonBody) throws Exception {
@@ -146,7 +104,7 @@ public class HyperClovaClient implements LlmClient {
                 if (!retryable || attempt >= waitMs.length) {
                     throw e;
                 }
-                logger.warn("HyperCLOVA 일시 오류 - " + (waitMs[attempt] / 1000) + "초 후 재시도");
+                logger.warn("LLM Studio 일시 오류 - " + (waitMs[attempt] / 1000) + "초 후 재시도");
                 Thread.sleep(waitMs[attempt]);
             }
         }
@@ -157,20 +115,11 @@ public class HyperClovaClient implements LlmClient {
         try {
             URL url = new URL(urlStr);
             conn = (HttpURLConnection) url.openConnection();
-
-            if (conn instanceof HttpsURLConnection) {
-                SSLSocketFactory factory = buildTls12Factory();
-                if (factory != null) {
-                    ((HttpsURLConnection) conn).setSSLSocketFactory(factory);
-                }
-            }
-
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(getTimeoutMs());
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Authorization", "Bearer " + getApiKey());
             conn.setRequestProperty("Accept", "application/json");
 
             OutputStream os = conn.getOutputStream();
@@ -181,7 +130,7 @@ public class HyperClovaClient implements LlmClient {
             int code = conn.getResponseCode();
             InputStream is = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
             if (is == null) {
-                throw new RuntimeException("HyperCLOVA API 응답 없음 (HTTP " + code + ")");
+                throw new RuntimeException("LLM Studio API 응답 없음 (HTTP " + code + ")");
             }
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
@@ -193,7 +142,7 @@ public class HyperClovaClient implements LlmClient {
             reader.close();
 
             if (code >= 400) {
-                throw new RuntimeException("HyperCLOVA API 호출 실패 (HTTP " + code + "): " + sb.toString());
+                throw new RuntimeException("LLM Studio API 호출 실패 (HTTP " + code + "): " + sb.toString());
             }
             return sb.toString();
         } finally {
@@ -203,41 +152,17 @@ public class HyperClovaClient implements LlmClient {
         }
     }
 
-    private SSLSocketFactory buildTls12Factory() {
-        try {
-            SSLContext ctx = SSLContext.getInstance("TLSv1.2");
-            ctx.init(null, null, null);
-            return ctx.getSocketFactory();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /** CLOVA Studio v3 / OpenAI 호환 응답에서 텍스트 추출 */
-    private String extractText(String responseJson) {
+    private String extractAnswer(String responseJson) {
         JSONObject root = JSONObject.fromObject(responseJson);
-
-        if (root.containsKey("result")) {
-            JSONObject result = root.getJSONObject("result");
-            if (result.containsKey("message")) {
-                JSONObject msg = result.getJSONObject("message");
-                if (msg.containsKey("content")) {
-                    return msg.getString("content");
-                }
+        if (root.containsKey("llm_result")) {
+            JSONObject llmResult = root.getJSONObject("llm_result");
+            if (llmResult.containsKey("answer")) {
+                return llmResult.getString("answer");
             }
         }
-
-        if (root.containsKey("choices")) {
-            JSONArray choices = root.getJSONArray("choices");
-            if (choices.size() > 0) {
-                JSONObject first = choices.getJSONObject(0);
-                if (first.containsKey("message")) {
-                    return first.getJSONObject("message").optString("content", "");
-                }
-                return first.optString("text", "");
-            }
-        }
-
-        throw new RuntimeException("HyperCLOVA 응답에서 텍스트를 찾지 못했습니다.");
+        String code = root.optString("response_code", "");
+        String message = root.optString("response_message", "");
+        throw new RuntimeException("LLM Studio 응답에서 answer를 찾지 못했습니다. "
+                + "response_code=" + code + ", message=" + message);
     }
 }

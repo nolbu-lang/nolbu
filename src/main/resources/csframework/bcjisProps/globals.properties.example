@@ -26,33 +26,19 @@ Globals.fileStorePath=C:/bcjis/upload/
 Globals.excelStorePath=C:/bcjis/download/excel/
 
 #-----------------------------------------------------------------------
-# AI \uc608\uc0b0\ub3c4\uc6b0\ubbf8 \ucc57\ubd07 \uc124\uc815
-# - \ud14c\uc2a4\ud2b8(PC): AiProvider=gemini + GeminiApiKey
-# - \uc6b4\uc601(\uc5c5\ubb34\uc11c\ubc84): AiProvider=hyperclova + ClovaApiKey
-# - API \ud0a4\uac00 \uc5c6\uc73c\uba74 \ucc57\ubd07\ub9cc \ube44\ud65c\uc131(\uc2dc\uc2a4\ud15c \uc790\uccb4\ub294 \uc815\uc0c1 \uad6c\ub3d9)
+# AI 예산도우미 챗봇 — 부산시 내부 행정 AI (LLM Studio / HyperCLOVA) 전용
 #-----------------------------------------------------------------------
-# LLM \uacf5\uae09\uc790: gemini | hyperclova
-Globals.AiProvider = gemini
+Globals.AiProvider = hyperclova
 
-# --- Gemini (\uac1c\uc778 PC \ud14c\uc2a4\ud2b8\uc6a9) ---
-# \ud0a4 \ubc1c\uae09: https://aistudio.google.com/app/apikey
-Globals.GeminiApiKey =
-Globals.GeminiModel = gemini-2.5-flash
-Globals.GeminiFallbackModel = gemini-2.5-flash-lite
-Globals.GeminiTimeoutMs = 60000
+# LLM Studio budget_search API (내부망)
+Globals.ClovaEndpoint = http://99.1.82.207:8080/llm-studio/v1/api/task/generate/syncapi/busan_ai_llm/budget_search
+Globals.ClovaTimeoutMs = 120000
 
-# --- HyperCLOVA X (\uc6b4\uc601 \uc5c5\ubb34\uc11c\ubc84\uc6a9, \uc2dc \uacc4\uc57d API) ---
-# CLOVA Studio Chat Completions v3
-Globals.ClovaApiKey =
-Globals.ClovaEndpoint = https://clovastudio.stream.ntruss.com/v3/chat-completions
-Globals.ClovaModel = HCX-007
-Globals.ClovaMaxTokens = 4096
-Globals.ClovaTimeoutMs = 60000
-
-# --- RAG \uacf5\ud1b5 (\ubaa8\ub378 \ubb34\uad00) ---
-# \uc2ec\uc0ac\uc870\uc11c \uc9c8\ubb38 \uc2dc AI\uc5d0 \uc804\ub2ec\ud560 \ucd5c\ub300 \uc0ac\uc5c5 \uac74\uc218
+# --- RAG 공통 ---
+# 심사조서 질문 시 AI에 전달할 최대 사업 건수
 Globals.AiMaxReportBlocks = 50
-# \uc77c\ubc18 SQL \uc870\ud68c \ucd5c\ub300 \ud589 \uc218
+# 일반 SQL 조회 최대 행 수
 Globals.GeminiMaxRows = 200
-# (\ud558\uc704\ud638\ud658) \uad6c \uc124\uc815\uba85\uc774 \uc5c6\uc73c\uba74 AiMaxReportBlocks \uac12 \uc0ac\uc6a9
+# (하위호환) 구 설정명이 없으면 AiMaxReportBlocks 값 사용
 Globals.GeminiMaxReportBlocks = 50
+Globals.AiReportDbOnly = true

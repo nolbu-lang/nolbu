@@ -2,6 +2,7 @@ package com.cs.bcjis.ai.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -136,6 +137,19 @@ public class AiChatServiceImpl implements AiChatService {
     private static final String CONTENT_FIELD_EXAM = "exam";
     private static final String BRACKET_MARKER_EXAM = "[검토내용]";
     private static final String BRACKET_MARKER_GUBUN = "[구분]";
+    private static final String BRACKET_MARKER_DEPT = "[소관부서]";
+
+    /**
+     * [소관부서] 지정 질문에서 부서·실국 키워드 추출.
+     */
+    private static final Pattern DEPT_QUOTED_PATTERN =
+            Pattern.compile("^\\s*['\"'「]([^\"'」]+)['\"'」]");
+
+    /** 소관부서 키워드에서 제외할 일반어 */
+    private static final String[] DEPT_STOP_WORDS = {
+            "소관부서", "소관", "부서", "실국", "국", "사업", "찾아", "검색", "정리", "해줘", "주세요",
+            "관련", "내용", "경상", "투자", "심사조서", "예산", "회계연도", "차수"
+    };
 
     /**
      * [구분]/[검토내용] 지정 질문에서 키워드 추출 (대괄호 표기 뒤 문장만 대상).
@@ -154,7 +168,10 @@ public class AiChatServiceImpl implements AiChatService {
             Pattern.compile("([\\uAC00-\\uD7A3\\w]+(?:\\s*,\\s*[\\uAC00-\\uD7A3\\w]+)+)\\s*관련"),
             Pattern.compile("([\\uAC00-\\uD7A3\\w]{2,})\\s*관련\\s*사업"),
             Pattern.compile("(?:에서|중에서|중)\\s*([\\uAC00-\\uD7A3\\w]{2,})\\s*(?:관련\\s*)?사업"),
-            Pattern.compile("([\\uAC00-\\uD7A3\\w]{2,})\\s*사업(?:을|를|중| 관련| 찾)")
+            Pattern.compile("([\\uAC00-\\uD7A3\\w]{2,})\\s*사업(?:을|를|중| 관련| 찾)"),
+            // "유가보조금 찾아줘" 등 '사업' 접미어 없이 검색하는 질문
+            Pattern.compile("([\\uAC00-\\uD7A3\\w]{2,})\\s*(?:찾아|검색|정리|알려)(?:줘|주세요)?"),
+            Pattern.compile("([\\uAC00-\\uD7A3\\w]{2,})\\s*(?:관련|대한|관한)")
     };
 
     /** 사업명 키워드에서 제외할 일반어 */
@@ -163,7 +180,8 @@ public class AiChatServiceImpl implements AiChatService {
             "예산", "본예산", "추경", "회추경", "찾아줘", "찾아", "검색", "정리", "알려줘", "알려",
             "관련", "사업", "조서", "년", "연도", "회계연도", "차수", "내용", "요약", "정리해줘",
             "해줘", "주세요", "보여줘", "확인", "검토의견", "심사의견", "검토내용", "요구내용", "구분",
-            "편성", "반영", "조정", "요구", "전년도", "이전년도", "작년", "올해", "금년", "도우미"
+            "편성", "반영", "조정", "요구", "전년도", "이전년도", "작년", "올해", "금년", "도우미",
+            "소관부서", "소관", "부서", "실국"
     };
 
     private int getMaxRows() {
@@ -210,9 +228,8 @@ public class AiChatServiceImpl implements AiChatService {
 
         if (!llmClient.isEnabled()) {
             result.put("answer", "AI 챗봇 API가 설정되지 않았습니다.\n"
-                    + "globals.properties 에 Globals.AiProvider 와 API 키를 등록하세요.\n"
-                    + "  · 테스트: AiProvider=gemini, Globals.GeminiApiKey\n"
-                    + "  · 운영: AiProvider=hyperclova, Globals.ClovaApiKey");
+                    + "globals.properties 설정을 확인하세요.\n"
+                    + "  · Globals.ClovaEndpoint (내부 LLM Studio URL)");
             return result;
         }
 
@@ -259,11 +276,17 @@ public class AiChatServiceImpl implements AiChatService {
         String tagKeyword = plan.optString("tagKeyword", "").trim();
         String implKeyword = plan.optString("implKeyword", "").trim();
         boolean explicitContent = isExplicitContentFieldSearch(question);
+        // [소관부서] 대괄호가 있을 때만 부서·실국 필터 (없으면 기존과 동일, LLM 추출 dept 무시)
+        if (hasDeptBracketFilter(question)) {
+            deptKeyword = resolveDeptKeyword(question, deptKeyword);
+        } else {
+            deptKeyword = "";
+        }
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.setMaxRows(getMaxReportBlocks());
 
-        // [구분]/[검토내용] 대괄호 지정 시 — 해당 비정형 필드만 검색 (사업명·시행주관 검색과 분리)
+        // [구분]/[검토내용] 대괄호 지정 시 — 해당 비정형 필드 검색 (+ [소관부서] 있으면 부서 필터)
         String contentField = "";
         String contentKeyword = "";
         String bizKeyword = "";
@@ -276,7 +299,7 @@ public class AiChatServiceImpl implements AiChatService {
                 result.put("answer",
                         "비정형 내용 검색 시 [구분] 또는 [검토내용]을 지정하고, 해당 목록에서 찾을 키워드를 함께 적어 주세요.\n"
                         + "예) 2026년 경상사업 및 투자사업에서 [검토내용]에 있는 내용 중 마무리 사업을 찾아서 정리해줘\n"
-                        + "예) 2026년 경상사업 및 투자사업에서 [구분]에 있는 내용 중 테크노파크가 시행처인 사업을 찾아서 정리해줘");
+                        + "예) 2026년 [소관부서]복지국 [검토내용] 마무리 사업을 찾아서 정리해줘");
                 result.put("rowCount", 0);
                 result.put("columns", new JSONArray());
                 result.put("dataList", new JSONArray());
@@ -288,6 +311,9 @@ public class AiChatServiceImpl implements AiChatService {
             }
             // 사업명 키워드: LLM + 규칙 기반 보완 (핵심 기능)
             bizKeyword = resolveBizKeyword(question, plan.optString("bizKeyword", "").trim());
+            if (hasDeptBracketFilter(question) && deptKeyword.length() > 0) {
+                bizKeyword = removeDeptTokensFromKeywordCsv(bizKeyword, deptKeyword);
+            }
             // 시행주관 질문인데 기관명이 bizKeyword로 들어온 경우만 전환
             if (implKeyword.length() == 0 && containsImplOrgQuestion(question) && bizKeyword.length() > 0) {
                 implKeyword = bizKeyword;
@@ -333,7 +359,10 @@ public class AiChatServiceImpl implements AiChatService {
                 result.put("answer",
                         "조건에 맞는 심사조서 데이터가 없습니다.\n"
                         + "사업명 키워드와 회계연도를 확인해 주세요.\n"
-                        + "예) 2025년 경상사업 및 투자사업에서 유가보조금 관련 사업을 찾아서 정리해줘");
+                        + (hasDeptBracketFilter(question) && deptKeyword.length() > 0
+                                ? "([소관부서] " + deptKeyword + " 소속 사업만 검색했습니다.)\n" : "")
+                        + "예) 2025년 경상사업 및 투자사업에서 유가보조금 관련 사업을 찾아서 정리해줘\n"
+                        + "예) 2026년 [소관부서]복지국 유가보조금 사업을 찾아서 정리해줘");
             }
             result.put("rowCount", 0);
             result.put("columns", new JSONArray());
@@ -579,20 +608,21 @@ public class AiChatServiceImpl implements AiChatService {
         boolean explicitContent = isExplicitContentFieldSearch(question);
         String ruleBizKeyword = explicitContent ? "" : extractBizKeywordFromQuestion(question);
 
-        // 사용자가 [구분]/[검토내용]을 지정한 경우 — 해당 비정형 필드만 검색 (그 외 경로 없음)
+        // 사용자가 [구분]/[검토내용]을 지정한 경우 — 비정형 필드 검색 (+ deptKeyword 부서 필터)
         if (explicitContent) {
             if (contentField.length() > 0 && contentKeyword.length() > 0) {
                 List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                         mergeAllYears, bgtCompoFg, addTimes, "", deptKeyword, tagKeyword,
                         "", contentField, contentKeyword, true);
                 logger.info("AI RAG hit[content-bracket] years=" + years.size() + " merge=" + mergeAllYears
-                        + " field=" + contentField + " kw=" + contentKeyword + " rows=" + rows.size());
+                        + " field=" + contentField + " kw=" + contentKeyword
+                        + " dept=" + deptKeyword + " rows=" + rows.size());
                 return rows;
             }
             return new ArrayList<Map<String, Object>>();
         }
 
-        // 1차: 사업명 넓은 검색(핵심)
+        // 1차: 사업명 넓은 검색(핵심) — deptKeyword 있으면 해당 부서 소속만
         if (bizKeyword.length() > 0) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
@@ -644,11 +674,16 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         // 6차: 부서·태그만으로 검색
-        if (deptKeyword.length() > 0 || tagKeyword.length() > 0) {
+        // [소관부서]+사업명/비정형 검색 시에는 부서 단독 폴백 금지 (사업명 무시·한도까지 부서 전체 반환 방지)
+        boolean deptBracketWithSearchIntent = hasDeptBracketWithNonDeptSearchIntent(
+                question, explicitContent, bizKeyword, ruleBizKeyword);
+        if (!deptBracketWithSearchIntent && (deptKeyword.length() > 0 || tagKeyword.length() > 0)) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, "", deptKeyword, tagKeyword,
                     "", "", "", false);
             if (!rows.isEmpty()) {
+                logger.info("AI RAG hit[6-dept-tag-only] years=" + years.size() + " merge=" + mergeAllYears
+                        + " dept=" + deptKeyword + " tag=" + tagKeyword + " rows=" + rows.size());
                 return rows;
             }
         }
@@ -999,6 +1034,14 @@ public class AiChatServiceImpl implements AiChatService {
     private JSONObject enrichPlanForReport(String question, JSONObject plan) {
         JSONObject enriched = plan == null ? new JSONObject() : JSONObject.fromObject(plan);
         enriched.put("mode", "report");
+        if (hasDeptBracketFilter(question)) {
+            String deptKw = extractDeptKeyword(question);
+            if (deptKw.length() > 0) {
+                enriched.put("deptKeyword", deptKw);
+            }
+        } else {
+            enriched.put("deptKeyword", "");
+        }
         if (isExplicitContentFieldSearch(question)) {
             ContentSearchInfo contentSearch = extractContentSearch(question);
             if (contentSearch.field.length() > 0) {
@@ -1061,9 +1104,10 @@ public class AiChatServiceImpl implements AiChatService {
         if (question == null || isExplicitContentFieldSearch(question)) {
             return "";
         }
+        String q = stripDeptBracketClause(question);
         List<String> found = new ArrayList<String>();
         for (int i = 0; i < BIZ_KEYWORD_PATTERNS.length; i++) {
-            Matcher m = BIZ_KEYWORD_PATTERNS[i].matcher(question);
+            Matcher m = BIZ_KEYWORD_PATTERNS[i].matcher(q);
             while (m.find()) {
                 String raw = m.group(1).trim();
                 if (raw.indexOf(",") > -1 || raw.indexOf(";") > -1) {
@@ -1077,6 +1121,12 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
         if (found.isEmpty()) {
+            String loose = extractLooseBizKeyword(q);
+            if (loose.length() > 0) {
+                addBizKeywordCandidate(found, loose);
+            }
+        }
+        if (found.isEmpty()) {
             return "";
         }
         StringBuilder sb = new StringBuilder();
@@ -1087,6 +1137,54 @@ public class AiChatServiceImpl implements AiChatService {
             sb.append(found.get(i));
         }
         return sb.toString();
+    }
+
+    /**
+     * 패턴 매칭 실패 시 남은 문장에서 사업명 후보 1개 추출.
+     * [소관부서]부서명 제거 후 "유가보조금 찾아줘" 같은 짧은 질문용.
+     */
+    private String extractLooseBizKeyword(String q) {
+        if (q == null || q.trim().length() == 0) {
+            return "";
+        }
+        String s = q.replaceAll("\\d{4}\\s*년(?:도)?", " ");
+        s = s.replaceAll("(?:경상|투자)\\s*사업(?:\\s*및\\s*(?:경상|투자)\\s*사업)?", " ");
+        s = s.replaceAll("(?:심사조서|조서|예산|회계연도|차수)", " ");
+        Matcher quoted = Pattern.compile("[\"'「]([^\"'」]+)[\"'」]").matcher(s);
+        if (quoted.find()) {
+            String kw = cleanLooseBizToken(quoted.group(1));
+            if (kw.length() >= 2) {
+                return kw;
+            }
+        }
+        Matcher beforeVerb = Pattern.compile(
+                "([\\uAC00-\\uD7A3][\\uAC00-\\uD7A3\\w\\s]{0,30}?)\\s*(?:찾아|검색|정리|알려|해줘|주세요)").matcher(s);
+        if (beforeVerb.find()) {
+            String kw = cleanLooseBizToken(beforeVerb.group(1));
+            if (kw.length() >= 2) {
+                return kw;
+            }
+        }
+        Matcher tokens = Pattern.compile("[\\uAC00-\\uD7A3\\w]{2,}").matcher(s);
+        String best = "";
+        while (tokens.find()) {
+            String tok = cleanLooseBizToken(tokens.group());
+            if (tok.length() >= 2 && !isBizStopWord(tok) && !isDeptStopWord(tok) && !isYearToken(tok)
+                    && tok.length() > best.length()) {
+                best = tok;
+            }
+        }
+        return best;
+    }
+
+    private String cleanLooseBizToken(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String kw = raw.trim();
+        kw = kw.replaceAll("(?:사업|을|를|인|으로|에서|관련|찾아|검색|정리|알려|해줘|주세요|및|에서)$", "").trim();
+        kw = kw.replaceAll("^(?:에서|중|의|에)\\s*", "").trim();
+        return kw;
     }
 
     private void addBizKeywordCandidate(List<String> found, String raw) {
@@ -1117,6 +1215,25 @@ public class AiChatServiceImpl implements AiChatService {
 
     private boolean isYearToken(String word) {
         return word.matches("\\d{4}");
+    }
+
+    /** LIKE 검색 패턴 — 영문 대·소문자 구분 없음 (한글은 그대로) */
+    private String toCaseInsensitiveLike(String keyword) {
+        if (keyword == null) {
+            return "%";
+        }
+        String kw = keyword.trim();
+        if (kw.length() == 0) {
+            return "%";
+        }
+        return "%" + kw.toUpperCase(Locale.ENGLISH) + "%";
+    }
+
+    private void addCaseInsensitiveLikeArgs(List<Object> args, String keyword, int count) {
+        String like = toCaseInsensitiveLike(keyword);
+        for (int i = 0; i < count; i++) {
+            args.add(like);
+        }
     }
 
     /**
@@ -1168,18 +1285,18 @@ public class AiChatServiceImpl implements AiChatService {
                 if (kw.length() == 0) {
                     continue;
                 }
-                String like = "%" + kw + "%";
                 if (kwSql.length() > 0) {
                     kwSql.append(" OR ");
                 }
                 if (broadKeyword) {
-                    kwSql.append("W.comp_ground LIKE ? OR W.dbiz_nm LIKE ? OR W.te_mng_mok_nm LIKE ? OR W.ubiz_nm LIKE ? OR W.pbiz_nm LIKE ? OR W.fis_fg_nm LIKE ?");
-                    kwSql.append(" OR W.srch_val LIKE ? OR W.demand_cont LIKE ? OR W.exam_cont LIKE ?");
-                    args.add(like); args.add(like); args.add(like); args.add(like); args.add(like); args.add(like);
-                    args.add(like); args.add(like); args.add(like);
+                    kwSql.append("UPPER(W.comp_ground) LIKE ? OR UPPER(W.dbiz_nm) LIKE ? OR UPPER(W.te_mng_mok_nm) LIKE ?");
+                    kwSql.append(" OR UPPER(W.ubiz_nm) LIKE ? OR UPPER(W.pbiz_nm) LIKE ? OR UPPER(W.fis_fg_nm) LIKE ?");
+                    kwSql.append(" OR UPPER(W.srch_val) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.exam_cont) LIKE ?");
+                    addCaseInsensitiveLikeArgs(args, kw, 9);
                 } else {
-                    kwSql.append("W.comp_ground LIKE ? OR W.dbiz_nm LIKE ? OR W.te_mng_mok_nm LIKE ? OR W.ubiz_nm LIKE ? OR W.pbiz_nm LIKE ? OR W.fis_fg_nm LIKE ?");
-                    args.add(like); args.add(like); args.add(like); args.add(like); args.add(like); args.add(like);
+                    kwSql.append("UPPER(W.comp_ground) LIKE ? OR UPPER(W.dbiz_nm) LIKE ? OR UPPER(W.te_mng_mok_nm) LIKE ?");
+                    kwSql.append(" OR UPPER(W.ubiz_nm) LIKE ? OR UPPER(W.pbiz_nm) LIKE ? OR UPPER(W.fis_fg_nm) LIKE ?");
+                    addCaseInsensitiveLikeArgs(args, kw, 6);
                 }
             }
             if (kwSql.length() > 0) {
@@ -1187,13 +1304,30 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
         if (deptKeyword.length() > 0) {
-            String like = "%" + deptKeyword + "%";
-            sb.append("  AND (W.dept_nm LIKE ? OR W.office_nm LIKE ?)\n");
-            args.add(like); args.add(like);
+            String[] deptKws = deptKeyword.split("[,;]");
+            StringBuilder deptSql = new StringBuilder();
+            for (int i = 0; i < deptKws.length; i++) {
+                String kw = deptKws[i].trim();
+                if (kw.length() == 0) {
+                    continue;
+                }
+                String like = toCaseInsensitiveLike(kw);
+                if (deptSql.length() > 0) {
+                    deptSql.append(" OR ");
+                }
+                deptSql.append("(UPPER(W.dept_nm) LIKE ? OR UPPER(W.office_nm) LIKE ?");
+                deptSql.append(" OR UPPER(TRIM(CONCAT(NVL(W.office_nm,''), ' ', NVL(W.dept_nm,'')))) LIKE ?)");
+                args.add(like);
+                args.add(like);
+                args.add(like);
+            }
+            if (deptSql.length() > 0) {
+                sb.append("  AND (").append(deptSql).append(")\n");
+            }
         }
         if (tagKeyword.length() > 0) {
-            sb.append("  AND W.srch_val LIKE ?\n");
-            args.add("%" + tagKeyword.replaceAll("#", "") + "%");
+            sb.append("  AND UPPER(W.srch_val) LIKE ?\n");
+            args.add(toCaseInsensitiveLike(tagKeyword.replaceAll("#", "")));
         }
         // 시행주관·시행주체·시행처 등 → [구분] 필드(요구내용·검토내용) 검색
         if (implKeyword.length() > 0) {
@@ -1204,15 +1338,12 @@ public class AiChatServiceImpl implements AiChatService {
                 if (kw.length() == 0) {
                     continue;
                 }
-                String like = "%" + kw + "%";
                 if (implSql.length() > 0) {
                     implSql.append(" OR ");
                 }
                 // gubun = demand_cont(심사조서 [구분] 목록의 요구내용)
-                implSql.append("W.gubun LIKE ? OR W.demand_cont LIKE ? OR W.invest_plan LIKE ?");
-                args.add(like);
-                args.add(like);
-                args.add(like);
+                implSql.append("UPPER(W.gubun) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.invest_plan) LIKE ?");
+                addCaseInsensitiveLikeArgs(args, kw, 3);
             }
             if (implSql.length() > 0) {
                 sb.append("  AND (").append(implSql).append(")\n");
@@ -1220,12 +1351,12 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         if (contentKeyword != null && contentKeyword.length() > 0) {
-            String like = "%" + contentKeyword + "%";
+            String like = toCaseInsensitiveLike(contentKeyword);
             if (CONTENT_FIELD_EXAM.equals(contentField)) {
-                sb.append("  AND W.exam_cont LIKE ?\n");
+                sb.append("  AND UPPER(W.exam_cont) LIKE ?\n");
                 args.add(like);
             } else if (CONTENT_FIELD_GUBUN.equals(contentField)) {
-                sb.append("  AND (W.gubun LIKE ? OR W.demand_cont LIKE ? OR W.invest_plan LIKE ?)\n");
+                sb.append("  AND (UPPER(W.gubun) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.invest_plan) LIKE ?)\n");
                 args.add(like);
                 args.add(like);
                 args.add(like);
@@ -1448,6 +1579,159 @@ public class AiChatServiceImpl implements AiChatService {
         return info;
     }
 
+    /** [소관부서] 대괄호가 있으면 부서·실국 필터 적용 (단독 검색 아님) */
+    private boolean hasDeptBracketFilter(String question) {
+        return question != null && question.indexOf(BRACKET_MARKER_DEPT) > -1;
+    }
+
+    /**
+     * [소관부서] 지정 + 사업명/비정형/시행주관 검색 의도가 함께 있는 경우.
+     * 이때는 부서 단독 폴백 검색을 하지 않는다.
+     */
+    private boolean hasDeptBracketWithNonDeptSearchIntent(String question, boolean explicitContent,
+            String bizKeyword, String ruleBizKeyword) {
+        if (!hasDeptBracketFilter(question)) {
+            return false;
+        }
+        if (explicitContent) {
+            return true;
+        }
+        if (bizKeyword != null && bizKeyword.trim().length() > 0) {
+            return true;
+        }
+        if (ruleBizKeyword != null && ruleBizKeyword.trim().length() > 0) {
+            return true;
+        }
+        if (containsImplOrgQuestion(question)) {
+            return true;
+        }
+        String loose = extractLooseBizKeyword(stripDeptBracketClause(question));
+        return loose.length() > 0;
+    }
+
+    /** 사업명 키워드 목록에서 부서명 토큰 제거 (LLM이 부서명을 bizKeyword에 넣은 경우) */
+    private String removeDeptTokensFromKeywordCsv(String csv, String deptKeyword) {
+        if (csv == null || csv.trim().length() == 0) {
+            return "";
+        }
+        if (deptKeyword == null || deptKeyword.trim().length() == 0) {
+            return csv.trim();
+        }
+        String[] deptParts = deptKeyword.split("[,;]");
+        String[] bizParts = csv.split("[,;]");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bizParts.length; i++) {
+            String kw = bizParts[i].trim();
+            if (kw.length() == 0) {
+                continue;
+            }
+            boolean isDeptToken = false;
+            for (int j = 0; j < deptParts.length; j++) {
+                String dept = deptParts[j].trim();
+                if (dept.length() == 0) {
+                    continue;
+                }
+                if (kw.equals(dept) || kw.indexOf(dept) > -1 || dept.indexOf(kw) > -1) {
+                    isDeptToken = true;
+                    break;
+                }
+            }
+            if (!isDeptToken) {
+                if (sb.length() > 0) {
+                    sb.append(",");
+                }
+                sb.append(kw);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 사업명 추출 시 [소관부서]부서명 절을 제거한다.
+     * 예) "2026년 [소관부서]복지국 유가보조금 사업" → "2026년  유가보조금 사업"
+     */
+    private String stripDeptBracketClause(String question) {
+        if (!hasDeptBracketFilter(question)) {
+            return question;
+        }
+        String deptKw = extractDeptKeyword(question);
+        if (deptKw.length() > 0) {
+            String pattern = Pattern.quote(BRACKET_MARKER_DEPT)
+                    + "\\s*['\"'「]?" + Pattern.quote(deptKw) + "['\"'」]?"
+                    + "\\s*(?:에서|에|인|이|은|는|으로)?\\s*";
+            String stripped = question.replaceFirst(pattern, " ");
+            if (!stripped.equals(question)) {
+                return stripped;
+            }
+        }
+        int idx = question.indexOf(BRACKET_MARKER_DEPT);
+        String tail = question.substring(idx + BRACKET_MARKER_DEPT.length());
+        Matcher m = Pattern.compile("^\\s*['\"'「]?[\\uAC00-\\uD7A3A-Za-z0-9()（）\\-\\.]+['\"'」]?\\s*(?:에서|에)?\\s*")
+                .matcher(tail);
+        if (m.find()) {
+            return question.substring(0, idx) + " " + tail.substring(m.end());
+        }
+        return question.replace(BRACKET_MARKER_DEPT, " ");
+    }
+
+    private String resolveDeptKeyword(String question, String planKeyword) {
+        String ruleKw = extractDeptKeyword(question);
+        if (planKeyword.length() > 0) {
+            if (ruleKw.length() > 0 && !containsKeyword(planKeyword, ruleKw)) {
+                return planKeyword + "," + ruleKw;
+            }
+            return planKeyword;
+        }
+        return ruleKw;
+    }
+
+    private String extractDeptKeyword(String question) {
+        if (!hasDeptBracketFilter(question)) {
+            return "";
+        }
+        String tail = question.substring(question.indexOf(BRACKET_MARKER_DEPT) + BRACKET_MARKER_DEPT.length());
+
+        Matcher quoted = DEPT_QUOTED_PATTERN.matcher(tail);
+        if (quoted.find()) {
+            String kw = cleanDeptKeyword(quoted.group(1));
+            if (kw.length() >= 2) {
+                return kw;
+            }
+        }
+
+        // [소관부서] 바로 뒤 첫 토큰만 부서명 (사업명과 구분)
+        Matcher singleWord = Pattern.compile(
+                "^\\s*([\\uAC00-\\uD7A3A-Za-z0-9()（）\\-\\.]+)\\s*(?:에서|에|인|이|은|는|으로)?").matcher(tail);
+        if (singleWord.find()) {
+            String kw = cleanDeptKeyword(singleWord.group(1));
+            if (kw.length() >= 2) {
+                return kw;
+            }
+        }
+        return "";
+    }
+
+    private String cleanDeptKeyword(String kw) {
+        if (kw == null) {
+            return "";
+        }
+        String s = kw.trim();
+        s = s.replaceAll("(?:사업|을|를|인|으로|에서|관련|찾아|검색|정리|해줘|주세요|소속)$", "").trim();
+        if (s.length() < 2 || isDeptStopWord(s) || isYearToken(s)) {
+            return "";
+        }
+        return s;
+    }
+
+    private boolean isDeptStopWord(String word) {
+        for (int i = 0; i < DEPT_STOP_WORDS.length; i++) {
+            if (DEPT_STOP_WORDS[i].equals(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** [구분]/[검토내용] 대괄호 지정 여부 — 이 경우에만 비정형 필드 검색 */
     private boolean isExplicitContentFieldSearch(String question) {
         return detectExplicitContentField(question).length() > 0;
@@ -1628,7 +1912,7 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("- bizKeyword: 사업명·분야에서 검색할 핵심 키워드. 여러 개면 쉼표로 구분 (예: \"유가보조금,유류비\"). 가장 중요.\n");
         sb.append("  (예: '2025년 유가보조금 관련 사업 찾아줘' → bizKeyword: \"유가보조금\")\n");
         sb.append("  ※ '검토의견 정리해줘'는 답변 요청이지 bizKeyword가 아님. 사업명 키워드를 bizKeyword에 넣을 것.\n");
-        sb.append("- deptKeyword: 부서/실국 이름 키워드 (예: \"복지\"). 없으면 빈 문자열.\n");
+        sb.append("- deptKeyword: [소관부서]대괄호 지정 시 부서·실국명 필터 (예: \"복지국\"). 사업명·비정형 검색 결과를 해당 부서로 한정.\n");
         sb.append("- tagKeyword: #으로 시작하는 검색태그 키워드 (예: \"민생\"). 없으면 빈 문자열.\n");
         sb.append("- implKeyword: 시행주관·시행주체·시행처·시행기관·사업기관 관련 질문일 때 [구분](요구내용)에서 검색할 기관/주체 키워드. 없으면 빈 문자열.\n");
         sb.append("  (예: '테크노파크가 시행주관인 사업' → implKeyword: \"테크노파크\", bizKeyword: \"\")\n");
