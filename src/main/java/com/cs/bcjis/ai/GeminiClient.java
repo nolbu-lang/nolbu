@@ -120,6 +120,10 @@ public class GeminiClient implements LlmClient {
         return generate(null, prompt);
     }
 
+    public String generateUserQuery(String userQuery) throws Exception {
+        return generate(null, userQuery);
+    }
+
     /**
      * 시스템 지침(system_instruction)과 프롬프트를 함께 전송하고 생성된 텍스트를 반환한다.
      *

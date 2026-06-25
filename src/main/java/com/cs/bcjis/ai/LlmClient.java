@@ -24,4 +24,9 @@ public interface LlmClient {
      * @param prompt            사용자 질문 및 DB 컨텍스트
      */
     String generate(String systemInstruction, String prompt) throws Exception;
+
+    /**
+     * LLM Studio budget_search — user_query에 챗봇 입력 원문만 전달.
+     */
+    String generateUserQuery(String userQuery) throws Exception;
 }

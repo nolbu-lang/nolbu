@@ -1,14 +1,13 @@
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%--
   AI 예산편성 도우미 챗 위젯 (예산편성 화면 중앙 하단)
-  - 내부 심사정보시스템(CUBRID) 데이터만 사용
-  - Gemini 로 자연어 질문 -> 조회 -> 결과 출력
+  - 내부 심사정보시스템(CUBRID) 데이터 조회 + 내부 행정 AI(LLM Studio)
 --%>
-<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css?v=20260614c" />
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css?v=20260625a" />
 
 <div id="aiChatDock" class="ai-collapsed">
   <div id="aiChatHeader">
-    <span class="ai-title">AI 예산편성 도우미 <span class="ai-badge">Gemini</span></span>
+    <span class="ai-title">AI 예산편성 도우미 <span class="ai-badge">내부 AI</span></span>
     <span class="ai-toggle" id="aiChatToggle">▲</span>
   </div>
   <div id="aiChatBody">

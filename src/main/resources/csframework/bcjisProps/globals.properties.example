@@ -31,6 +31,7 @@ Globals.excelStorePath=C:/bcjis/download/excel/
 Globals.AiProvider = hyperclova
 
 # LLM Studio budget_search API (내부망)
+# POST 본문 필수: user_query, datetime, stream, dialog_history
 Globals.ClovaEndpoint = http://99.1.82.207:8080/llm-studio/v1/api/task/generate/syncapi/busan_ai_llm/budget_search
 Globals.ClovaTimeoutMs = 120000
 

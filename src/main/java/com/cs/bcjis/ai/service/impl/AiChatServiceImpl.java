@@ -226,22 +226,26 @@ public class AiChatServiceImpl implements AiChatService {
             return result;
         }
 
-        if (!llmClient.isEnabled()) {
+        boolean reportLike = looksLikeReportQuestion(question);
+        boolean llmReady = llmClient.isEnabled();
+        // 심사조서 질문 + DB 직접 조립 모드는 내부 LLM 없이도 동작 (CUBRID 검색만)
+        if (!llmReady && !(reportLike && isReportDbOnly())) {
             result.put("answer", "AI 챗봇 API가 설정되지 않았습니다.\n"
                     + "globals.properties 설정을 확인하세요.\n"
-                    + "  · Globals.ClovaEndpoint (내부 LLM Studio URL)");
+                    + "  · Globals.ClovaEndpoint = http://99.1.82.207:8080/llm-studio/v1/api/task/generate/syncapi/busan_ai_llm/budget_search");
+            result.put("aiProvider", "none");
             return result;
         }
 
-        result.put("aiProvider", llmClient.getProviderName());
+        result.put("aiProvider", llmReady ? llmClient.getProviderName() : "db-only");
 
         // 1) 질문 분류 — 심사조서 질문은 규칙 기반으로 바로 처리 (LLM 1회 절약)
         JSONObject plan;
         if (looksLikeReportQuestion(question)) {
             plan = enrichPlanForReport(question, new JSONObject());
         } else {
-            String planRaw = llmClient.generate(buildPlanPrompt(question));
-            plan = parseJsonFromModel(planRaw);
+            String planRaw = llmClient.generateUserQuery(question);
+            plan = parsePlanOrDirectChatAnswer(planRaw);
         }
 
         String mode = plan.optString("mode", "");
@@ -382,7 +386,7 @@ public class AiChatServiceImpl implements AiChatService {
             logger.info("AI RAG[report] provider=" + llmClient.getProviderName()
                     + " year=" + fisYear + " rows=" + rows.size()
                     + " contextChars=" + context.length());
-            answer = llmClient.generate(SYSTEM_PERSONA, buildReportAnswerPrompt(question, context));
+            answer = llmClient.generateUserQuery(question);
             if (answer == null || answer.trim().length() == 0) {
                 answer = "총 " + rows.size() + "건의 심사조서를 찾았습니다. 아래 표를 확인해 주세요.";
             } else {
@@ -1879,7 +1883,7 @@ public class AiChatServiceImpl implements AiChatService {
         logger.info("AI RAG[sql] provider=" + llmClient.getProviderName()
                 + " rows=" + rows.size());
 
-        String finalAnswer = llmClient.generate(SYSTEM_PERSONA, buildSummaryPrompt(question, sql, rows));
+        String finalAnswer = llmClient.generateUserQuery(question);
         if (finalAnswer == null || finalAnswer.trim().length() == 0) {
             finalAnswer = "총 " + rows.size() + "건의 결과를 조회했습니다. 아래 표를 확인해 주세요.";
         }
@@ -1976,6 +1980,64 @@ public class AiChatServiceImpl implements AiChatService {
                 obj.put(entry.getKey(), entry.getValue() == null ? "" : String.valueOf(entry.getValue()));
             }
             dataList.add(obj);
+        }
+    }
+
+    /**
+     * LLM 응답 처리 — JSON 질문분류 계획 또는 budget_search API 자연어 답변.
+     * 내부 AI(budget_search)는 user_query 원문에 대해 llm_result.answer(자연어)를 반환한다.
+     */
+    private JSONObject parsePlanOrDirectChatAnswer(String raw) {
+        JSONObject planJson = tryParseJsonPlan(raw);
+        if (planJson != null && planJson.containsKey("mode")) {
+            return planJson;
+        }
+        JSONObject chat = new JSONObject();
+        chat.put("mode", "chat");
+        chat.put("needData", false);
+        if (raw != null && raw.trim().length() > 0) {
+            chat.put("answer", raw.trim());
+        } else {
+            chat.put("answer", "질문을 이해하지 못했습니다. 다시 한 번 구체적으로 질문해 주세요.");
+        }
+        return chat;
+    }
+
+    /** 모델 출력에서 JSON 계획 객체를 추출. 실패 시 null */
+    private JSONObject tryParseJsonPlan(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String text = raw.trim();
+        if (text.length() == 0) {
+            return null;
+        }
+
+        if (text.startsWith("```")) {
+            int firstNewline = text.indexOf('\n');
+            if (firstNewline > -1) {
+                text = text.substring(firstNewline + 1);
+            }
+            int lastFence = text.lastIndexOf("```");
+            if (lastFence > -1) {
+                text = text.substring(0, lastFence);
+            }
+            text = text.trim();
+        }
+
+        int start = text.indexOf('{');
+        int end = text.lastIndexOf('}');
+        if (start > -1 && end > start) {
+            text = text.substring(start, end + 1);
+        } else {
+            return null;
+        }
+
+        try {
+            return JSONObject.fromObject(text);
+        } catch (Exception e) {
+            logger.info("LLM 응답이 JSON 계획이 아님 — 자연어 답변으로 처리: chars=" + raw.length());
+            return null;
         }
     }
 

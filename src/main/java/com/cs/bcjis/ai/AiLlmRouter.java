@@ -45,4 +45,8 @@ public class AiLlmRouter implements LlmClient {
     public String generate(String systemInstruction, String prompt) throws Exception {
         return resolveDelegate().generate(systemInstruction, prompt);
     }
+
+    public String generateUserQuery(String userQuery) throws Exception {
+        return resolveDelegate().generateUserQuery(userQuery);
+    }
 }

@@ -85,6 +85,10 @@
             inner += '<div class="ai-sql-box">' + htmlEscape(data.sql) + '</div>';
         }
 
+        if (data && data.aiProvider) {
+            inner += '<div class="ai-provider-hint">연결: ' + htmlEscape(data.aiProvider) + '</div>';
+        }
+
         inner += "</div>";
 
         $loadingEl.removeClass("ai-loading").html(inner);
