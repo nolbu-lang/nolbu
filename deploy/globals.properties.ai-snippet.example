@@ -1,0 +1,27 @@
+#-----------------------------------------------------------------------
+# AI 예산도우미 — 운영 서버 globals.properties 추가 항목
+# 기존 globals.properties 파일 맨 아래에 아래 블록을 추가하세요.
+# (DB 접속 정보 등 기존 설정은 변경하지 않습니다)
+#-----------------------------------------------------------------------
+
+Globals.AiProvider = hyperclova
+
+# LLM Studio budget_search API (내부망 — 행정AI 담당부서 제공 URL)
+# POST 본문: user_query, datetime, stream(Boolean), dialog_history(String "[]")
+Globals.ClovaEndpoint = http://99.1.82.207:8080/llm-studio/v1/api/task/generate/syncapi/busan_ai_llm/budget_search
+Globals.ClovaTimeoutMs = 120000
+
+# 심사조서 질문: DB 직접 조립(빠름). true 권장
+Globals.AiReportDbOnly = true
+Globals.AiMaxReportBlocks = 50
+
+# (하위호환) 일반 SQL 조회 최대 행
+Globals.GeminiMaxRows = 200
+Globals.GeminiMaxReportBlocks = 50
+
+#-----------------------------------------------------------------------
+# 운영 전 확인
+# 1) WAS 서버 → 99.1.82.207:8080 네트워크 접근 가능
+# 2) globals.properties 수정 후 Tomcat 재기동
+# 3) 로그인 → 화면 하단 AI 예산편성 도우미 → 질문 테스트
+#-----------------------------------------------------------------------

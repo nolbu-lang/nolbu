@@ -3,6 +3,14 @@ target.zip
 src/main/resources/csframework/bcjisProps/globals.properties
 *.war
 
+# 로컬/배포 패키지 (scripts/package-*.ps1 로 생성)
+bcjis-배포-*/
+bcjis-배포-*.zip
+bcjis-source-diff-*/
+bcjis-source-diff-*.zip
+bcjis-소스변경분-*/
+bcjis-소스변경분-*.zip
+
 # 로컬 적재/실행 시 생성되는 로그·에러 파일
 *.log
 csql.err
