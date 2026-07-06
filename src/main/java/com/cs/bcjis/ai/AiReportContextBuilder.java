@@ -758,6 +758,34 @@ public class AiReportContextBuilder {
         return sb.toString();
     }
 
+    /**
+     * 상세 창용 행 데이터(JSON). HTML 대신 클라이언트에서 4열 표를 그린다.
+     * [구분] 열은 포함하지 않음 (demand_cont = 요구내역만).
+     */
+    public static List<Map<String, String>> buildMultiYearBizDetailRows(List<Map<String, Object>> group,
+            ContextOptions options) {
+        List<Map<String, String>> out = new ArrayList<Map<String, String>>();
+        if (group == null || group.isEmpty()) {
+            return out;
+        }
+        if (options == null) {
+            options = ContextOptions.defaults();
+        }
+        for (int i = 0; i < group.size(); i++) {
+            Map<String, Object> row = group.get(i);
+            String fisYear = getStr(row, "fis_year");
+            String budgetCell = (fisYear.length() > 0 ? fisYear + "년, " : "")
+                    + formatBudgetDgrDisplay(row, options);
+            Map<String, String> line = new LinkedHashMap<String, String>();
+            line.put("budget", budgetCell);
+            line.put("demand", truncateTo(getStr(row, "demand_cont"), MAX_DETAIL_CONT_LENGTH));
+            line.put("exam", truncateTo(getStr(row, "exam_cont"), MAX_DETAIL_CONT_LENGTH));
+            line.put("dept", formatDeptLine(row));
+            out.add(line);
+        }
+        return out;
+    }
+
     private static String resolveGubunText(Map<String, Object> row) {
         String gubun = getStr(row, "gubun");
         if (gubun.length() == 0) {

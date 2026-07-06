@@ -75,18 +75,17 @@
 
         for (var r = 0; r < dataList.length; r++) {
             var row = dataList[r];
-            var detail = row["_detail"];
+            var detailRows = row["_detailRows"];
             var title = row["_detailTitle"] || row["사업명"] || "";
-            var clickable = detail && String(detail).length > 0;
+            var hasRows = detailRows && detailRows.length > 0;
+            var clickable = hasRows;
             var cls = [];
             if (clickable) { cls.push("ai-row-clickable"); }
             if (isGroupStart[r]) { cls.push("ai-grp-start"); }
             var attrs = cls.length ? (' class="' + cls.join(" ") + '"') : "";
             if (clickable) {
-                // 상세 HTML은 base64로 보관(긴 HTML·특수문자 깨짐 방지). 구버전 data-detail 도 호환.
-                var detailB64 = encodeDetailB64(String(detail));
                 attrs += ' title="클릭하면 연도별·차수별 상세를 새 창에서 봅니다"'
-                    + ' data-detail-b64="' + htmlEscape(detailB64) + '"'
+                    + ' data-detail-rows="' + htmlEscape(encodeURIComponent(JSON.stringify(detailRows))) + '"'
                     + ' data-title="' + htmlEscape(encodeURIComponent(String(title))) + '"';
             }
             html += "<tr" + attrs + ">";
@@ -121,7 +120,47 @@
         + '.ai-biz-detail-table .ai-th-dept,.ai-biz-detail-table .ai-td-dept{width:16%;word-break:break-word;white-space:normal;line-height:1.45;}'
         + '.ai-biz-detail-table .ai-td-wrap{word-break:break-word;line-height:1.55;}';
 
-    /** 상세 HTML을 data 속성에 안전하게 저장 */
+    /** 서버 JSON(_detailRows) → 4열 상세 표 (항상 [구분] 열 없음) */
+    function buildDetailTableFromRows(rows) {
+        if (!rows || !rows.length) {
+            return "";
+        }
+        var html = '<table class="ai-biz-detail-table"><thead><tr>'
+            + '<th class="ai-th-budget">[차수별예산내역]</th>'
+            + '<th class="ai-th-demand">[요구내역]</th>'
+            + '<th class="ai-th-exam">[검토의견]</th>'
+            + '<th class="ai-th-dept">[소관부서]</th>'
+            + '</tr></thead><tbody>';
+        for (var i = 0; i < rows.length; i++) {
+            var line = rows[i] || {};
+            var demand = line.demand ? String(line.demand) : "";
+            var exam = line.exam ? String(line.exam) : "";
+            html += "<tr>"
+                + '<td class="ai-td-budget">' + htmlEscape(line.budget || "") + "</td>"
+                + '<td class="ai-td-wrap ai-td-demand">' + (demand ? nl2br(demand) : "-") + "</td>"
+                + '<td class="ai-td-wrap ai-td-exam">' + (exam ? nl2br(exam) : "-") + "</td>"
+                + '<td class="ai-td-dept">' + htmlEscape(line.dept || "-") + "</td>"
+                + "</tr>";
+        }
+        return html + "</tbody></table>";
+    }
+
+    function parseDetailRowsAttr(attrVal) {
+        if (!attrVal) {
+            return null;
+        }
+        try {
+            return JSON.parse(decodeURIComponent(String(attrVal)));
+        } catch (e) {
+            try {
+                return JSON.parse(String(attrVal));
+            } catch (e2) {
+                return null;
+            }
+        }
+    }
+
+    /** 상세 HTML을 data 속성에 안전하게 저장 (구버전 호환) */
     function encodeDetailB64(html) {
         try {
             return btoa(unescape(encodeURIComponent(String(html))));
@@ -141,7 +180,7 @@
         }
     }
 
-    /** 구버전(5열) 상세 표에서 [구분] 열 제거 — 캐시·미배포 WAR 대응 */
+    /** 구버전 HTML 상세 표에서 [구분] 열 제거 */
     function normalizeDetailTableHtml(html) {
         if (!html) {
             return "";
@@ -152,12 +191,12 @@
         }
         try {
             var $h = $("<div>").html(s);
-            $h.find("table.ai-biz-detail-table").each(function () {
+            $h.find("table").each(function () {
                 var $t = $(this);
                 var idx = -1;
-                $t.find("thead tr").first().children("th").each(function (i) {
-                    var $th = $(this);
-                    if ($th.hasClass("ai-th-gubun") || $.trim($th.text()) === "[구분]") {
+                $t.find("thead tr, tr").first().children("th").each(function (i) {
+                    var txt = $.trim($(this).text());
+                    if ($(this).hasClass("ai-th-gubun") || txt === "[구분]" || txt.indexOf("[구분]") === 0) {
                         idx = i;
                         return false;
                     }
@@ -171,14 +210,35 @@
             return $h.html();
         } catch (e2) {
             return s
-                .replace(/<th[^>]*class="[^"]*ai-th-gubun[^"]*"[^>]*>\s*\[구분\]\s*<\/th>/gi, "")
+                .replace(/<th[^>]*>\s*\[구분\]\s*<\/th>/gi, "")
                 .replace(/<td[^>]*class="[^"]*ai-td-gubun[^"]*"[^>]*>[\s\S]*?<\/td>/gi, "");
         }
     }
 
+    function resolveDetailHtml($row) {
+        var rowsAttr = $row.attr("data-detail-rows");
+        var parsed = parseDetailRowsAttr(rowsAttr);
+        if (parsed && parsed.length > 0) {
+            return buildDetailTableFromRows(parsed);
+        }
+        var b64 = $row.attr("data-detail-b64");
+        var html = "";
+        if (b64) {
+            html = decodeDetailB64(b64);
+        }
+        if (!html) {
+            try {
+                html = decodeURIComponent($row.attr("data-detail") || "");
+            } catch (e) {
+                html = $row.attr("data-detail") || "";
+            }
+        }
+        return normalizeDetailTableHtml(html);
+    }
+
     function openDetailWindow(title, detailHtml) {
         var safeTitle = htmlEscape(title || "사업 상세");
-        var bodyHtml = normalizeDetailTableHtml(detailHtml || "");
+        var bodyHtml = detailHtml || "";
 
         // 1순위: 실제 새 창. 팝업 차단 등으로 실패하면 화면 내 모달로 대체(정부망 브라우저 대응)
         var win = null;
@@ -334,23 +394,13 @@
 
         // 검색결과 표의 행 클릭 → 해당 사업 상세를 새 창에서 표시
         $(document).on("click.aichat", ".ai-result-table tbody tr.ai-row-clickable", function () {
-            var detail = "";
+            var $tr = $(this);
+            var detail = resolveDetailHtml($tr);
             var title = "";
-            var b64 = $(this).attr("data-detail-b64");
-            if (b64) {
-                detail = decodeDetailB64(b64);
-            }
-            if (!detail) {
-                try {
-                    detail = decodeURIComponent($(this).attr("data-detail") || "");
-                } catch (e) {
-                    detail = $(this).attr("data-detail") || "";
-                }
-            }
             try {
-                title = decodeURIComponent($(this).attr("data-title") || "");
+                title = decodeURIComponent($tr.attr("data-title") || "");
             } catch (e) {
-                title = $(this).attr("data-title") || "";
+                title = $tr.attr("data-title") || "";
             }
             openDetailWindow(title, detail);
         });

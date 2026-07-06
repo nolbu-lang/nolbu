@@ -426,16 +426,15 @@ public class AiChatServiceImpl implements AiChatService {
         // (표 행 하나를 클릭하면 그 사업의 전체 연도·차수 상세가 새 창에 함께 표시됨)
         java.util.LinkedHashMap<String, List<Map<String, Object>>> bizNameGroups =
                 AiReportContextBuilder.groupRowsByBizNameAcrossYears(rows);
-        java.util.IdentityHashMap<Map<String, Object>, String> detailByRow =
-                new java.util.IdentityHashMap<Map<String, Object>, String>();
+        java.util.IdentityHashMap<Map<String, Object>, JSONArray> detailRowsByRow =
+                new java.util.IdentityHashMap<Map<String, Object>, JSONArray>();
         for (java.util.Iterator<List<Map<String, Object>>> git = bizNameGroups.values().iterator(); git.hasNext();) {
             List<Map<String, Object>> g = git.next();
-            // 상세 표: [구분] 열 제외(요구내역과 동일 데이터) — LLM 컨텍스트 옵션과 무관하게 고정
             AiReportContextBuilder.ContextOptions detailOpts = copyContextOptions(ctxOpts);
             detailOpts.includeGubun = false;
-            String detail = AiReportContextBuilder.buildMultiYearBizDetailHtml(g, detailOpts);
+            JSONArray detailRows = toDetailRowsJson(g, detailOpts);
             for (int gi = 0; gi < g.size(); gi++) {
-                detailByRow.put(g.get(gi), detail);
+                detailRowsByRow.put(g.get(gi), detailRows);
             }
         }
 
@@ -497,9 +496,11 @@ public class AiChatServiceImpl implements AiChatService {
             obj.put("요구액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "demand_bgt_amt")));
             obj.put("조정액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "bgt_amt")));
             obj.put("조정재원", AiReportContextBuilder.formatFrscForRow(row));
-            // 표 클릭용 상세 내용(해당 사업 전체 연도·차수) — 컬럼에는 포함하지 않고 클릭 시 새 창에 표시
-            String detail = detailByRow.get(row);
-            obj.put("_detail", detail == null ? "" : detail);
+            // 표 클릭 상세: JSON 행 목록(4열) — 클라이언트에서 표 생성, [구분] 열 없음
+            JSONArray detailRows = detailRowsByRow.get(row);
+            if (detailRows != null && !detailRows.isEmpty()) {
+                obj.put("_detailRows", detailRows);
+            }
             obj.put("_detailTitle", bizLabel);
             // 표 그룹 키(연도+사업명+부서) — 프런트에서 같은 사업의 차수 행을 셀 병합(그룹화)하는 데 사용
             obj.put("_grpKey", fisYearVal + "|" + bizLabel + "|" + deptLabel);
@@ -1719,6 +1720,23 @@ public class AiChatServiceImpl implements AiChatService {
         opts.maxReviewLength = src.maxReviewLength;
         opts.maxBlocks = src.maxBlocks;
         return opts;
+    }
+
+    /** 상세 창용 JSON 행 배열 (budget, demand, exam, dept) */
+    private JSONArray toDetailRowsJson(List<Map<String, Object>> group,
+            AiReportContextBuilder.ContextOptions options) {
+        JSONArray arr = new JSONArray();
+        List<Map<String, String>> rows = AiReportContextBuilder.buildMultiYearBizDetailRows(group, options);
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, String> line = rows.get(i);
+            JSONObject o = new JSONObject();
+            o.put("budget", line.get("budget") == null ? "" : line.get("budget"));
+            o.put("demand", line.get("demand") == null ? "" : line.get("demand"));
+            o.put("exam", line.get("exam") == null ? "" : line.get("exam"));
+            o.put("dept", line.get("dept") == null ? "" : line.get("dept"));
+            arr.add(o);
+        }
+        return arr;
     }
 
     private boolean wantsDemandAmt(String question) {
