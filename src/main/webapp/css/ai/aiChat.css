@@ -411,30 +411,25 @@
 
 .ai-detail-card .ai-biz-detail-table .ai-th-budget,
 .ai-detail-card .ai-biz-detail-table .ai-td-budget {
-    width: 11%;
+    width: 16%;
     word-break: break-word;
     white-space: normal;
     line-height: 1.45;
 }
 
-.ai-detail-card .ai-biz-detail-table .ai-th-gubun,
-.ai-detail-card .ai-biz-detail-table .ai-td-gubun {
-    width: 14%;
-}
-
 .ai-detail-card .ai-biz-detail-table .ai-th-demand,
 .ai-detail-card .ai-biz-detail-table .ai-td-demand {
-    width: 28%;
+    width: 34%;
 }
 
 .ai-detail-card .ai-biz-detail-table .ai-th-exam,
 .ai-detail-card .ai-biz-detail-table .ai-td-exam {
-    width: 28%;
+    width: 34%;
 }
 
 .ai-detail-card .ai-biz-detail-table .ai-th-dept,
 .ai-detail-card .ai-biz-detail-table .ai-td-dept {
-    width: 9%;
+    width: 16%;
     word-break: break-word;
     white-space: normal;
     line-height: 1.45;

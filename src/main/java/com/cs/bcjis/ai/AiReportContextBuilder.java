@@ -717,7 +717,8 @@ public class AiReportContextBuilder {
 
     /**
      * 한 사업명(통계목)의 상세를 표(HTML)로 정리한다. (표 클릭 → 새 창/모달용)
-     * 열 순서: [차수별예산내역] → [구분] → [요구내역] → [검토의견] → [소관부서]
+     * 열 순서: [차수별예산내역] → [요구내역] → [검토의견] → [소관부서]
+     * (구분 필드는 요구내역과 동일 데이터인 경우가 많아 상세 표에서는 제외)
      */
     public static String buildMultiYearBizDetailHtml(List<Map<String, Object>> group, ContextOptions options) {
         if (group == null || group.isEmpty()) {
@@ -730,7 +731,6 @@ public class AiReportContextBuilder {
         StringBuilder sb = new StringBuilder();
         sb.append("<table class=\"ai-biz-detail-table\"><thead><tr>");
         sb.append("<th class=\"ai-th-budget\">[차수별예산내역]</th>");
-        sb.append("<th class=\"ai-th-gubun\">[구분]</th>");
         sb.append("<th class=\"ai-th-demand\">[요구내역]</th>");
         sb.append("<th class=\"ai-th-exam\">[검토의견]</th>");
         sb.append("<th class=\"ai-th-dept\">[소관부서]</th>");
@@ -744,9 +744,6 @@ public class AiReportContextBuilder {
 
             sb.append("<tr>");
             sb.append("<td class=\"ai-td-budget\">").append(escapeHtml(budgetCell)).append("</td>");
-            sb.append("<td class=\"ai-td-wrap ai-td-gubun\">")
-                    .append(escapeHtmlMultiline(truncateTo(resolveGubunText(row), MAX_GUBUN_LENGTH)))
-                    .append("</td>");
             sb.append("<td class=\"ai-td-wrap ai-td-demand\">")
                     .append(escapeHtmlMultiline(truncateTo(getStr(row, "demand_cont"), MAX_DETAIL_CONT_LENGTH)))
                     .append("</td>");

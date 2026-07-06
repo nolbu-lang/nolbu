@@ -74,9 +74,10 @@ Globals.AiPerfLog = true
 
 1. http://99.1.1.39:8080/main/main.do 로그인
 2. 예산편성 화면 하단 **AI 예산편성 도우미** 위젯 표시 확인
-3. 브라우저 개발자도구 → Network: `aiChat.css?v=20260706b`, `aiChat.js?v=20260706b` 로드 확인 (구버전 캐시면 Ctrl+F5)
+3. 브라우저 개발자도구 → Network: `aiChat.css?v=20260706c`, `aiChat.js?v=20260706c` 로드 확인 (구버전 캐시면 Ctrl+F5)
 4. 테스트 질의: `2026년 경상사업 및 투자사업에서 일상돌봄 사업을 찾아줘`
-5. Tomcat `catalina.out` 에 `AI PERF[searchReport] ms=...` 로그 확인 — 수 초 이상이면 인덱스 미적용·DB 부하 점검
+5. 사업명 클릭 → 상세 창: **[구분] 열 없음**, `[차수별예산내역]`·`[소관부서]` 열 너비 정상
+6. Tomcat `catalina.out` 에 `AI PERF[searchReport] ms=...` 로그 확인 — 수 초 이상이면 인덱스 미적용·DB 부하 점검
 
 ---
 
@@ -88,7 +89,7 @@ Globals.AiPerfLog = true
 | 연도 미지정 시 5개년+전체연도 순차 검색 | `AiNearbyYearCount=1`, `AiSearchAllYearsFallback=false` |
 | 사업명 넓은 검색(검토의견 CLOB) | 1차 좁은 검색(세세사업명·세부사업명) 우선 — 이번 빌드 반영 |
 | LLM 호출 | `AiReportDbOnly=true` |
-| 브라우저 캐시(구 JS/CSS) | `?v=20260706b` 갱신 후 강력 새로고침 |
+| 브라우저 캐시(구 JS/CSS) | `?v=20260706c` 갱신 후 강력 새로고침 |
 
 ---
 
