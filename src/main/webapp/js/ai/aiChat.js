@@ -83,9 +83,10 @@
             if (isGroupStart[r]) { cls.push("ai-grp-start"); }
             var attrs = cls.length ? (' class="' + cls.join(" ") + '"') : "";
             if (clickable) {
-                // 상세 내용을 행에 안전하게 실어두고, 클릭 시 새 창에서 표시
+                // 상세 HTML은 base64로 보관(긴 HTML·특수문자 깨짐 방지). 구버전 data-detail 도 호환.
+                var detailB64 = encodeDetailB64(String(detail));
                 attrs += ' title="클릭하면 연도별·차수별 상세를 새 창에서 봅니다"'
-                    + ' data-detail="' + htmlEscape(encodeURIComponent(String(detail))) + '"'
+                    + ' data-detail-b64="' + htmlEscape(detailB64) + '"'
                     + ' data-title="' + htmlEscape(encodeURIComponent(String(title))) + '"';
             }
             html += "<tr" + attrs + ">";
@@ -120,9 +121,64 @@
         + '.ai-biz-detail-table .ai-th-dept,.ai-biz-detail-table .ai-td-dept{width:16%;word-break:break-word;white-space:normal;line-height:1.45;}'
         + '.ai-biz-detail-table .ai-td-wrap{word-break:break-word;line-height:1.55;}';
 
+    /** 상세 HTML을 data 속성에 안전하게 저장 */
+    function encodeDetailB64(html) {
+        try {
+            return btoa(unescape(encodeURIComponent(String(html))));
+        } catch (e) {
+            return "";
+        }
+    }
+
+    function decodeDetailB64(b64) {
+        if (!b64) {
+            return "";
+        }
+        try {
+            return decodeURIComponent(escape(atob(String(b64))));
+        } catch (e) {
+            return "";
+        }
+    }
+
+    /** 구버전(5열) 상세 표에서 [구분] 열 제거 — 캐시·미배포 WAR 대응 */
+    function normalizeDetailTableHtml(html) {
+        if (!html) {
+            return "";
+        }
+        var s = String(html);
+        if (s.indexOf("ai-th-gubun") < 0 && s.indexOf("[구분]") < 0) {
+            return s;
+        }
+        try {
+            var $h = $("<div>").html(s);
+            $h.find("table.ai-biz-detail-table").each(function () {
+                var $t = $(this);
+                var idx = -1;
+                $t.find("thead tr").first().children("th").each(function (i) {
+                    var $th = $(this);
+                    if ($th.hasClass("ai-th-gubun") || $.trim($th.text()) === "[구분]") {
+                        idx = i;
+                        return false;
+                    }
+                });
+                if (idx >= 0) {
+                    $t.find("tr").each(function () {
+                        $(this).children("td,th").eq(idx).remove();
+                    });
+                }
+            });
+            return $h.html();
+        } catch (e2) {
+            return s
+                .replace(/<th[^>]*class="[^"]*ai-th-gubun[^"]*"[^>]*>\s*\[구분\]\s*<\/th>/gi, "")
+                .replace(/<td[^>]*class="[^"]*ai-td-gubun[^"]*"[^>]*>[\s\S]*?<\/td>/gi, "");
+        }
+    }
+
     function openDetailWindow(title, detailHtml) {
         var safeTitle = htmlEscape(title || "사업 상세");
-        var bodyHtml = detailHtml || "";
+        var bodyHtml = normalizeDetailTableHtml(detailHtml || "");
 
         // 1순위: 실제 새 창. 팝업 차단 등으로 실패하면 화면 내 모달로 대체(정부망 브라우저 대응)
         var win = null;
@@ -280,11 +336,20 @@
         $(document).on("click.aichat", ".ai-result-table tbody tr.ai-row-clickable", function () {
             var detail = "";
             var title = "";
+            var b64 = $(this).attr("data-detail-b64");
+            if (b64) {
+                detail = decodeDetailB64(b64);
+            }
+            if (!detail) {
+                try {
+                    detail = decodeURIComponent($(this).attr("data-detail") || "");
+                } catch (e) {
+                    detail = $(this).attr("data-detail") || "";
+                }
+            }
             try {
-                detail = decodeURIComponent($(this).attr("data-detail") || "");
                 title = decodeURIComponent($(this).attr("data-title") || "");
             } catch (e) {
-                detail = $(this).attr("data-detail") || "";
                 title = $(this).attr("data-title") || "";
             }
             openDetailWindow(title, detail);

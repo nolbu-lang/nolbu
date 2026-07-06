@@ -718,7 +718,7 @@ public class AiReportContextBuilder {
     /**
      * 한 사업명(통계목)의 상세를 표(HTML)로 정리한다. (표 클릭 → 새 창/모달용)
      * 열 순서: [차수별예산내역] → [요구내역] → [검토의견] → [소관부서]
-     * (구분 필드는 요구내역과 동일 데이터인 경우가 많아 상세 표에서는 제외)
+     * includeGubun 옵션과 무관하게 [구분] 열은 표시하지 않음 (요구내역과 동일 DB 필드).
      */
     public static String buildMultiYearBizDetailHtml(List<Map<String, Object>> group, ContextOptions options) {
         if (group == null || group.isEmpty()) {

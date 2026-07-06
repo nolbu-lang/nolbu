@@ -3,7 +3,7 @@
   AI 예산편성 도우미 챗 위젯 (예산편성 화면 중앙 하단)
   - 내부 심사정보시스템(CUBRID) 데이터 조회 + 내부 행정 AI(LLM Studio)
 --%>
-<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css?v=20260706c" />
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/ai/aiChat.css?v=20260707a" />
 
 <div id="aiChatDock" class="ai-collapsed">
   <div id="aiChatHeader">
@@ -23,4 +23,4 @@
   </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260706c"></script>
+<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260707a"></script>

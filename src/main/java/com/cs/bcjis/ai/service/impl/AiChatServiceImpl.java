@@ -430,7 +430,10 @@ public class AiChatServiceImpl implements AiChatService {
                 new java.util.IdentityHashMap<Map<String, Object>, String>();
         for (java.util.Iterator<List<Map<String, Object>>> git = bizNameGroups.values().iterator(); git.hasNext();) {
             List<Map<String, Object>> g = git.next();
-            String detail = AiReportContextBuilder.buildMultiYearBizDetailHtml(g, ctxOpts);
+            // 상세 표: [구분] 열 제외(요구내역과 동일 데이터) — LLM 컨텍스트 옵션과 무관하게 고정
+            AiReportContextBuilder.ContextOptions detailOpts = copyContextOptions(ctxOpts);
+            detailOpts.includeGubun = false;
+            String detail = AiReportContextBuilder.buildMultiYearBizDetailHtml(g, detailOpts);
             for (int gi = 0; gi < g.size(); gi++) {
                 detailByRow.put(g.get(gi), detail);
             }
@@ -1699,6 +1702,22 @@ public class AiChatServiceImpl implements AiChatService {
                 || parseYearRangeLabel(planFisYear) != null
                 || mentionsAllYearsSearch(question);
         opts.maxReviewLength = 300;
+        return opts;
+    }
+
+    private AiReportContextBuilder.ContextOptions copyContextOptions(
+            AiReportContextBuilder.ContextOptions src) {
+        AiReportContextBuilder.ContextOptions opts = AiReportContextBuilder.ContextOptions.defaults();
+        if (src == null) {
+            return opts;
+        }
+        opts.includeGubun = src.includeGubun;
+        opts.includePreYearAmt = src.includePreYearAmt;
+        opts.includeDemandAmt = src.includeDemandAmt;
+        opts.includeTags = src.includeTags;
+        opts.multiYearRangeQuery = src.multiYearRangeQuery;
+        opts.maxReviewLength = src.maxReviewLength;
+        opts.maxBlocks = src.maxBlocks;
         return opts;
     }
 
