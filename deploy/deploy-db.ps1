@@ -26,7 +26,7 @@ $env:PATH = "$CubridBin;$env:PATH"
 
 if (-not $SkipIndexes) {
     Write-Host "=== 인덱스 적용 (apply-indexes.ps1) ==="
-    & (Join-Path $Scripts "apply-indexes.ps1")
+    & (Join-Path $Scripts "apply-indexes.ps1") -DbName $DbName -DbUser $DbUser -DbPassword $DbPassword
 }
 
 if ($RunSeed) {

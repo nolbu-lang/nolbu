@@ -48,6 +48,25 @@
             return "";
         }
 
+        // 연도+사업명+부서가 같은 차수 행들을 하나로 묶어(셀 병합) 표시할 컬럼
+        var mergeCols = { "연도": true, "사업명": true, "소관부서": true };
+
+        // 그룹(_grpKey) 단위 rowspan 계산
+        var isGroupStart = {};
+        var groupSpan = {};
+        for (var g = 0; g < dataList.length; g++) {
+            var key = dataList[g]["_grpKey"];
+            if (typeof key === "undefined" || key === null) { key = "__row" + g; }
+            if (g === 0 || key !== dataList[g - 1]["_grpKey"]) {
+                isGroupStart[g] = true;
+                var span = 1;
+                for (var n = g + 1; n < dataList.length; n++) {
+                    if (dataList[n]["_grpKey"] === dataList[g]["_grpKey"]) { span++; } else { break; }
+                }
+                groupSpan[g] = span;
+            }
+        }
+
         var html = '<div class="ai-result-table-wrap"><table class="ai-result-table"><thead><tr>';
         for (var c = 0; c < columns.length; c++) {
             html += "<th>" + htmlEscape(columns[c]) + "</th>";
@@ -56,9 +75,32 @@
 
         for (var r = 0; r < dataList.length; r++) {
             var row = dataList[r];
-            html += "<tr>";
+            var detail = row["_detail"];
+            var title = row["_detailTitle"] || row["사업명"] || "";
+            var clickable = detail && String(detail).length > 0;
+            var cls = [];
+            if (clickable) { cls.push("ai-row-clickable"); }
+            if (isGroupStart[r]) { cls.push("ai-grp-start"); }
+            var attrs = cls.length ? (' class="' + cls.join(" ") + '"') : "";
+            if (clickable) {
+                // 상세 내용을 행에 안전하게 실어두고, 클릭 시 새 창에서 표시
+                attrs += ' title="클릭하면 연도별·차수별 상세를 새 창에서 봅니다"'
+                    + ' data-detail="' + htmlEscape(encodeURIComponent(String(detail))) + '"'
+                    + ' data-title="' + htmlEscape(encodeURIComponent(String(title))) + '"';
+            }
+            html += "<tr" + attrs + ">";
             for (var k = 0; k < columns.length; k++) {
-                html += "<td>" + htmlEscape(row[columns[k]]) + "</td>";
+                var col = columns[k];
+                if (mergeCols[col]) {
+                    // 그룹 첫 행에서만 셀 출력(rowspan). 나머지 차수 행은 병합되어 생략.
+                    if (isGroupStart[r]) {
+                        var rs = (groupSpan[r] > 1) ? (' rowspan="' + groupSpan[r] + '"') : "";
+                        var cellCls = (col === "사업명") ? "ai-grp-cell ai-biz-cell" : "ai-grp-cell";
+                        html += '<td class="' + cellCls + '"' + rs + ">" + htmlEscape(row[col]) + "</td>";
+                    }
+                } else {
+                    html += "<td>" + htmlEscape(row[col]) + "</td>";
+                }
             }
             html += "</tr>";
         }
@@ -66,17 +108,84 @@
         return html;
     }
 
+    /** 사업 상세 창/모달 공통 표 스타일 */
+    var DETAIL_TABLE_CSS = ''
+        + '.ai-biz-detail-table{border-collapse:collapse;width:100%;font-size:13px;table-layout:fixed;}'
+        + '.ai-biz-detail-table th,.ai-biz-detail-table td{border:1px solid #d5dbe3;padding:6px 8px;text-align:left;vertical-align:top;}'
+        + '.ai-biz-detail-table th{background:#eef2f7;color:#1f4e79;font-weight:bold;}'
+        + '.ai-biz-detail-table tr:nth-child(even) td{background:#fafbfc;}'
+        + '.ai-biz-detail-table .ai-th-budget,.ai-biz-detail-table .ai-td-budget{width:11%;word-break:break-word;white-space:normal;line-height:1.45;}'
+        + '.ai-biz-detail-table .ai-th-gubun,.ai-biz-detail-table .ai-td-gubun{width:14%;}'
+        + '.ai-biz-detail-table .ai-th-demand,.ai-biz-detail-table .ai-td-demand{width:28%;}'
+        + '.ai-biz-detail-table .ai-th-exam,.ai-biz-detail-table .ai-td-exam{width:28%;}'
+        + '.ai-biz-detail-table .ai-th-dept,.ai-biz-detail-table .ai-td-dept{width:9%;word-break:break-word;white-space:normal;line-height:1.45;}'
+        + '.ai-biz-detail-table .ai-td-wrap{word-break:break-word;line-height:1.55;}';
+
+    function openDetailWindow(title, detailHtml) {
+        var safeTitle = htmlEscape(title || "사업 상세");
+        var bodyHtml = detailHtml || "";
+
+        // 1순위: 실제 새 창. 팝업 차단 등으로 실패하면 화면 내 모달로 대체(정부망 브라우저 대응)
+        var win = null;
+        try {
+            win = window.open("", "_blank", "width=960,height=720,scrollbars=yes,resizable=yes");
+        } catch (e) {
+            win = null;
+        }
+
+        if (win && win.document) {
+            var doc = win.document;
+            doc.open();
+            doc.write(
+                '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">'
+                + '<title>' + safeTitle + '</title>'
+                + '<style>'
+                + 'body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;margin:0;background:#f4f6f8;color:#222;}'
+                + '.hd{background:#1f4e79;color:#fff;padding:14px 20px;font-size:16px;font-weight:bold;}'
+                + '.bd{padding:18px 22px;line-height:1.7;font-size:14px;}'
+                + '.card{background:#fff;border:1px solid #dfe3e8;border-radius:8px;padding:18px 20px;'
+                + 'box-shadow:0 1px 3px rgba(0,0,0,.06);overflow-x:auto;}'
+                + DETAIL_TABLE_CSS
+                + '</style></head><body>'
+                + '<div class="hd">' + safeTitle + '</div>'
+                + '<div class="bd"><div class="card">' + bodyHtml + '</div></div>'
+                + '</body></html>');
+            doc.close();
+            win.focus();
+            return;
+        }
+
+        openDetailModal(safeTitle, bodyHtml);
+    }
+
+    function openDetailModal(safeTitle, bodyHtml) {
+        $(".ai-detail-modal").remove();
+        var html = '<div class="ai-detail-modal">'
+            + '<div class="ai-detail-dim"></div>'
+            + '<div class="ai-detail-panel">'
+            + '<div class="ai-detail-hd"><span>' + safeTitle + '</span>'
+            + '<button type="button" class="ai-detail-close" aria-label="닫기">&times;</button></div>'
+            + '<div class="ai-detail-bd"><div class="ai-detail-card">' + (bodyHtml || "") + '</div></div>'
+            + '</div></div>';
+        $("body").append(html);
+    }
+
     function appendBotAnswer($loadingEl, data) {
         var answer = (data && data.answer) ? data.answer : "응답이 없습니다.";
-        var inner = '<div class="ai-bubble ai-pre">' + nl2br(answer);
 
+        var tableHtml = "";
         if (data && data.columns && data.dataList) {
-            var tableHtml = buildResultTable(data.columns, data.dataList);
-            if (tableHtml) {
-                inner += tableHtml;
-                if (typeof data.rowCount !== "undefined") {
-                    inner += '<div style="font-size:11px;color:#888;margin-top:4px;">총 ' + data.rowCount + '건 (표시 행수 제한 적용)</div>';
-                }
+            tableHtml = buildResultTable(data.columns, data.dataList);
+        }
+
+        // 표가 있는 답변은 말풍선을 대화창 전체 폭으로 넓혀 가로 열이 모두 보이도록 한다.
+        var bubbleClass = "ai-bubble ai-pre" + (tableHtml ? " ai-bubble-wide" : "");
+        var inner = '<div class="' + bubbleClass + '">' + nl2br(answer);
+
+        if (tableHtml) {
+            inner += tableHtml;
+            if (typeof data.rowCount !== "undefined") {
+                inner += '<div style="font-size:11px;color:#888;margin-top:4px;">총 ' + data.rowCount + '건 (표시 행수 제한 적용)</div>';
             }
         }
 
@@ -166,6 +275,25 @@
 
         $(document).on("click.aichat", ".ai-sql-toggle", function () {
             $(this).next(".ai-sql-box").toggle();
+        });
+
+        // 검색결과 표의 행 클릭 → 해당 사업 상세를 새 창에서 표시
+        $(document).on("click.aichat", ".ai-result-table tbody tr.ai-row-clickable", function () {
+            var detail = "";
+            var title = "";
+            try {
+                detail = decodeURIComponent($(this).attr("data-detail") || "");
+                title = decodeURIComponent($(this).attr("data-title") || "");
+            } catch (e) {
+                detail = $(this).attr("data-detail") || "";
+                title = $(this).attr("data-title") || "";
+            }
+            openDetailWindow(title, detail);
+        });
+
+        // 상세 모달 닫기 (닫기 버튼 · 배경 클릭)
+        $(document).on("click.aichat", ".ai-detail-close, .ai-detail-dim", function () {
+            $(".ai-detail-modal").remove();
         });
     }
 

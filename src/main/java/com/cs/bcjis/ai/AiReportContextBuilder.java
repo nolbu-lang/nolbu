@@ -22,6 +22,9 @@ public class AiReportContextBuilder {
     /** 비정형 텍스트(요구/검토) 기본 최대 길이 */
     private static final int MAX_CONT_LENGTH = 400;
 
+    /** 상세 창(표) 표시용 요구·검토 최대 길이 */
+    private static final int MAX_DETAIL_CONT_LENGTH = 3000;
+
     /** [구분] 필드 최대 길이 (요구내용 원문이 길어 토큰 폭주 방지) */
     private static final int MAX_GUBUN_LENGTH = 300;
 
@@ -55,7 +58,7 @@ public class AiReportContextBuilder {
      *   report_nm, fis_year, bgt_dgr, bgt_compo_fg, add_times,
      *   office_nm, dept_nm, pbiz_nm, ubiz_nm, dbiz_nm, comp_ground(세세사업명), fis_fg_nm,
      *   te_mng_mok_cd, te_mng_mok_nm, gubun(구분),
-     *   pre_amt, pre_bgt_amt, demand_bgt_amt, bgt_amt, diff_amt   (원 단위)
+     *   pre_amt, pre_bgt_amt, demand_bgt_amt(DEMAND_DIFF_AMT 합), bgt_amt(DIFF_AMT 합=조정액), diff_amt   (원 단위)
      *   frsc_amt1~6, frsc_detail (연간 조정예산 재원, 원 단위)
      *   tot_biz_amt (투자조서 총사업비 합계, 원 단위)
      *   demand_cont, exam_cont, srch_val
@@ -334,55 +337,230 @@ public class AiReportContextBuilder {
         return "";
     }
 
+    /** 심사조서 재원명 → 국비 / 시비 / 기타. TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT = 화면 '조정액' */
+    private static final String[] FRSC_NM_GOV = {
+            "국고보조금", "균특보조금", "기금보조금", "특별교부세", "소방안전교부세", "지방소멸대응기금"
+    };
+    private static final String FRSC_NM_SI = "자체재원";
+
+    /**
+     * TB_DGRCOMPOFRSC 조회 결과(재원명·조정액 목록)를 행에 반영한다.
+     * DialogDgrcompoModify.selectDgrcompofrscList 와 동일 데이터 기준.
+     */
+    public static void applyAdjFrscFromFrscLines(Map<String, Object> row, List<Map<String, Object>> frscLines) {
+        if (row == null) {
+            return;
+        }
+        long gov = 0L;
+        long si = 0L;
+        long etc = 0L;
+        StringBuilder detail = new StringBuilder();
+
+        if (frscLines != null) {
+            for (int i = 0; i < frscLines.size(); i++) {
+                Map<String, Object> line = frscLines.get(i);
+                long adj = getLong(line, "adj_def_frsc_amt");
+                if (adj == 0L) {
+                    continue;
+                }
+                String nm = getStr(line, "frsc_fg_nm");
+                int bucket = frscBucketByFgNm(nm);
+                if (bucket == 0) {
+                    gov += adj;
+                } else if (bucket == 1) {
+                    si += adj;
+                } else {
+                    etc += adj;
+                }
+                if (detail.length() > 0) {
+                    detail.append("|");
+                }
+                detail.append(nm).append(":").append(adj);
+            }
+        }
+
+        Map<String, Object> fr = new java.util.HashMap<String, Object>();
+        fr.put("adj_frsc_gov", Long.valueOf(gov));
+        fr.put("adj_frsc_si", Long.valueOf(si));
+        fr.put("adj_frsc_etc", Long.valueOf(etc));
+        fr.put("frsc_detail", detail.toString());
+        applyAdjFrscFromDb(row, fr);
+    }
+
     /**
      * TB_DGRCOMPOFRSC 조회 결과를 행에 반영한다.
-     * frsc_detail = 재원별 ADJ_DEF_FRSC_AMT 합(심사조서 FRSCES 와 동일 출처).
+     * adj_frsc_gov/si/etc = 재원명별 조정액(ADJ_DEF_FRSC_AMT) 합(경상·투자 동일 규칙).
      */
     public static void applyAdjFrscFromDb(Map<String, Object> row, Map<String, Object> fr) {
         if (row == null || fr == null) {
             return;
         }
-        row.put("frsc_amt1", fr.get("frsc_amt1"));
-        row.put("frsc_amt2", fr.get("frsc_amt2"));
-        row.put("frsc_amt3", fr.get("frsc_amt3"));
-        row.put("frsc_amt4", fr.get("frsc_amt4"));
-        row.put("frsc_amt5", fr.get("frsc_amt5"));
-        row.put("frsc_amt6", fr.get("frsc_amt6"));
+        row.put("adj_frsc_gov", fr.get("adj_frsc_gov"));
+        row.put("adj_frsc_si", fr.get("adj_frsc_si"));
+        row.put("adj_frsc_etc", fr.get("adj_frsc_etc"));
         row.put("frsc_detail", fr.get("frsc_detail"));
+        normalizeAdjFrscOnRow(row);
+    }
+
+    /** 재원별 조정액(ADJ_DEF_FRSC_AMT)을 국비/시비/기타 슬롯에 반영한다. */
+    public static void normalizeAdjFrscOnRow(Map<String, Object> row) {
+        if (row == null) {
+            return;
+        }
+        long adjAmt = getLong(row, "bgt_amt");
+        if (adjAmt == 0L) {
+            clearAdjFrscSlots(row);
+            return;
+        }
+
+        long[] buckets = getAdjFrscBucketsForRow(row);
+        buckets = reconcileFrscBucketsToAdjAmt(buckets[0], buckets[1], buckets[2], adjAmt, getStr(row, "frsc_detail"));
+        buckets = clipFrscBucketsForDisplay(buckets[0], buckets[1], buckets[2], adjAmt);
+        if (buckets[0] == 0L && buckets[1] == 0L && buckets[2] == 0L) {
+            clearAdjFrscSlots(row);
+            return;
+        }
+
+        writeAdjFrscBucketsToSlots(row, buckets[0], buckets[1], buckets[2]);
     }
 
     /**
-     * 조정액 재원 표기 — TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT 만 사용한다.
-     * (요구액 DMN_DEF_FRSC_AMT, 총사업비 tot_frsc_amt 는 사용하지 않음)
+     * 재원별 조정액 합이 diff_amt(조정액)와 다를 때 화면(재원별 그리드)과 맞춘다.
+     * 추경에서 이월·상계 잔여로 국비·시비가 동일 금액으로 중복 잡히는 경우 국비 우선.
+     */
+    private static long[] reconcileFrscBucketsToAdjAmt(long gov, long si, long etc, long adjAmt, String frscDetail) {
+        long sum = gov + si + etc;
+        if (sum == adjAmt) {
+            return new long[] { gov, si, etc };
+        }
+
+        long[] fromDetail = parseFrscDetailBuckets(frscDetail);
+        long detailSum = fromDetail[0] + fromDetail[1] + fromDetail[2];
+        if (detailSum == adjAmt && detailSum != 0L) {
+            return fromDetail;
+        }
+
+        if (adjAmt != 0L) {
+            if (gov == adjAmt && si == adjAmt && etc == 0L) {
+                return new long[] { gov, 0L, 0L };
+            }
+            if (si == adjAmt && gov == adjAmt && etc == 0L) {
+                return new long[] { gov, 0L, 0L };
+            }
+            if (gov == adjAmt && si != 0L && si != adjAmt) {
+                return new long[] { gov, 0L, etc };
+            }
+            if (si == adjAmt && gov != 0L && gov != adjAmt) {
+                return new long[] { 0L, si, etc };
+            }
+        }
+
+        if (detailSum != 0L) {
+            return fromDetail;
+        }
+        return new long[] { gov, si, etc };
+    }
+
+    /** 조정액 부호와 반대인 재원 버킷은 표시에서 제외 (추경 상계·이월 잔여 제거) */
+    private static long[] clipFrscBucketsForDisplay(long gov, long si, long etc, long adjAmt) {
+        if (adjAmt > 0L) {
+            if (gov < 0L) {
+                gov = 0L;
+            }
+            if (si < 0L) {
+                si = 0L;
+            }
+            if (etc < 0L) {
+                etc = 0L;
+            }
+        } else if (adjAmt < 0L) {
+            if (gov > 0L) {
+                gov = 0L;
+            }
+            if (si > 0L) {
+                si = 0L;
+            }
+            if (etc > 0L) {
+                etc = 0L;
+            }
+        }
+        return new long[] { gov, si, etc };
+    }
+
+    private static void clearAdjFrscSlots(Map<String, Object> row) {
+        row.put("adj_frsc_gov", Long.valueOf(0L));
+        row.put("adj_frsc_si", Long.valueOf(0L));
+        row.put("adj_frsc_etc", Long.valueOf(0L));
+        row.put("frsc_amt1", Long.valueOf(0L));
+        row.put("frsc_amt2", Long.valueOf(0L));
+        row.put("frsc_amt3", Long.valueOf(0L));
+        row.put("frsc_amt4", Long.valueOf(0L));
+        row.put("frsc_amt5", Long.valueOf(0L));
+        row.put("frsc_amt6", Long.valueOf(0L));
+        row.put("frsc_detail", "");
+    }
+
+    /** [국비, 시비, 기타] → frsc_amt1~6 슬롯 (경상·투자 동일) */
+    private static void writeAdjFrscBucketsToSlots(Map<String, Object> row, long gov, long si, long etc) {
+        row.put("frsc_amt1", Long.valueOf(si));
+        row.put("frsc_amt2", Long.valueOf(gov));
+        row.put("frsc_amt3", Long.valueOf(0L));
+        row.put("frsc_amt4", Long.valueOf(0L));
+        row.put("frsc_amt5", Long.valueOf(etc));
+        row.put("frsc_amt6", Long.valueOf(0L));
+        row.put("adj_frsc_gov", Long.valueOf(gov));
+        row.put("adj_frsc_si", Long.valueOf(si));
+        row.put("adj_frsc_etc", Long.valueOf(etc));
+    }
+
+    /**
+     * 조정액 재원 표기 — TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT(화면 재원별 '조정액' 컬럼) 합산.
+     * 국고보조금·균특보조금·기금보조금·특별교부세·소방안전교부세·지방소멸대응기금 → 국비,
+     * 자체재원 → 시비, 그 외 → 기타.
      */
     public static String formatFrscForRow(Map<String, Object> row) {
+        long adjAmt = getLong(row, "bgt_amt");
+        if (adjAmt == 0L) {
+            return "";
+        }
+        long[] buckets = getAdjFrscBucketsForRow(row);
+        buckets = reconcileFrscBucketsToAdjAmt(buckets[0], buckets[1], buckets[2], adjAmt, getStr(row, "frsc_detail"));
+        buckets = clipFrscBucketsForDisplay(buckets[0], buckets[1], buckets[2], adjAmt);
+        return formatFrscAmounts(buckets[0], buckets[1], buckets[2]);
+    }
+
+    /** frsc_detail(재원명:조정액) 우선 → adj_frsc_gov/si/etc → 구형 슬롯 */
+    private static long[] getAdjFrscBucketsForRow(Map<String, Object> row) {
         String detail = getStr(row, "frsc_detail");
         if (detail.length() > 0) {
-            String fromDetail = formatFrscDetail(detail);
-            if (fromDetail.length() > 0) {
+            long[] fromDetail = parseFrscDetailBuckets(detail);
+            if (fromDetail[0] != 0L || fromDetail[1] != 0L || fromDetail[2] != 0L) {
                 return fromDetail;
             }
         }
 
-        return formatFrscAmountsFromAdjSlots(row);
+        long gov = getLong(row, "adj_frsc_gov");
+        long si = getLong(row, "adj_frsc_si");
+        long etc = getLong(row, "adj_frsc_etc");
+        if (gov != 0L || si != 0L || etc != 0L) {
+            return new long[] { gov, si, etc };
+        }
+
+        return getAdjFrscBucketsFromLegacySlots(row);
     }
 
-    /** frsc_amt1~6(ADJ_DEF_FRSC_AMT 슬롯 합) → 국비/시비/기타 표기 */
+    /** 구형 frsc_amt1~6 슬롯 fallback */
+    private static long[] getAdjFrscBucketsFromLegacySlots(Map<String, Object> row) {
+        long si = getLong(row, "frsc_amt1");
+        long gov = getLong(row, "frsc_amt2") + getLong(row, "frsc_amt3") + getLong(row, "frsc_amt4");
+        long etc = getLong(row, "frsc_amt5") + getLong(row, "frsc_amt6");
+        return new long[] { gov, si, etc };
+    }
+
+    /** frsc_amt1~6(ADJ_DEF_FRSC_AMT 슬롯 합) → 국비/시비/기타 표기 (내부용) */
     public static String formatFrscAmountsFromAdjSlots(Map<String, Object> row) {
-        long si;
-        long gov;
-        long etc;
-        if (isInvestReport(row)) {
-            si = getLong(row, "frsc_amt1");
-            gov = getLong(row, "frsc_amt2");
-            etc = getLong(row, "frsc_amt3") + getLong(row, "frsc_amt4")
-                    + getLong(row, "frsc_amt5") + getLong(row, "frsc_amt6");
-        } else {
-            si = getLong(row, "frsc_amt1");
-            gov = getLong(row, "frsc_amt2") + getLong(row, "frsc_amt3") + getLong(row, "frsc_amt4");
-            etc = getLong(row, "frsc_amt5") + getLong(row, "frsc_amt6");
-        }
-        return formatFrscAmounts(gov, si, etc);
+        long[] buckets = getAdjFrscBucketsForRow(row);
+        return formatFrscAmounts(buckets[0], buckets[1], buckets[2]);
     }
 
     /** 투자사업심사조서(020) 여부 */
@@ -393,8 +571,8 @@ public class AiReportContextBuilder {
 
     /**
      * 차수별 예산 한 줄.
-     * 예산액 = 조정액 총합(bgt_amt), 괄호 = 조정액 재원구성(ADJ_DEF_FRSC_AMT).
-     * 예) 본예산:200백만원(국비140, 시비60)
+     * 예산액 = 조정액(DIFF_AMT), 괄호 = 재원별 조정액(ADJ_DEF_FRSC_AMT) 합산.
+     * 예) 본예산:200백만원(국비 140, 시비 60)
      */
     public static String formatBudgetDgrDisplay(Map<String, Object> row, ContextOptions options) {
         String shortDgr = buildShortDgrLabel(getStr(row, "bgt_compo_fg"),
@@ -445,6 +623,167 @@ public class AiReportContextBuilder {
             group.add(row);
         }
         return groups;
+    }
+
+    /**
+     * 같은 사업명(통계목)을 연도와 무관하게 하나로 묶는다. (표 클릭 상세용)
+     * 부서 개편으로 소관부서가 바뀌어도 동일 사업이 연도별로 함께 표시되도록
+     * 연도·부서를 키에서 제외하고 사업명 + 통계목코드로만 그룹화한다.
+     */
+    public static LinkedHashMap<String, List<Map<String, Object>>> groupRowsByBizNameAcrossYears(
+            List<Map<String, Object>> rows) {
+        LinkedHashMap<String, List<Map<String, Object>>> groups = new LinkedHashMap<String, List<Map<String, Object>>>();
+        if (rows == null) {
+            return groups;
+        }
+        for (Iterator<Map<String, Object>> it = rows.iterator(); it.hasNext();) {
+            Map<String, Object> row = it.next();
+            String key = getStr(row, "report_nm") + "|" + getBizNm(row) + "|" + getStr(row, "te_mng_mok_cd");
+            List<Map<String, Object>> group = groups.get(key);
+            if (group == null) {
+                group = new ArrayList<Map<String, Object>>();
+                groups.put(key, group);
+            }
+            group.add(row);
+        }
+        return groups;
+    }
+
+    /**
+     * 한 사업명(통계목)의 상세를 연도별 → 차수별로 나눠 표시한다. (표 클릭 상세 창용)
+     * group 은 연도 오름차순·연도 내 차수 순으로 정렬되어 있다고 가정한다.
+     */
+    public static String buildMultiYearBizBlock(int seq, List<Map<String, Object>> group, ContextOptions options) {
+        StringBuilder sb = new StringBuilder();
+        if (group == null || group.isEmpty()) {
+            return "";
+        }
+        if (options == null) {
+            options = ContextOptions.defaults();
+        }
+
+        Map<String, Object> first = group.get(0);
+        sb.append("■ [사업명(통계목)] ").append(buildBizLabel(first)).append("\n");
+
+        // 연도별로 분리 (입력 정렬 순서 = 연도→차수 유지)
+        LinkedHashMap<String, List<Map<String, Object>>> byYear =
+                new LinkedHashMap<String, List<Map<String, Object>>>();
+        for (int i = 0; i < group.size(); i++) {
+            Map<String, Object> row = group.get(i);
+            String year = getStr(row, "fis_year");
+            List<Map<String, Object>> yl = byYear.get(year);
+            if (yl == null) {
+                yl = new ArrayList<Map<String, Object>>();
+                byYear.put(year, yl);
+            }
+            yl.add(row);
+        }
+
+        for (Iterator<Map.Entry<String, List<Map<String, Object>>>> it = byYear.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<String, List<Map<String, Object>>> e = it.next();
+            String year = e.getKey();
+            List<Map<String, Object>> yearRows = e.getValue();
+            Map<String, Object> yf = yearRows.get(0);
+
+            sb.append("\n【").append(year.length() > 0 ? year + "년" : "연도미상").append("】\n");
+
+            // 소관부서 — 연도별 1회
+            StringBuilder dept = new StringBuilder();
+            String officeNm = getStr(yf, "office_nm");
+            String deptNm = getStr(yf, "dept_nm");
+            if (officeNm.length() > 0) dept.append(officeNm);
+            if (deptNm.length() > 0) {
+                if (dept.length() > 0) dept.append(" ");
+                dept.append(deptNm);
+            }
+            sb.append("  [소관부서] ").append(dept.length() > 0 ? dept.toString() : "-").append("\n");
+
+            if (options.includeGubun) {
+                String gubun = getStr(yf, "gubun");
+                if (gubun.length() == 0) gubun = getStr(yf, "invest_plan");
+                if (gubun.length() > 0) {
+                    sb.append("  [구분] ").append(truncateTo(gubun, MAX_GUBUN_LENGTH)).append("\n");
+                }
+            }
+
+            // 차수별 세부
+            for (int i = 0; i < yearRows.size(); i++) {
+                sb.append(buildDgrSection(yearRows.get(i), options));
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 한 사업명(통계목)의 상세를 표(HTML)로 정리한다. (표 클릭 → 새 창/모달용)
+     * 열 순서: [차수별예산내역] → [구분] → [요구내역] → [검토의견] → [소관부서]
+     */
+    public static String buildMultiYearBizDetailHtml(List<Map<String, Object>> group, ContextOptions options) {
+        if (group == null || group.isEmpty()) {
+            return "";
+        }
+        if (options == null) {
+            options = ContextOptions.defaults();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<table class=\"ai-biz-detail-table\"><thead><tr>");
+        sb.append("<th class=\"ai-th-budget\">[차수별예산내역]</th>");
+        sb.append("<th class=\"ai-th-gubun\">[구분]</th>");
+        sb.append("<th class=\"ai-th-demand\">[요구내역]</th>");
+        sb.append("<th class=\"ai-th-exam\">[검토의견]</th>");
+        sb.append("<th class=\"ai-th-dept\">[소관부서]</th>");
+        sb.append("</tr></thead><tbody>");
+
+        for (int i = 0; i < group.size(); i++) {
+            Map<String, Object> row = group.get(i);
+            String fisYear = getStr(row, "fis_year");
+            String budgetCell = (fisYear.length() > 0 ? fisYear + "년, " : "")
+                    + formatBudgetDgrDisplay(row, options);
+
+            sb.append("<tr>");
+            sb.append("<td class=\"ai-td-budget\">").append(escapeHtml(budgetCell)).append("</td>");
+            sb.append("<td class=\"ai-td-wrap ai-td-gubun\">")
+                    .append(escapeHtmlMultiline(truncateTo(resolveGubunText(row), MAX_GUBUN_LENGTH)))
+                    .append("</td>");
+            sb.append("<td class=\"ai-td-wrap ai-td-demand\">")
+                    .append(escapeHtmlMultiline(truncateTo(getStr(row, "demand_cont"), MAX_DETAIL_CONT_LENGTH)))
+                    .append("</td>");
+            sb.append("<td class=\"ai-td-wrap ai-td-exam\">")
+                    .append(escapeHtmlMultiline(truncateTo(getStr(row, "exam_cont"), MAX_DETAIL_CONT_LENGTH)))
+                    .append("</td>");
+            sb.append("<td class=\"ai-td-dept\">").append(escapeHtml(formatDeptLine(row))).append("</td>");
+            sb.append("</tr>");
+        }
+
+        sb.append("</tbody></table>");
+        return sb.toString();
+    }
+
+    private static String resolveGubunText(Map<String, Object> row) {
+        String gubun = getStr(row, "gubun");
+        if (gubun.length() == 0) {
+            gubun = getStr(row, "invest_plan");
+        }
+        return gubun;
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null || s.length() == 0) {
+            return "";
+        }
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+
+    private static String escapeHtmlMultiline(String s) {
+        if (s == null || s.length() == 0) {
+            return "-";
+        }
+        return escapeHtml(s).replace("\r\n", "\n").replace("\n", "<br/>");
     }
 
     /** 사업(블록) 수 상한 — 연도 병합 등으로 행이 많아져도 답변·표 건수 제한 */
@@ -662,10 +1001,10 @@ public class AiReportContextBuilder {
             }
 
             int bucket;
-            if (standCd.length() > 0) {
-                bucket = frscBucketByStandCd(standCd, name);
+            if (name.length() > 0) {
+                bucket = frscBucketByFgNm(name);
             } else {
-                bucket = frscBucketByName(name);
+                bucket = frscBucketByStandCd(standCd, name);
             }
             if (bucket == 0) {
                 gov += amt;
@@ -702,34 +1041,56 @@ public class AiReportContextBuilder {
         }
     }
 
-    /** 0=국비, 1=시비, 2=기타 — 심사조서 FRSC_AMT1~6 슬롯 표기(Report010/020 SaveFile) */
+    /**
+     * 심사조서 재원명(FRSC_FG_NM) → 0=국비, 1=시비, 2=기타.
+     * 금액 출처: TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT (= 화면 재원별 '조정액' 컬럼).
+     */
+    private static int frscBucketByFgNm(String frscFgNm) {
+        if (frscFgNm == null || frscFgNm.length() == 0) {
+            return 2;
+        }
+        String nm = frscFgNm.trim();
+        for (int i = 0; i < FRSC_NM_GOV.length; i++) {
+            if (FRSC_NM_GOV[i].equals(nm)) {
+                return 0;
+            }
+        }
+        if (FRSC_NM_SI.equals(nm)) {
+            return 1;
+        }
+        return 2;
+    }
+
+    /** SQL IN 절용 — 국비 재원명 목록 */
+    public static String frscGovNamesInClause() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < FRSC_NM_GOV.length; i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append("'").append(FRSC_NM_GOV[i]).append("'");
+        }
+        return sb.toString();
+    }
+
+    /** 0=국비, 1=시비, 2=기타 — stand_frsc_cd fallback (재원명 없을 때) */
     private static int frscBucketByStandCd(String standCd, String name) {
         if ("160".equals(standCd)) {
             return 1;
         }
-        if ("110".equals(standCd) || "120".equals(standCd) || "130".equals(standCd)) {
+        if ("110".equals(standCd) || "120".equals(standCd) || "130".equals(standCd)
+                || "140".equals(standCd) || "150".equals(standCd) || "175".equals(standCd)) {
             return 0;
         }
-        if ("180".equals(standCd) || "190".equals(standCd) || "170".equals(standCd)
-                || "200".equals(standCd) || "210".equals(standCd)
-                || "140".equals(standCd) || "150".equals(standCd)) {
-            return 2;
+        if (name != null && name.length() > 0) {
+            return frscBucketByFgNm(name);
         }
-        return frscBucketByName(name);
+        return 2;
     }
 
     /** 재원명 기반 분류(구형 호환) */
     private static int frscBucketByName(String name) {
-        if (name == null || name.length() == 0) {
-            return 2;
-        }
-        if (name.indexOf("국") > -1 || name.indexOf("균") > -1 || name.indexOf("교부") > -1) {
-            return 0;
-        }
-        if (name.indexOf("시") > -1 || name.indexOf("자체") > -1 || name.indexOf("자") == 0) {
-            return 1;
-        }
-        return 2;
+        return frscBucketByFgNm(name);
     }
 
     /** 국비/시비/기타 금액을 답변 서식으로 조합 (예: 국비500, 시비47) */

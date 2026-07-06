@@ -1,4 +1,9 @@
 # create-indexes.sql 의 CREATE INDEX 문을 개별 실행 (중복/오류 시 건너뛰고 계속)
+param(
+    [string]$DbName = "bcjis",
+    [string]$DbUser = "bcjisapp",
+    [string]$DbPassword = "bcjisapp00"
+)
 $ErrorActionPreference = "Continue"
 
 $CubridBin = $null
@@ -9,9 +14,8 @@ if (-not $CubridBin -or -not (Test-Path (Join-Path $CubridBin "csql.exe"))) {
 $env:CUBRID = Split-Path -Parent $CubridBin
 $env:PATH = "$CubridBin;$env:PATH"
 
-$DbName = "bcjis"
-$User = "bcjisapp"
-$Password = "bcjisapp00"
+$User = $DbUser
+$Password = $DbPassword
 $csql = Join-Path $CubridBin "csql.exe"
 $sqlFile = Join-Path $PSScriptRoot "create-indexes.sql"
 

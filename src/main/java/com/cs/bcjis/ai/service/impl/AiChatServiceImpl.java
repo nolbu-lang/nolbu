@@ -57,6 +57,9 @@ public class AiChatServiceImpl implements AiChatService {
     /** TB_BGTDGR 최대 회계연도 — 요청마다 반복 조회 방지 */
     private volatile String cachedMaxFisYear = "";
 
+    /** TB_FISYEAR 전체 회계연도 — 요청마다 반복 조회 방지 */
+    private volatile List<String> cachedAllFisYears = null;
+
     /**
      * 답변 생성용 시스템 지침(system_instruction).
      * 예산 심사관 페르소나와 보고서 출력 서식을 모든 답변에 강제한다.
@@ -198,12 +201,49 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
+    /** 회계연도 미지정 시 TB_FISYEAR 전체 연도 순차 검색(7차 폴백). 운영은 false 권장. */
+    private boolean isAllYearsFallbackEnabled() {
+        try {
+            String v = config.getProperty("Globals.AiSearchAllYearsFallback", "false");
+            return "true".equalsIgnoreCase(v.trim());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isPerfLogEnabled() {
+        try {
+            String v = config.getProperty("Globals.AiPerfLog", "true");
+            return !"false".equalsIgnoreCase(v.trim());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void logPerf(String tag, long startMs, String detail) {
+        if (isPerfLogEnabled()) {
+            logger.info("AI PERF[" + tag + "] ms=" + (System.currentTimeMillis() - startMs) + " " + detail);
+        }
+    }
+
     private int getMaxReportBlocks() {
         int v = getIntProp("Globals.AiMaxReportBlocks", -1);
         if (v > 0) {
             return v;
         }
-        return getIntProp("Globals.GeminiMaxReportBlocks", 50);
+        return getIntProp("Globals.GeminiMaxReportBlocks", 100);
+    }
+
+    /**
+     * 조회·표시 원시 행(차수) 상한. 사업 하나가 여러 차수(행)로 나뉘므로
+     * 사업 상한(getMaxReportBlocks)의 몇 배로 넉넉히 잡아 100개 사업이 잘리지 않게 한다.
+     */
+    private int getMaxReportRows() {
+        int v = getIntProp("Globals.AiMaxReportRows", -1);
+        if (v > 0) {
+            return v;
+        }
+        return getMaxReportBlocks() * 6;
     }
 
     private int getIntProp(String key, int defaultValue) {
@@ -288,7 +328,7 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.setMaxRows(getMaxReportBlocks());
+        jdbcTemplate.setMaxRows(getMaxReportRows());
 
         // [구분]/[검토내용] 대괄호 지정 시 — 해당 비정형 필드 검색 (+ [소관부서] 있으면 부서 필터)
         String contentField = "";
@@ -343,12 +383,16 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
+        long tSearch = System.currentTimeMillis();
         List<Map<String, Object>> rows = searchReportRows(jdbcTemplate, question,
                 reportCd, planFisYear, explicitFisYear, bgtCompoFg, addTimes,
                 bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword);
+        logPerf("searchReport", tSearch, "rows=" + (rows == null ? 0 : rows.size()) + " kw=" + bizKeyword);
 
         if (!rows.isEmpty()) {
+            long tFrsc = System.currentTimeMillis();
             enrichReportRowsWithFrsc(jdbcTemplate, rows);
+            logPerf("enrichFrsc", tFrsc, "rows=" + rows.size());
             rows = AiReportContextBuilder.trimRowsToMaxBizGroups(rows, getMaxReportBlocks());
         }
 
@@ -374,26 +418,33 @@ public class AiChatServiceImpl implements AiChatService {
             return result;
         }
 
-        // 답변 생성 — 기본은 DB 직접 조립(1~4항목). LLM 호출 생략으로 응답 속도 개선.
+        // 답변 생성 — 표 목록을 먼저 보여주고, 사업 상세는 표 클릭 시 새 창에서 표시한다.
         AiReportContextBuilder.ContextOptions ctxOpts = buildContextOptions(question, planFisYear, tagKeyword, contentField);
         ctxOpts.maxBlocks = getMaxReportBlocks();
-        String answer;
-        if (isReportDbOnly()) {
-            answer = AiReportContextBuilder.assembleReportAnswer(rows, "", ctxOpts);
-            logger.info("AI RAG[report] db-only year=" + fisYear + " rows=" + rows.size());
-        } else {
-            String context = AiReportContextBuilder.buildReportContext(rows, fisYear, dgr, ctxOpts);
-            logger.info("AI RAG[report] provider=" + llmClient.getProviderName()
-                    + " year=" + fisYear + " rows=" + rows.size()
-                    + " contextChars=" + context.length());
-            answer = llmClient.generateUserQuery(question);
-            if (answer == null || answer.trim().length() == 0) {
-                answer = "총 " + rows.size() + "건의 심사조서를 찾았습니다. 아래 표를 확인해 주세요.";
-            } else {
-                answer = answer.trim();
+
+        // 표 클릭 상세: 같은 사업명(통계목)을 연도와 무관하게 묶어, 연도별→차수별로 나눠 표시한다.
+        // (표 행 하나를 클릭하면 그 사업의 전체 연도·차수 상세가 새 창에 함께 표시됨)
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> bizNameGroups =
+                AiReportContextBuilder.groupRowsByBizNameAcrossYears(rows);
+        java.util.IdentityHashMap<Map<String, Object>, String> detailByRow =
+                new java.util.IdentityHashMap<Map<String, Object>, String>();
+        for (java.util.Iterator<List<Map<String, Object>>> git = bizNameGroups.values().iterator(); git.hasNext();) {
+            List<Map<String, Object>> g = git.next();
+            String detail = AiReportContextBuilder.buildMultiYearBizDetailHtml(g, ctxOpts);
+            for (int gi = 0; gi < g.size(); gi++) {
+                detailByRow.put(g.get(gi), detail);
             }
-            answer = AiReportContextBuilder.assembleReportAnswer(rows, answer, ctxOpts);
         }
+
+        // 표 목록 그룹 수(연도+사업명 단위) — 안내 문구용
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> bizGroups =
+                AiReportContextBuilder.groupRowsByBiz(rows);
+
+        String answer = "총 " + bizGroups.size() + "개 사업(" + rows.size() + "건)을 찾았습니다.\n"
+                + "표는 연도별·사업명별로 묶고 차수별로 나눠 표시했습니다.\n"
+                + "사업명을 클릭하면 해당 사업의 연도별·차수별 상세 내용을 새 창에서 확인할 수 있습니다.";
+        logger.info("AI RAG[report] year=" + fisYear + " rows=" + rows.size()
+                + " bizGroups=" + bizGroups.size() + " dbOnly=" + isReportDbOnly());
 
         if (rows.size() > 0) {
             int frscZero = 0;
@@ -403,7 +454,9 @@ public class AiChatServiceImpl implements AiChatService {
                 }
             }
             Map<String, Object> sample = rows.get(0);
-            logger.info("AI RAG[report] frsc sample: frsc_amt2=" + AiReportContextBuilder.getLong(sample, "frsc_amt2")
+            logger.info("AI RAG[report] frsc sample: bgt_amt=" + AiReportContextBuilder.getLong(sample, "bgt_amt")
+                    + " adj_gov=" + AiReportContextBuilder.getLong(sample, "adj_frsc_gov")
+                    + " adj_si=" + AiReportContextBuilder.getLong(sample, "adj_frsc_si")
                     + " frsc_detail=" + AiReportContextBuilder.getStr(sample, "frsc_detail")
                     + " frsc_fmt=" + AiReportContextBuilder.formatFrscForRow(sample)
                     + " frsc_zero_rows=" + frscZero + "/" + rows.size());
@@ -412,8 +465,9 @@ public class AiChatServiceImpl implements AiChatService {
         result.put("answer", answer);
         result.put("rowCount", rows.size());
 
-        // 화면 표 출력용 요약 목록
+        // 화면 표 출력용 요약 목록 (연도 컬럼 추가 — 연도 범위 검색 시 연도 구분)
         JSONArray columns = new JSONArray();
+        columns.add("연도");
         columns.add("사업명");
         columns.add("소관부서");
         columns.add("차수");
@@ -425,16 +479,27 @@ public class AiChatServiceImpl implements AiChatService {
         for (int i = 0; i < rows.size(); i++) {
             Map<String, Object> row = rows.get(i);
             JSONObject obj = new JSONObject();
-            obj.put("사업명", AiReportContextBuilder.buildBizLabel(row));
-            obj.put("소관부서", (AiReportContextBuilder.getStr(row, "office_nm") + " " + AiReportContextBuilder.getStr(row, "dept_nm")).trim());
+            String fisYearVal = AiReportContextBuilder.getStr(row, "fis_year");
+            String bizLabel = AiReportContextBuilder.buildBizLabel(row);
+            String deptLabel = (AiReportContextBuilder.getStr(row, "office_nm") + " "
+                    + AiReportContextBuilder.getStr(row, "dept_nm")).trim();
+            obj.put("연도", fisYearVal);
+            obj.put("사업명", bizLabel);
+            obj.put("소관부서", deptLabel);
             obj.put("차수", AiReportContextBuilder.buildDgrLabel(
-                    AiReportContextBuilder.getStr(row, "fis_year"),
+                    fisYearVal,
                     AiReportContextBuilder.getStr(row, "bgt_compo_fg"),
                     AiReportContextBuilder.getLong(row, "add_times"),
                     AiReportContextBuilder.getStr(row, "bgt_dgr")));
             obj.put("요구액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "demand_bgt_amt")));
             obj.put("조정액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "bgt_amt")));
             obj.put("조정재원", AiReportContextBuilder.formatFrscForRow(row));
+            // 표 클릭용 상세 내용(해당 사업 전체 연도·차수) — 컬럼에는 포함하지 않고 클릭 시 새 창에 표시
+            String detail = detailByRow.get(row);
+            obj.put("_detail", detail == null ? "" : detail);
+            obj.put("_detailTitle", bizLabel);
+            // 표 그룹 키(연도+사업명+부서) — 프런트에서 같은 사업의 차수 행을 셀 병합(그룹화)하는 데 사용
+            obj.put("_grpKey", fisYearVal + "|" + bizLabel + "|" + deptLabel);
             dataList.add(obj);
         }
         result.put("columns", columns);
@@ -453,9 +518,8 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     /**
-     * 조회된 조서 행에 TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT 기반 재원(frsc_amt1~6)을 부여한다.
-     * 연도별로 일괄 조회하며 2013~2026 등 TB_FISYEAR 전 연도에 동일 로직 적용.
-     * 예산액(bgt_amt)=조정액 총액, 괄호=재원별 조정액(ADJ_DEF_FRSC_AMT) 합.
+     * 조회된 조서 행에 TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT(화면 재원별 '조정액') 기반
+     * adj_frsc_gov/si/etc 를 부여한다. 재원명 매핑은 경상·투자 동일.
      */
     private void enrichReportRowsWithFrsc(JdbcTemplate jdbcTemplate, List<Map<String, Object>> rows) {
         if (rows == null || rows.isEmpty()) {
@@ -515,33 +579,18 @@ public class AiChatServiceImpl implements AiChatService {
             args.add(fisYear);
             args.addAll(pairArgs);
 
-            String sql = "SELECT Z1.fis_year AS fis_year\n"
-                    + "     , Z1.bgt_dgr AS bgt_dgr\n"
-                    + "     , Z1.te_bgt_compo_id AS te_bgt_compo_id\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '160', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt1\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '110', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), '120', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), '130', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt2\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '140', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), '150', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt3\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '180', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt4\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '190', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt5\n"
-                    + "     , NVL(SUM(DECODE(Z2.STAND_FRSC_CD, '170', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), '200', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), '210', NVL(Z1.ADJ_DEF_FRSC_AMT, 0), 0)), 0) AS frsc_amt6\n"
-                    + "     , NVL((SELECT GROUP_CONCAT(ZZ.FRSC SEPARATOR '|')\n"
-                    + "              FROM (SELECT MAX(Z2B.STAND_FRSC_CD) || ':' || MAX(Z2B.FRSC_FG_NM) || ':' || TO_CHAR(NVL(SUM(Z1B.ADJ_DEF_FRSC_AMT), 0)) AS FRSC\n"
-                    + "                         , NVL(SUM(Z1B.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT\n"
-                    + "                      FROM TB_DGRCOMPOFRSC Z1B, TB_YEARFRSC Z2B\n"
-                    + "                     WHERE Z1B.FIS_YEAR = Z1.FIS_YEAR\n"
-                    + "                       AND Z1B.BGT_DGR = Z1.BGT_DGR\n"
-                    + "                       AND Z1B.TE_BGT_COMPO_ID = Z1.TE_BGT_COMPO_ID\n"
-                    + appendYearFrscJoin("Z1B", "Z2B")
-                    + appendFrscBootstrapExcludeClause("Z1B")
-                    + "                     GROUP BY Z2B.FRSC_FG_CD) ZZ\n"
-                    + "             WHERE ZZ.FRSC_AMT <> 0), '') AS frsc_detail\n"
-                    + "  FROM TB_DGRCOMPOFRSC Z1, TB_YEARFRSC Z2\n"
-                    + " WHERE 1=1\n"
-                    + appendYearFrscJoin("Z1", "Z2")
-                    + appendFrscBootstrapExcludeClause("Z1")
-                    + "   AND Z1.FIS_YEAR = ?\n"
-                    + "   AND (Z1.BGT_DGR, Z1.TE_BGT_COMPO_ID) IN (" + inClause + ")\n"
-                    + " GROUP BY Z1.fis_year, Z1.bgt_dgr, Z1.te_bgt_compo_id";
+            String sql = "SELECT BB.BGT_DGR AS bgt_dgr\n"
+                    + "     , BB.TE_BGT_COMPO_ID AS te_bgt_compo_id\n"
+                    + "     , A.FRSC_FG_NM AS frsc_fg_nm\n"
+                    + "     , NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) AS adj_def_frsc_amt\n"
+                    + "  FROM TB_YEARFRSC A\n"
+                    + " INNER JOIN TB_DGRCOMPOFRSC BB\n"
+                    + "    ON A.FIS_YEAR = BB.FIS_YEAR\n"
+                    + "   AND A.FRSC_FG_CD = BB.FRSC_FG_CD\n"
+                    + " WHERE A.FIS_YEAR = ?\n"
+                    + "   AND (BB.BGT_DGR, BB.TE_BGT_COMPO_ID) IN (" + inClause + ")\n"
+                    + " GROUP BY BB.BGT_DGR, BB.TE_BGT_COMPO_ID, A.FRSC_FG_CD, A.FRSC_FG_NM\n"
+                    + "HAVING NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) <> 0";
 
             List<Map<String, Object>> frscRows;
             try {
@@ -551,25 +600,57 @@ public class AiChatServiceImpl implements AiChatService {
                 continue;
             }
 
-            java.util.HashMap<String, Map<String, Object>> lookup =
-                    new java.util.HashMap<String, Map<String, Object>>();
+            java.util.HashMap<String, List<Map<String, Object>>> linesByCompo =
+                    new java.util.HashMap<String, List<Map<String, Object>>>();
             for (int i = 0; i < frscRows.size(); i++) {
-                Map<String, Object> fr = frscRows.get(i);
-                String k = AiReportContextBuilder.getLong(fr, "bgt_dgr") + "\u0001"
-                        + AiReportContextBuilder.getStr(fr, "te_bgt_compo_id");
-                lookup.put(k, fr);
+                Map<String, Object> line = frscRows.get(i);
+                String k = AiReportContextBuilder.getLong(line, "bgt_dgr") + "\u0001"
+                        + AiReportContextBuilder.getStr(line, "te_bgt_compo_id");
+                List<Map<String, Object>> list = linesByCompo.get(k);
+                if (list == null) {
+                    list = new ArrayList<Map<String, Object>>();
+                    linesByCompo.put(k, list);
+                }
+                list.add(line);
             }
 
             for (int i = 0; i < yearRows.size(); i++) {
                 Map<String, Object> row = yearRows.get(i);
                 String k = AiReportContextBuilder.getLong(row, "bgt_dgr") + "\u0001"
                         + AiReportContextBuilder.getStr(row, "te_bgt_compo_id");
-                Map<String, Object> fr = lookup.get(k);
-                if (fr != null) {
-                    AiReportContextBuilder.applyAdjFrscFromDb(row, fr);
-                }
+                List<Map<String, Object>> lines = linesByCompo.get(k);
+                AiReportContextBuilder.applyAdjFrscFromFrscLines(row, lines);
             }
         }
+    }
+
+    /**
+     * 재원구분(FRSC_FG_CD)별 ADJ_DEF_FRSC_AMT 합계 — DialogDgrcompoModify·심사조서 화면과 동일.
+     * 추경 등 동일 재원에 +/- 행이 있으면 SUM 으로 상계( MAX 는 잔여 양수만 남겨 오표시 ).
+     */
+    private static String frscAdjSummedSubquery(String alias) {
+        return "(SELECT Z0.FIS_YEAR AS FIS_YEAR\n"
+                + "      , Z0.BGT_DGR AS BGT_DGR\n"
+                + "      , Z0.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID\n"
+                + "      , Z0.FRSC_FG_CD AS FRSC_FG_CD\n"
+                + "      , NVL(SUM(NVL(Z0.ADJ_DEF_FRSC_AMT, 0)), 0) AS ADJ_DEF_FRSC_AMT\n"
+                + "   FROM TB_DGRCOMPOFRSC Z0\n"
+                + "  WHERE 1=1\n"
+                + appendFrscBootstrapExcludeClause("Z0")
+                + "  GROUP BY Z0.FIS_YEAR, Z0.BGT_DGR, Z0.TE_BGT_COMPO_ID, Z0.FRSC_FG_CD) " + alias;
+    }
+
+    /** TB_YEARFRSC 조인 — 해당 연도·재원코드 정확히 일치 (DialogDgrcompoModify 와 동일) */
+    private static String appendYearFrscExactJoin(String frscAlias, String yearFrscAlias) {
+        return "   AND " + yearFrscAlias + ".FIS_YEAR = " + frscAlias + ".FIS_YEAR\n"
+                + "   AND " + yearFrscAlias + ".FRSC_FG_CD = " + frscAlias + ".FRSC_FG_CD\n";
+    }
+
+    /**
+     * @deprecated {@link #appendYearFrscExactJoin} 사용 — 연도 fallback 은 재원명·금액 오매핑 유발
+     */
+    private static String frscAdjDedupedSubquery(String alias) {
+        return frscAdjSummedSubquery(alias);
     }
 
     /** bootstrap 가짜 재원 행 제외 — 동일 편성에 운영 재원이 있으면 bootstrap 은 합산하지 않음 */
@@ -626,25 +707,26 @@ public class AiChatServiceImpl implements AiChatService {
             return new ArrayList<Map<String, Object>>();
         }
 
-        // 1차: 사업명 넓은 검색(핵심) — deptKeyword 있으면 해당 부서 소속만
-        if (bizKeyword.length() > 0) {
-            List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
-                    mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
-                    "", "", "", true);
-            if (!rows.isEmpty()) {
-                logger.info("AI RAG hit[1-biz-broad] years=" + years.size() + " merge=" + mergeAllYears
-                        + " kw=" + bizKeyword + " rows=" + rows.size());
-                return rows;
-            }
-        }
-
-        // 2차: 사업명 좁은 검색 — 사업명 필드만
+        // 1차: 사업명 좁은 검색(이름 컬럼만) — 대용량 검토의견 텍스트를 읽지 않아 매우 빠름.
+        //      필터가 조인 내부로 push down 되어 사업명 검색은 여기서 즉시 처리된다(주 경로).
         if (bizKeyword.length() > 0) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
                     "", "", "", false);
             if (!rows.isEmpty()) {
-                logger.info("AI RAG hit[2-biz-narrow] years=" + years.size() + " merge=" + mergeAllYears
+                logger.info("AI RAG hit[1-biz-narrow] years=" + years.size() + " merge=" + mergeAllYears
+                        + " kw=" + bizKeyword + " rows=" + rows.size());
+                return rows;
+            }
+        }
+
+        // 2차: 사업명 넓은 검색 — 이름으로 못 찾은 경우에만 검토의견·검색태그 텍스트까지 확장(느림).
+        if (bizKeyword.length() > 0) {
+            List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
+                    mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
+                    "", "", "", true);
+            if (!rows.isEmpty()) {
+                logger.info("AI RAG hit[2-biz-broad] years=" + years.size() + " merge=" + mergeAllYears
                         + " kw=" + bizKeyword + " rows=" + rows.size());
                 return rows;
             }
@@ -692,8 +774,8 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
-        // 7차: 회계연도 미지정·인근연도 실패 시 TB_FISYEAR 전체 연도 순차 검색 (2013~ 등 동일 로직)
-        if (!explicitFisYear) {
+        // 7차: 회계연도 미지정·인근연도 실패 시 전 연도 순차 검색 (기본 비활성 — 운영 DB 부하 큼)
+        if (!explicitFisYear && isAllYearsFallbackEnabled()) {
             List<String> allYears = getAllFisYears(jdbcTemplate);
             for (int i = 0; i < allYears.size(); i++) {
                 String y = allYears.get(i);
@@ -717,8 +799,18 @@ public class AiChatServiceImpl implements AiChatService {
     private List<Map<String, Object>> runReportQuery(JdbcTemplate jdbcTemplate, String reportCd, String fisYear,
             String bgtCompoFg, int addTimes, String bizKeyword, String deptKeyword, String tagKeyword,
             String implKeyword, String contentField, String contentKeyword, boolean broadKeyword) {
+        List<String> years = new ArrayList<String>();
+        years.add(fisYear);
+        return runReportQueryForYears(jdbcTemplate, reportCd, years, bgtCompoFg, addTimes,
+                bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword, broadKeyword);
+    }
+
+    /** 연도 목록 전체를 IN 조건으로 한 번에 조회 (연도 범위·다연도 검색 성능·정확도 개선) */
+    private List<Map<String, Object>> runReportQueryForYears(JdbcTemplate jdbcTemplate, String reportCd,
+            List<String> years, String bgtCompoFg, int addTimes, String bizKeyword, String deptKeyword,
+            String tagKeyword, String implKeyword, String contentField, String contentKeyword, boolean broadKeyword) {
         List<Object> args = new ArrayList<Object>();
-        String sql = buildReportSql(reportCd, fisYear, bgtCompoFg, addTimes,
+        String sql = buildReportSql(reportCd, years, bgtCompoFg, addTimes,
                 bizKeyword, deptKeyword, tagKeyword, implKeyword,
                 contentField, contentKeyword, broadKeyword, args);
         return queryReport(jdbcTemplate, sql, args);
@@ -733,6 +825,11 @@ public class AiChatServiceImpl implements AiChatService {
             List<String> years, boolean mergeAllYears, String bgtCompoFg, int addTimes,
             String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
             String contentField, String contentKeyword, boolean broadKeyword) {
+
+        // 연도별로 개별(단일 연도) 질의를 수행한다.
+        // 단일 연도 질의는 fis_year = ? 로 인덱스 범위 스캔이 적용돼 빠르지만,
+        // 여러 연도를 IN/BETWEEN 으로 합치면 집계 서브쿼리 조인이 나쁜 중첩 루프 계획으로
+        // 바뀌어 급격히 느려진다. 따라서 범위 검색도 연도별 개별 질의 후 결과를 합친다.
         List<Map<String, Object>> merged = new ArrayList<Map<String, Object>>();
         for (int i = 0; i < years.size(); i++) {
             List<Map<String, Object>> rows = runReportQuery(jdbcTemplate, reportCd, years.get(i),
@@ -741,7 +838,11 @@ public class AiChatServiceImpl implements AiChatService {
             if (!rows.isEmpty()) {
                 if (mergeAllYears) {
                     merged.addAll(rows);
+                    if (merged.size() >= getMaxReportRows()) {
+                        break;
+                    }
                 } else {
+                    // 단일 연도·인근연도 우선(first-hit): 처음 hit 연도만 반환
                     return rows;
                 }
             }
@@ -834,12 +935,13 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
-        // 연도를 명시하지 않은 경우에만 인근 연도 확장 (명시 연도는 해당 연도만 — 2020·2022 등 동일 적용)
+        // 연도를 명시하지 않은 경우에만 인근 연도 확장 (운영 DB 부하 방지 — 기본 1개년)
         if (!explicitYear) {
             String anchor = years.isEmpty() ? getMaxFisYear(jdbcTemplate) : years.get(0);
-            if (anchor.length() == 4) {
+            int nearbyCount = getIntProp("Globals.AiNearbyYearCount", 1);
+            if (anchor.length() == 4 && nearbyCount > 0) {
                 int base = Integer.parseInt(anchor);
-                for (int i = 1; i < 5; i++) {
+                for (int i = 1; i <= nearbyCount; i++) {
                     String y = String.valueOf(base - i);
                     if (!years.contains(y)) {
                         years.add(y);
@@ -893,6 +995,9 @@ public class AiChatServiceImpl implements AiChatService {
 
     /** TB_FISYEAR 기준 전체 회계연도 (오름차순) */
     private List<String> getAllFisYears(JdbcTemplate jdbcTemplate) {
+        if (cachedAllFisYears != null && !cachedAllFisYears.isEmpty()) {
+            return cachedAllFisYears;
+        }
         List<String> years = new ArrayList<String>();
         try {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
@@ -914,6 +1019,9 @@ public class AiChatServiceImpl implements AiChatService {
                     years.add(String.valueOf(y));
                 }
             }
+        }
+        if (!years.isEmpty()) {
+            cachedAllFisYears = years;
         }
         return years;
     }
@@ -1240,6 +1348,67 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
+    /** 띄어쓰기·영문 대소문자 무시 LIKE 패턴 — 키워드의 공백을 모두 제거한다. */
+    private String toSpaceInsensitiveLike(String keyword) {
+        if (keyword == null) {
+            return "%";
+        }
+        String kw = keyword.replaceAll("\\s+", "").trim();
+        if (kw.length() == 0) {
+            return "%";
+        }
+        return "%" + kw.toUpperCase(Locale.ENGLISH) + "%";
+    }
+
+    /** 컬럼도 공백을 제거하고 비교 (예: UPPER(REPLACE(W.comp_ground,' ','')) LIKE ?) */
+    private String spaceInsensitiveLikeCol(String col) {
+        return "UPPER(REPLACE(" + col + ", ' ', '')) LIKE ?";
+    }
+
+    private void addSpaceInsensitiveLikeArgs(List<Object> args, String keyword, int count) {
+        String like = toSpaceInsensitiveLike(keyword);
+        for (int i = 0; i < count; i++) {
+            args.add(like);
+        }
+    }
+
+    /**
+     * 회계연도 검색 조건절.
+     * - 단일 연도: "col = ?"  (인덱스 범위 스캔 그대로 사용 — 속도 최적)
+     * - 연도 범위: "col BETWEEN ? AND ?" (연속 구간 인덱스 스캔, IN 목록보다 빠름)
+     * CUBRID 옵티마이저는 IN(?,?,...) 에서 인덱스 활용이 저하되어 = / BETWEEN 을 사용한다.
+     */
+    private String yearPredicate(String col, List<String> years) {
+        if (years == null || years.size() <= 1) {
+            return col + " = ?";
+        }
+        return col + " BETWEEN ? AND ?";
+    }
+
+    private void addYearPredicateArgs(List<Object> args, List<String> years) {
+        if (years == null || years.isEmpty()) {
+            args.add("");
+            return;
+        }
+        if (years.size() == 1) {
+            args.add(years.get(0));
+            return;
+        }
+        String min = years.get(0);
+        String max = years.get(0);
+        for (int i = 1; i < years.size(); i++) {
+            String y = years.get(i);
+            if (y.compareTo(min) < 0) {
+                min = y;
+            }
+            if (y.compareTo(max) > 0) {
+                max = y;
+            }
+        }
+        args.add(min);
+        args.add(max);
+    }
+
     /**
      * 심사조서 사업 단위 조회 SQL 생성.
      *
@@ -1251,7 +1420,7 @@ public class AiChatServiceImpl implements AiChatService {
      *
      * @param broadKeyword true 면 사업명 키워드를 검토의견/검색태그까지 확장(OR)하여 재검색
      */
-    private String buildReportSql(String reportCd, String fisYear, String bgtCompoFg, int addTimes,
+    private String buildReportSql(String reportCd, List<String> years, String bgtCompoFg, int addTimes,
             String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
             String contentField, String contentKeyword,
             boolean broadKeyword, List<Object> args) {
@@ -1261,26 +1430,146 @@ public class AiChatServiceImpl implements AiChatService {
         StringBuilder sb = new StringBuilder();
 
         // 재원(frsc_amt1~6)은 조회 후 enrichReportRowsWithFrsc()에서 일괄 부여 (연도·차수 무관 동일 로직)
+        // 성능: 키워드·부서 등 필터를 UNION 이후(W)가 아니라 각 브랜치 조인 내부(R/C/B/D)로
+        // push down 하여, 조인 단계에서 곧바로 걸러 결과 행수를 최소화한다.
         sb.append("SELECT X.* FROM (\n");
         sb.append("SELECT * FROM (\n");
         if (both || "010".equals(reportCd)) {
-            appendReportBranch(sb, "010", fisYear, bgtCompoFg, addTimes, args);
+            appendReportBranch(sb, "010", years, bgtCompoFg, addTimes,
+                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword, broadKeyword, args);
         }
         if (both) {
             sb.append("UNION ALL\n");
         }
         if (both || "020".equals(reportCd)) {
-            appendReportBranch(sb, "020", fisYear, bgtCompoFg, addTimes, args);
+            appendReportBranch(sb, "020", years, bgtCompoFg, addTimes,
+                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword, broadKeyword, args);
         }
         sb.append(") W\n");
         sb.append("WHERE 1=1\n");
 
-        // 행정운영경비(정책사업)의 기본경비·인력운영비 사업은 심사 대상 정보가 아니므로 제외
-        sb.append("  AND NOT (W.pbiz_nm LIKE '%행정운영경비%'\n");
-        sb.append("           AND (W.ubiz_nm LIKE '%기본경비%' OR W.ubiz_nm LIKE '%인력운영비%'\n");
-        sb.append("                OR W.dbiz_nm LIKE '%기본경비%' OR W.dbiz_nm LIKE '%인력운영비%'))\n");
+        // 같은 사업의 차수별 행이 인접하도록 사업 기준으로 정렬 (연도 → 부서 → 사업 → 차수)
+        sb.append("ORDER BY W.fis_year, W.office_nm, W.dept_nm, W.comp_ground, W.te_mng_mok_cd, W.bgt_dgr\n");
+        // 연도 범위·다연도 검색이면 연도별 결과가 잘리지 않도록 행 상한을 연도 수에 비례해 확대
+        int limit = getMaxReportRows();
+        int yearCount = years == null ? 1 : Math.max(1, years.size());
+        if (yearCount > 1) {
+            limit = Math.min(limit * yearCount, 6000);
+        }
+        sb.append("LIMIT ").append(limit).append("\n");
+        sb.append(") X");
 
-        // 사업명 키워드: 쉼표(,)로 여러 개를 받아 OR 검색 (예: "유가보조금,유류비,연료비")
+        return sb.toString();
+    }
+
+    /** 조서구분(010/020)별 단일 SELECT 분기 생성. 단일 연도=등호, 범위=BETWEEN 으로 인덱스 활용. */
+    private void appendReportBranch(StringBuilder sb, String reportCd, List<String> years,
+            String bgtCompoFg, int addTimes,
+            String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
+            String contentField, String contentKeyword, boolean broadKeyword, List<Object> args) {
+
+        boolean invest = "020".equals(reportCd);
+        String table = invest ? "TB_REPORT020" : "TB_REPORT010";
+        String reportNm = invest ? "투자사업심사조서" : "경상사업심사조서";
+
+        // 성능 핵심: TB_DGRCOMPO 를 파생(GROUP BY) 테이블이 아니라 직접 조인하고 바깥에서 GROUP BY 한다.
+        // 파생 테이블은 CUBRID 가 인덱스를 못 타 그 해 전체(수만 행)를 매번 materialize·순차 스캔하지만,
+        // 직접 조인은 R→C(ix_dgrcompo_te)→D/B/G 전부 인덱스 NL 조인이 되어 10배 이상 빠르다.
+        // (검증: 같은 te_bgt_compo_id 그룹 내 dept_cd/dbiz_cd 는 항상 동일하고 마스터 매칭도 100% 이므로 결과 동일)
+        sb.append("SELECT '").append(reportNm).append("' AS report_nm\n");
+        sb.append("     , R.fis_year AS fis_year\n");
+        sb.append("     , R.bgt_dgr AS bgt_dgr\n");
+        sb.append("     , R.te_bgt_compo_id AS te_bgt_compo_id\n");
+        sb.append("     , MIN(G.bgt_compo_fg) AS bgt_compo_fg\n");
+        sb.append("     , NVL(MIN(G.add_times), 0) AS add_times\n");
+        sb.append("     , NVL(MIN(D.office_nm), '') AS office_nm\n");
+        sb.append("     , NVL(MIN(D.dept_nm), '') AS dept_nm\n");
+        sb.append("     , NVL(MIN(B.pbiz_nm), '') AS pbiz_nm\n");
+        sb.append("     , NVL(MIN(B.ubiz_nm), '') AS ubiz_nm\n");
+        sb.append("     , NVL(MIN(B.dbiz_nm), '') AS dbiz_nm\n");
+        sb.append("     , NVL(MIN(C.comp_ground), '') AS comp_ground\n");
+        sb.append("     , NVL(MIN(B.fis_fg_nm), '') AS fis_fg_nm\n");
+        sb.append("     , MIN(C.te_mng_mok_cd) AS te_mng_mok_cd\n");
+        sb.append("     , MIN(C.te_mng_mok_nm) AS te_mng_mok_nm\n");
+        sb.append("     , MIN(C.dept_cd) AS dept_cd\n");
+        sb.append("     , MIN(C.dbiz_cd) AS dbiz_cd\n");
+        sb.append("     , SUM(NVL(C.pre_amt, 0)) AS pre_amt\n");
+        sb.append("     , SUM(NVL(C.pre_bgt_amt, 0)) AS pre_bgt_amt\n");
+        // 심사조서 화면(ReportWrite010)과 동일: 조정액=DIFF_AMT, 요구액=DEMAND_DIFF_AMT (추경 포함)
+        sb.append("     , SUM(NVL(C.demand_diff_amt, 0)) AS demand_bgt_amt\n");
+        sb.append("     , SUM(NVL(C.diff_amt, 0)) AS bgt_amt\n");
+        sb.append("     , SUM(NVL(C.diff_amt, 0)) AS diff_amt\n");
+        sb.append("     , NVL(MIN(R.demand_cont), '') AS gubun\n");
+        sb.append("     , NVL(MIN(R.invest_plan), '') AS invest_plan\n");
+        sb.append("     , NVL(MIN(R.demand_cont), '') AS demand_cont\n");
+        sb.append("     , NVL(MIN(R.exam_cont), '') AS exam_cont\n");
+        sb.append("     , NVL(MIN(R.srch_val), '') AS srch_val\n");
+        if (invest) {
+            sb.append("     , MIN(NVL(R.tot_frsc_amt1,0)+NVL(R.tot_frsc_amt2,0)+NVL(R.tot_frsc_amt3,0)+NVL(R.tot_frsc_amt4,0)+NVL(R.tot_frsc_amt5,0)+NVL(R.tot_frsc_amt6,0)) AS tot_biz_amt\n");
+        } else {
+            sb.append("     , 0 AS tot_biz_amt\n");
+        }
+        sb.append("  FROM ").append(table).append(" R\n");
+        sb.append("     , TB_DGRCOMPO C\n");
+        sb.append("     , TB_BGTDGR G\n");
+        sb.append("     , TB_DGRDEPT D\n");
+        sb.append("     , TB_DGRBIZ B\n");
+        sb.append(" WHERE C.fis_year = R.fis_year\n");
+        sb.append("   AND C.bgt_dgr = R.bgt_dgr\n");
+        sb.append("   AND C.te_bgt_compo_id = R.te_bgt_compo_id\n");
+        sb.append("   AND C.compo_level = '1'\n");
+        sb.append("   AND (C.cng_type IS NULL OR C.cng_type = 'CH02' OR (C.cng_type = 'CH01' AND C.grp_lvl <> '2'))\n");
+        sb.append("   AND G.fis_year = R.fis_year\n");
+        sb.append("   AND G.bgt_dgr = R.bgt_dgr\n");
+        sb.append("   AND D.fis_year = R.fis_year\n");
+        sb.append("   AND D.bgt_dgr = R.bgt_dgr\n");
+        sb.append("   AND D.dept_cd = C.dept_cd\n");
+        sb.append("   AND B.fis_year = R.fis_year\n");
+        sb.append("   AND B.bgt_dgr = R.bgt_dgr\n");
+        sb.append("   AND B.dbiz_cd = C.dbiz_cd\n");
+        sb.append("   AND R.report_cd = '").append(reportCd).append("'\n");
+        sb.append("   AND ").append(yearPredicate("R.fis_year", years)).append("\n");
+        sb.append("   AND ").append(yearPredicate("C.fis_year", years)).append("\n");
+        // '?' 등장 순서: R(fis_year) -> C(fis_year)
+        addYearPredicateArgs(args, years);
+        addYearPredicateArgs(args, years);
+
+        if ("10".equals(bgtCompoFg)) {
+            sb.append("   AND G.bgt_compo_fg = '10'\n");
+        } else if ("20".equals(bgtCompoFg)) {
+            sb.append("   AND G.bgt_compo_fg = '20'\n");
+            if (addTimes > 0) {
+                sb.append("   AND G.add_times = ?\n");
+                args.add(Integer.valueOf(addTimes));
+            }
+        }
+
+        // 필터(키워드·부서·태그·구분·비정형)를 조인 WHERE 에 직접 적용 (push down)
+        appendReportBranchFilters(sb, bizKeyword, deptKeyword, tagKeyword, implKeyword,
+                contentField, contentKeyword, broadKeyword, args);
+
+        // 사업(te_bgt_compo_id) 단위로 compo 금액을 합산
+        sb.append("   GROUP BY R.fis_year, R.bgt_dgr, R.te_bgt_compo_id\n");
+        sb.append("\n");
+    }
+
+    /**
+     * 브랜치(R/C/B/D 별칭) WHERE 에 필터를 push down 한다.
+     * 컬럼 매핑: comp_ground·te_mng_mok_nm=C, dbiz_nm·ubiz_nm·pbiz_nm·fis_fg_nm=B,
+     * dept_nm·office_nm=D, srch_val·demand_cont·exam_cont·invest_plan=R (gubun=R.demand_cont).
+     */
+    private void appendReportBranchFilters(StringBuilder sb, String bizKeyword, String deptKeyword,
+            String tagKeyword, String implKeyword, String contentField, String contentKeyword,
+            boolean broadKeyword, List<Object> args) {
+
+        // 행정운영경비(정책사업)의 기본경비·인력운영비 사업은 심사 대상 정보가 아니므로 제외
+        sb.append("   AND NOT (B.pbiz_nm LIKE '%행정운영경비%'\n");
+        sb.append("            AND (B.ubiz_nm LIKE '%기본경비%' OR B.ubiz_nm LIKE '%인력운영비%'\n");
+        sb.append("                 OR B.dbiz_nm LIKE '%기본경비%' OR B.dbiz_nm LIKE '%인력운영비%'))\n");
+
+        // 사업명 키워드: 쉼표(,)로 여러 개를 받아 OR 검색.
+        // 좁은 검색(!broadKeyword): 세세사업명·세부사업명만 — REPLACE 6컬럼 OR 은 대용량 DB에서 급격히 느림.
+        // 넓은 검색: 검토의견·검색태그까지 확장(느림, 1차 실패 시에만).
         if (bizKeyword.length() > 0) {
             String[] keywords = bizKeyword.split("[,;]");
             StringBuilder kwSql = new StringBuilder();
@@ -1293,18 +1582,18 @@ public class AiChatServiceImpl implements AiChatService {
                     kwSql.append(" OR ");
                 }
                 if (broadKeyword) {
-                    kwSql.append("UPPER(W.comp_ground) LIKE ? OR UPPER(W.dbiz_nm) LIKE ? OR UPPER(W.te_mng_mok_nm) LIKE ?");
-                    kwSql.append(" OR UPPER(W.ubiz_nm) LIKE ? OR UPPER(W.pbiz_nm) LIKE ? OR UPPER(W.fis_fg_nm) LIKE ?");
-                    kwSql.append(" OR UPPER(W.srch_val) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.exam_cont) LIKE ?");
-                    addCaseInsensitiveLikeArgs(args, kw, 9);
+                    kwSql.append(spaceInsensitiveLikeCol("C.comp_ground")).append(" OR ").append(spaceInsensitiveLikeCol("B.dbiz_nm")).append(" OR ").append(spaceInsensitiveLikeCol("C.te_mng_mok_nm"));
+                    kwSql.append(" OR ").append(spaceInsensitiveLikeCol("B.ubiz_nm")).append(" OR ").append(spaceInsensitiveLikeCol("B.pbiz_nm")).append(" OR ").append(spaceInsensitiveLikeCol("B.fis_fg_nm"));
+                    addSpaceInsensitiveLikeArgs(args, kw, 6);
+                    kwSql.append(" OR UPPER(R.srch_val) LIKE ? OR UPPER(R.demand_cont) LIKE ? OR UPPER(R.exam_cont) LIKE ?");
+                    addCaseInsensitiveLikeArgs(args, kw, 3);
                 } else {
-                    kwSql.append("UPPER(W.comp_ground) LIKE ? OR UPPER(W.dbiz_nm) LIKE ? OR UPPER(W.te_mng_mok_nm) LIKE ?");
-                    kwSql.append(" OR UPPER(W.ubiz_nm) LIKE ? OR UPPER(W.pbiz_nm) LIKE ? OR UPPER(W.fis_fg_nm) LIKE ?");
-                    addCaseInsensitiveLikeArgs(args, kw, 6);
+                    kwSql.append(spaceInsensitiveLikeCol("B.dbiz_nm")).append(" OR ").append(spaceInsensitiveLikeCol("C.comp_ground"));
+                    addSpaceInsensitiveLikeArgs(args, kw, 2);
                 }
             }
             if (kwSql.length() > 0) {
-                sb.append("  AND (").append(kwSql).append(")\n");
+                sb.append("   AND (").append(kwSql).append(")\n");
             }
         }
         if (deptKeyword.length() > 0) {
@@ -1319,18 +1608,18 @@ public class AiChatServiceImpl implements AiChatService {
                 if (deptSql.length() > 0) {
                     deptSql.append(" OR ");
                 }
-                deptSql.append("(UPPER(W.dept_nm) LIKE ? OR UPPER(W.office_nm) LIKE ?");
-                deptSql.append(" OR UPPER(TRIM(CONCAT(NVL(W.office_nm,''), ' ', NVL(W.dept_nm,'')))) LIKE ?)");
+                deptSql.append("(UPPER(D.dept_nm) LIKE ? OR UPPER(D.office_nm) LIKE ?");
+                deptSql.append(" OR UPPER(TRIM(CONCAT(NVL(D.office_nm,''), ' ', NVL(D.dept_nm,'')))) LIKE ?)");
                 args.add(like);
                 args.add(like);
                 args.add(like);
             }
             if (deptSql.length() > 0) {
-                sb.append("  AND (").append(deptSql).append(")\n");
+                sb.append("   AND (").append(deptSql).append(")\n");
             }
         }
         if (tagKeyword.length() > 0) {
-            sb.append("  AND UPPER(W.srch_val) LIKE ?\n");
+            sb.append("   AND UPPER(R.srch_val) LIKE ?\n");
             args.add(toCaseInsensitiveLike(tagKeyword.replaceAll("#", "")));
         }
         // 시행주관·시행주체·시행처 등 → [구분] 필드(요구내용·검토내용) 검색
@@ -1345,133 +1634,26 @@ public class AiChatServiceImpl implements AiChatService {
                 if (implSql.length() > 0) {
                     implSql.append(" OR ");
                 }
-                // gubun = demand_cont(심사조서 [구분] 목록의 요구내용)
-                implSql.append("UPPER(W.gubun) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.invest_plan) LIKE ?");
-                addCaseInsensitiveLikeArgs(args, kw, 3);
+                // gubun = R.demand_cont (심사조서 [구분] 목록의 요구내용)
+                implSql.append("UPPER(R.demand_cont) LIKE ? OR UPPER(R.invest_plan) LIKE ?");
+                addCaseInsensitiveLikeArgs(args, kw, 2);
             }
             if (implSql.length() > 0) {
-                sb.append("  AND (").append(implSql).append(")\n");
+                sb.append("   AND (").append(implSql).append(")\n");
             }
         }
 
         if (contentKeyword != null && contentKeyword.length() > 0) {
             String like = toCaseInsensitiveLike(contentKeyword);
             if (CONTENT_FIELD_EXAM.equals(contentField)) {
-                sb.append("  AND UPPER(W.exam_cont) LIKE ?\n");
+                sb.append("   AND UPPER(R.exam_cont) LIKE ?\n");
                 args.add(like);
             } else if (CONTENT_FIELD_GUBUN.equals(contentField)) {
-                sb.append("  AND (UPPER(W.gubun) LIKE ? OR UPPER(W.demand_cont) LIKE ? OR UPPER(W.invest_plan) LIKE ?)\n");
-                args.add(like);
+                sb.append("   AND (UPPER(R.demand_cont) LIKE ? OR UPPER(R.invest_plan) LIKE ?)\n");
                 args.add(like);
                 args.add(like);
             }
         }
-
-        // 같은 사업의 차수별 행이 인접하도록 사업 기준으로 정렬 (차수는 마지막)
-        sb.append("ORDER BY W.office_nm, W.dept_nm, W.comp_ground, W.te_mng_mok_cd, W.bgt_dgr\n");
-        sb.append("LIMIT ").append(getMaxReportBlocks()).append("\n");
-        sb.append(") X");
-
-        return sb.toString();
-    }
-
-    /** 조서구분(010/020)별 단일 SELECT 분기 생성 */
-    private void appendReportBranch(StringBuilder sb, String reportCd, String fisYear,
-            String bgtCompoFg, int addTimes, List<Object> args) {
-
-        boolean invest = "020".equals(reportCd);
-        String table = invest ? "TB_REPORT020" : "TB_REPORT010";
-        String reportNm = invest ? "투자사업심사조서" : "경상사업심사조서";
-
-        sb.append("SELECT '").append(reportNm).append("' AS report_nm\n");
-        sb.append("     , R.fis_year AS fis_year\n");
-        sb.append("     , R.bgt_dgr AS bgt_dgr\n");
-        sb.append("     , R.te_bgt_compo_id AS te_bgt_compo_id\n");
-        sb.append("     , G.bgt_compo_fg AS bgt_compo_fg\n");
-        sb.append("     , NVL(G.add_times, 0) AS add_times\n");
-        sb.append("     , NVL(D.office_nm, '') AS office_nm\n");
-        sb.append("     , NVL(D.dept_nm, '') AS dept_nm\n");
-        sb.append("     , NVL(B.pbiz_nm, '') AS pbiz_nm\n");
-        sb.append("     , NVL(B.ubiz_nm, '') AS ubiz_nm\n");
-        sb.append("     , NVL(B.dbiz_nm, '') AS dbiz_nm\n");
-        sb.append("     , NVL(C.comp_ground, '') AS comp_ground\n");
-        sb.append("     , NVL(B.fis_fg_nm, '') AS fis_fg_nm\n");
-        sb.append("     , C.te_mng_mok_cd AS te_mng_mok_cd\n");
-        sb.append("     , C.te_mng_mok_nm AS te_mng_mok_nm\n");
-        sb.append("     , C.dept_cd AS dept_cd\n");
-        sb.append("     , C.dbiz_cd AS dbiz_cd\n");
-        sb.append("     , C.pre_amt AS pre_amt\n");
-        sb.append("     , C.pre_bgt_amt AS pre_bgt_amt\n");
-        sb.append("     , C.demand_bgt_amt AS demand_bgt_amt\n");
-        sb.append("     , C.bgt_amt AS bgt_amt\n");
-        sb.append("     , C.diff_amt AS diff_amt\n");
-        sb.append("     , NVL(R.demand_cont, '') AS gubun\n");
-        sb.append("     , NVL(R.invest_plan, '') AS invest_plan\n");
-        sb.append("     , NVL(R.demand_cont, '') AS demand_cont\n");
-        sb.append("     , NVL(R.exam_cont, '') AS exam_cont\n");
-        sb.append("     , NVL(R.srch_val, '') AS srch_val\n");
-        if (invest) {
-            sb.append("     , NVL(R.tot_frsc_amt1,0)+NVL(R.tot_frsc_amt2,0)+NVL(R.tot_frsc_amt3,0)+NVL(R.tot_frsc_amt4,0)+NVL(R.tot_frsc_amt5,0)+NVL(R.tot_frsc_amt6,0) AS tot_biz_amt\n");
-        } else {
-            sb.append("     , 0 AS tot_biz_amt\n");
-        }
-        sb.append("  FROM ").append(table).append(" R\n");
-        sb.append("     , (SELECT fis_year, bgt_dgr, te_bgt_compo_id\n");
-        sb.append("             , MIN(dept_cd) AS dept_cd\n");
-        sb.append("             , MIN(dbiz_cd) AS dbiz_cd\n");
-        sb.append("             , MIN(te_mng_mok_cd) AS te_mng_mok_cd\n");
-        sb.append("             , MIN(te_mng_mok_nm) AS te_mng_mok_nm\n");
-        sb.append("             , MIN(comp_ground) AS comp_ground\n");
-        sb.append("             , SUM(NVL(pre_amt, 0)) AS pre_amt\n");
-        sb.append("             , SUM(NVL(pre_bgt_amt, 0)) AS pre_bgt_amt\n");
-        sb.append("             , SUM(NVL(demand_bgt_amt, 0)) AS demand_bgt_amt\n");
-        sb.append("             , SUM(NVL(bgt_amt, 0)) AS bgt_amt\n");
-        sb.append("             , SUM(NVL(diff_amt, 0)) AS diff_amt\n");
-        sb.append("          FROM TB_DGRCOMPO\n");
-        sb.append("         WHERE compo_level = '1'\n");
-        sb.append("           AND fis_year = ?\n");
-        sb.append("           AND (cng_type IS NULL OR cng_type = 'CH02' OR (cng_type = 'CH01' AND grp_lvl <> '2'))\n");
-        sb.append("         GROUP BY fis_year, bgt_dgr, te_bgt_compo_id) C\n");
-        // 부서명·사업명은 스칼라 서브쿼리 대신 집계 조인으로 조회 (속도 개선)
-        sb.append("     , TB_BGTDGR G\n");
-        sb.append("     , (SELECT fis_year, bgt_dgr, dept_cd, MIN(office_nm) AS office_nm, MIN(dept_nm) AS dept_nm\n");
-        sb.append("          FROM TB_DGRDEPT\n");
-        sb.append("         WHERE fis_year = ?\n");
-        sb.append("         GROUP BY fis_year, bgt_dgr, dept_cd) D\n");
-        sb.append("     , (SELECT fis_year, bgt_dgr, dbiz_cd, MIN(pbiz_nm) AS pbiz_nm, MIN(ubiz_nm) AS ubiz_nm\n");
-        sb.append("             , MIN(dbiz_nm) AS dbiz_nm, MIN(fis_fg_nm) AS fis_fg_nm\n");
-        sb.append("          FROM TB_DGRBIZ\n");
-        sb.append("         WHERE fis_year = ?\n");
-        sb.append("         GROUP BY fis_year, bgt_dgr, dbiz_cd) B\n");
-        sb.append(" WHERE C.fis_year = R.fis_year\n");
-        sb.append("   AND C.bgt_dgr = R.bgt_dgr\n");
-        sb.append("   AND C.te_bgt_compo_id = R.te_bgt_compo_id\n");
-        sb.append("   AND G.fis_year = R.fis_year\n");
-        sb.append("   AND G.bgt_dgr = R.bgt_dgr\n");
-        sb.append("   AND D.fis_year = R.fis_year\n");
-        sb.append("   AND D.bgt_dgr = R.bgt_dgr\n");
-        sb.append("   AND D.dept_cd = C.dept_cd\n");
-        sb.append("   AND B.fis_year = R.fis_year\n");
-        sb.append("   AND B.bgt_dgr = R.bgt_dgr\n");
-        sb.append("   AND B.dbiz_cd = C.dbiz_cd\n");
-        sb.append("   AND R.report_cd = '").append(reportCd).append("'\n");
-        sb.append("   AND R.fis_year = ?\n");
-        // '?' 등장 순서: C(fis_year) -> D(fis_year) -> B(fis_year) -> R(fis_year)
-        args.add(fisYear);
-        args.add(fisYear);
-        args.add(fisYear);
-        args.add(fisYear);
-
-        if ("10".equals(bgtCompoFg)) {
-            sb.append("   AND G.bgt_compo_fg = '10'\n");
-        } else if ("20".equals(bgtCompoFg)) {
-            sb.append("   AND G.bgt_compo_fg = '20'\n");
-            if (addTimes > 0) {
-                sb.append("   AND G.add_times = ?\n");
-                args.add(Integer.valueOf(addTimes));
-            }
-        }
-        sb.append("\n");
     }
 
     /** 심사조서 RAG 최종 답변 프롬프트 (페르소나·서식은 system_instruction 으로 별도 고정) */

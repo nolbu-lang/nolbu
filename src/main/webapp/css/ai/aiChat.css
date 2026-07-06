@@ -10,7 +10,7 @@
     bottom: 0;
     transform: translateX(-50%);
     -webkit-transform: translateX(-50%);
-    width: 720px;
+    width: 960px;
     max-width: 96%;
     z-index: 99990;
     font-family: "맑은 고딕", "Malgun Gothic", dotum, sans-serif;
@@ -102,6 +102,13 @@
     white-space: pre-wrap;
 }
 
+/* 표가 포함된 답변 말풍선 — 대화창 전체 폭 사용 (가로 열이 잘리지 않도록) */
+.ai-msg.ai-bot .ai-bubble.ai-bubble-wide {
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .ai-msg.ai-bot .ai-bubble {
     background: #ffffff;
     border: 1px solid #dcdfe5;
@@ -191,8 +198,30 @@
     top: 0;
 }
 
-.ai-result-table tr:nth-child(even) td {
-    background: #fafbfc;
+.ai-result-table tbody tr.ai-row-clickable {
+    cursor: pointer;
+}
+
+.ai-result-table tbody tr.ai-row-clickable:hover td {
+    background: #e8f0fe;
+}
+
+/* 연도+사업명 그룹 구분선 (그룹 첫 행 위쪽) */
+.ai-result-table tbody tr.ai-grp-start > td {
+    border-top: 2px solid #b9c9e2;
+}
+
+/* 병합된 그룹 셀(연도·사업명·소관부서) — 세로 가운데 정렬, 연한 배경 */
+.ai-result-table tbody td.ai-grp-cell {
+    vertical-align: middle;
+    background: #fbfcfe;
+}
+
+/* 사업명 셀 — 클릭 가능 강조 */
+.ai-result-table tbody td.ai-biz-cell {
+    color: #1a4b8b;
+    text-decoration: underline;
+    font-weight: bold;
 }
 
 .ai-sql-toggle {
@@ -276,4 +305,142 @@
 
 .ai-examples .ai-chip:hover {
     background: #d8e5f5;
+}
+
+/* 사업 상세 모달 (새 창 팝업 차단 시 대체 표시) */
+.ai-detail-modal {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147483000;
+}
+
+.ai-detail-dim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.ai-detail-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 920px;
+    max-width: 94vw;
+    max-height: 86vh;
+    background: #f4f6f8;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ai-detail-hd {
+    flex: 0 0 auto;
+    background: #1f4e79;
+    color: #fff;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ai-detail-close {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.ai-detail-bd {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 16px 18px;
+}
+
+.ai-detail-card {
+    background: #fff;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    padding: 16px 18px;
+    line-height: 1.7;
+    font-size: 13px;
+    white-space: normal;
+    word-break: break-word;
+    overflow-x: auto;
+}
+
+/* 사업 상세 표 (모달) */
+.ai-detail-card .ai-biz-detail-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+    table-layout: fixed;
+}
+
+.ai-detail-card .ai-biz-detail-table th,
+.ai-detail-card .ai-biz-detail-table td {
+    border: 1px solid #d5dbe3;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.ai-detail-card .ai-biz-detail-table th {
+    background: #eef2f7;
+    color: #1f4e79;
+    font-weight: bold;
+}
+
+.ai-detail-card .ai-biz-detail-table tr:nth-child(even) td {
+    background: #fafbfc;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-th-budget,
+.ai-detail-card .ai-biz-detail-table .ai-td-budget {
+    width: 11%;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-th-gubun,
+.ai-detail-card .ai-biz-detail-table .ai-td-gubun {
+    width: 14%;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-th-demand,
+.ai-detail-card .ai-biz-detail-table .ai-td-demand {
+    width: 28%;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-th-exam,
+.ai-detail-card .ai-biz-detail-table .ai-td-exam {
+    width: 28%;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-th-dept,
+.ai-detail-card .ai-biz-detail-table .ai-td-dept {
+    width: 9%;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+.ai-detail-card .ai-biz-detail-table .ai-td-wrap {
+    word-break: break-word;
+    line-height: 1.55;
 }

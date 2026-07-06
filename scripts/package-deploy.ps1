@@ -41,6 +41,7 @@ $deployFiles = @(
     "deploy\deploy-app.ps1",
     "deploy\deploy-db.ps1",
     "deploy\README-관리자용.md",
+    "deploy\README-운영배포-AI.md",
     "deploy\globals.properties.ai-snippet.example"
 )
 foreach ($f in $deployFiles) {
@@ -63,7 +64,9 @@ foreach ($f in $scriptFiles) {
     }
 }
 
+$guideName = "docs\운영서버_배포_가이드_$DateTag.md"
 $docFiles = @(
+    $guideName,
     "docs\운영배포_종합개선보고서.md",
     "docs\업무서버_적용_가이드.md",
     "docs\개선사항_보고서.md",
@@ -83,7 +86,10 @@ $readme = @"
 # bcjis 개선본 배포 패키지 ($DateTag)
 
 ## 전달 목적
-예산편성심사정보시스템 개선(전년도예산조서적용 + AI 예산도우미) 운영 서버 반영
+예산편성심사정보시스템 — bcjis-소스변경분-20260629 **다음** 차수 (조정재원·AI 검색속도)
+
+## 이전 배포
+- bcjis-소스변경분-20260629 / bcjis-배포-20260629 까지 적용 후 **본 패키지** 적용
 
 ## 관리자가 받을 파일 (이 폴더 전체)
 1. **bcjis-webapp.war** — 애플리케이션 (필수)

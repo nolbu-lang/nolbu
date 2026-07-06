@@ -15,6 +15,11 @@ Globals.ClovaTimeoutMs = 120000
 Globals.AiReportDbOnly = true
 Globals.AiMaxReportBlocks = 50
 
+# 운영 검색 속도 (2026-07-06 배포)
+Globals.AiNearbyYearCount = 1
+Globals.AiSearchAllYearsFallback = false
+Globals.AiPerfLog = true
+
 # (하위호환) 일반 SQL 조회 최대 행
 Globals.GeminiMaxRows = 200
 Globals.GeminiMaxReportBlocks = 50
