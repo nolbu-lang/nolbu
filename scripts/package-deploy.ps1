@@ -53,6 +53,7 @@ foreach ($f in $deployFiles) {
 
 $scriptFiles = @(
     "scripts\apply-indexes.ps1",
+    "scripts\check-ai-indexes.ps1",
     "scripts\create-indexes.sql",
     "scripts\patch-menu-budget-copy.sql",
     "scripts\seed-comm-seq.sql"

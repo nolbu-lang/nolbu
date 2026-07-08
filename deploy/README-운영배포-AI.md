@@ -1,123 +1,82 @@
-# AI 예산편성 도우미 — 운영 서버(99.1.1.39) 속도·배포 절차
+# AI 예산편성 도우미 — 운영 서버(99.1.1.39) 속도 재점검·배포 (2026-07-08)
 
 운영 URL: http://99.1.1.39:8080/main/main.do
 
-## PC는 빠른데 운영만 느린 이유
+## PC vs 운영 속도차 — 점검 결과와 조치
 
-| 원인 | PC | 운영(99.1.1.39) |
-|------|----|-----------------|
-| 조서·세세목 데이터량 | 적음 | 대용량 |
-| 인덱스 | 로컬 적용됨 | **미적용이면 수십 배 느림** |
-| `REPLACE()` 사업명 LIKE | 체감 적음 | 풀스캔 |
-| 요구·검토 CLOB 넓은 검색 | 드묾 | **자동 재시도 시 급격히 느림** |
-| 010∪020 UNION | 가벼움 | 옵티마이저 부담 |
-| LLM | db-only면 생략 | `AiReportDbOnly=false`면 추가 지연 |
-
----
-
-## 1단계 — 개발 PC에서 WAR 빌드
-
-```powershell
-cd "프로젝트루트"
-.\scripts\build.ps1
-```
-
-생성물: `target\bcjis-webapp.war`
+| # | 원인 | 점검 | 조치 |
+|---|------|------|------|
+| 1 | 운영 DB 대용량 | 운영 > PC | 인덱스·검색 경로 최적화 |
+| 2 | 인덱스 미적용 | `check-ai-indexes.ps1` | `apply-indexes.ps1` 필수 |
+| 3 | REPLACE/LIKE | 코드 | 공백 없으면 평문 UPPER LIKE |
+| 4 | CLOB 넓은 검색 | 설정 | `AiEnableBroadSearch=false` |
+| 5 | 010∪020 UNION | 코드 | 010→020 순차 |
+| 6 | 재원 일괄조회 | 코드 | 상한 trim 후 FRSC, 배치 OR |
+| 7 | 상세 JSON 중복 | 코드 | 사업당 `_detailRows` 1회만 |
+| 8 | LLM | 설정 | `AiReportDbOnly=true` |
 
 ---
 
-## 2단계 — 운영 DB 인덱스 (**속도의 핵심, 필수**)
+## 관리자 적용 순서 (필수)
+
+### A. 인덱스 점검 → 적용
 
 ```powershell
+# 1) 누락 확인
+.\scripts\check-ai-indexes.ps1 -DbPassword "운영DB비밀번호"
+
+# 2) 누락 시 (또는 최초 1회)
 .\scripts\apply-indexes.ps1 -DbPassword "운영DB비밀번호"
 ```
 
-또는:
+`MISSING` 이 나오면 AI 검색이 PC보다 현저히 느립니다. 반드시 적용하세요.
 
-```powershell
-.\deploy\deploy-db.ps1 -DbPassword "운영DB비밀번호" -RunMenuPatch
-```
-
-이번 배포 추가 인덱스:
-
-- `ix_dgrcompo_compground` — 세세사업명
-- `ix_dgrbiz_dbiz_nm` — 세부사업명
-
-이미 있으면 스크립트가 건너뜁니다.
-
----
-
-## 3단계 — 운영 `globals.properties` (속도 설정)
-
-기존 DB 접속 정보는 유지하고 **아래만 추가·확인**:
+### B. globals.properties (기존 DB URL은 유지)
 
 ```properties
 Globals.AiReportDbOnly = true
 Globals.AiMaxReportBlocks = 50
-
-# 연도 미지정 시 인근 연도 확장 없음 (0 = 최신연도만)
 Globals.AiNearbyYearCount = 0
 Globals.AiSearchAllYearsFallback = false
-
-# 요구·검토 CLOB 넓은 검색 OFF (운영 필수)
 Globals.AiEnableBroadSearch = false
-
 Globals.AiFrscBatchSize = 40
+Globals.AiQueryTimeoutSec = 45
 Globals.AiPerfLog = true
 ```
 
-`deploy/globals.properties.ai-snippet.example` 참고.  
-수정 후 **Tomcat 재기동**.
+### C. WAR 배포
 
----
+전달물: `bcjis-배포-20260708` (또는 최신 ZIP) 의 `bcjis-webapp.war`
 
-## 4단계 — WAR 배포
+1. Tomcat 중지  
+2. `webapps\bcjis-webapp` 삭제  
+3. WAR 복사  
+4. Tomcat 기동  
+5. Ctrl+F5 (`aiChat.js?v=20260708b`)
 
-```powershell
-.\deploy\deploy-app.ps1 -TomcatHome "운영Tomcat경로"
-```
+### D. 확인
 
-수동: Tomcat 중지 → `webapps\bcjis-webapp` 삭제 → WAR 복사 → 기동
+질의: `2026년 경상사업 및 투자사업에서 일상돌봄 사업을 찾아줘`
 
----
-
-## 5단계 — 확인
-
-1. http://99.1.1.39:8080/main/main.do 로그인
-2. Ctrl+F5
-3. 질의: `2026년 경상사업 및 투자사업에서 일상돌봄 사업을 찾아줘`
-4. `catalina.out`에서:
+`catalina.out` 예:
 
 ```
 AI PERF[searchReport] ms=...
-AI PERF[queryReport] ms=...
 AI PERF[enrichFrsc] ms=...
 AI RAG hit[1-biz-narrow] ...
 ```
 
-- `searchReport`가 **수 초 이상**이면 → 인덱스 미적용 또는 `AiEnableBroadSearch`/`AiReportDbOnly` 점검
-- `hit[2-biz-broad]`가 보이면 → 넓은 검색이 켜져 있음 (`false`로 변경)
-
----
-
-## 이번 코드 개선 요약 (2026-07-08)
-
-| 개선 | 내용 |
-|------|------|
-| 좁은 검색 LIKE | 공백 없으면 `REPLACE` 없이 `UPPER(col) LIKE` |
-| 넓은 검색 | 기본 **OFF** (`AiEnableBroadSearch=false`) |
-| 조서 010/020 | UNION 대신 **순차 조회** (first-hit 시 010만으로 종료 가능) |
-| 재원 enrich | 큰 IN 절 → **배치 OR** + FRSC 선행 조인 |
-| 연도 확장 | 기본 **0** (명시 연도만) |
-| 인덱스 | `comp_ground`, `dbiz_nm` 추가 |
+- `searchReport` 수 초 이상 → 인덱스·넓은검색 설정 재확인  
+- `hit[2-biz-broad]` → `AiEnableBroadSearch` 가 true 인지 확인 후 false  
 
 ---
 
 ## 한 번에
 
 ```powershell
-.\deploy\deploy-all.ps1 -TomcatHome "Tomcat경로" -DbPassword "운영DB비밀번호"
+.\deploy\deploy-all.ps1 -TomcatHome "Tomcat경로" -DbPassword "DB비밀번호"
+.\scripts\check-ai-indexes.ps1 -DbPassword "DB비밀번호"
 ```
 
-Tomcat 재기동 + `globals.properties` 속도 설정 반영 필수.
+globals 속도 설정 + Tomcat 재기동 필수.
 

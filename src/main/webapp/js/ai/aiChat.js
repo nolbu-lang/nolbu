@@ -67,6 +67,15 @@
             }
         }
 
+        // 상세 JSON은 사업명(_detailKey)당 1회만 오므로, 같은 키를 공유하는 행은 맵으로 이어 붙임
+        var detailByKey = {};
+        for (var d = 0; d < dataList.length; d++) {
+            var dr = dataList[d];
+            if (dr["_detailRows"] && dr["_detailRows"].length > 0 && dr["_detailKey"]) {
+                detailByKey[dr["_detailKey"]] = dr["_detailRows"];
+            }
+        }
+
         var html = '<div class="ai-result-table-wrap"><table class="ai-result-table"><thead><tr>';
         for (var c = 0; c < columns.length; c++) {
             html += "<th>" + htmlEscape(columns[c]) + "</th>";
@@ -75,7 +84,8 @@
 
         for (var r = 0; r < dataList.length; r++) {
             var row = dataList[r];
-            var detailRows = row["_detailRows"];
+            var detailKey = row["_detailKey"] || row["사업명"] || "";
+            var detailRows = row["_detailRows"] || detailByKey[detailKey];
             var title = row["_detailTitle"] || row["사업명"] || "";
             var hasRows = detailRows && detailRows.length > 0;
             var clickable = hasRows;
@@ -92,7 +102,6 @@
             for (var k = 0; k < columns.length; k++) {
                 var col = columns[k];
                 if (mergeCols[col]) {
-                    // 그룹 첫 행에서만 셀 출력(rowspan). 나머지 차수 행은 병합되어 생략.
                     if (isGroupStart[r]) {
                         var rs = (groupSpan[r] > 1) ? (' rowspan="' + groupSpan[r] + '"') : "";
                         var cellCls = (col === "사업명") ? "ai-grp-cell ai-biz-cell" : "ai-grp-cell";

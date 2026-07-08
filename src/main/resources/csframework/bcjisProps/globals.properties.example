@@ -51,5 +51,7 @@ Globals.AiSearchAllYearsFallback = false
 Globals.AiEnableBroadSearch = false
 # 재원 조회 배치 크기 (운영 CUBRID)
 Globals.AiFrscBatchSize = 40
+# 단일 질의 타임아웃(초)
+Globals.AiQueryTimeoutSec = 45
 # AI 검색 구간별 소요시간 로그 (Tomcat catalina.out)
 Globals.AiPerfLog = true

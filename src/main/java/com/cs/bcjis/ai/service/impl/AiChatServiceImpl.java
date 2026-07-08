@@ -342,6 +342,10 @@ public class AiChatServiceImpl implements AiChatService {
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.setMaxRows(getMaxReportRows());
+        int qTimeout = getIntProp("Globals.AiQueryTimeoutSec", 45);
+        if (qTimeout > 0) {
+            jdbcTemplate.setQueryTimeout(qTimeout);
+        }
 
         // [구분]/[검토내용] 대괄호 지정 시 — 해당 비정형 필드 검색 (+ [소관부서] 있으면 부서 필터)
         String contentField = "";
@@ -403,10 +407,11 @@ public class AiChatServiceImpl implements AiChatService {
         logPerf("searchReport", tSearch, "rows=" + (rows == null ? 0 : rows.size()) + " kw=" + bizKeyword);
 
         if (!rows.isEmpty()) {
+            // 먼저 사업 수 상한으로 자른 뒤 재원 조회 — 잘릴 행까지 FRSC 조회하지 않음(운영 속도)
+            rows = AiReportContextBuilder.trimRowsToMaxBizGroups(rows, getMaxReportBlocks());
             long tFrsc = System.currentTimeMillis();
             enrichReportRowsWithFrsc(jdbcTemplate, rows);
             logPerf("enrichFrsc", tFrsc, "rows=" + rows.size());
-            rows = AiReportContextBuilder.trimRowsToMaxBizGroups(rows, getMaxReportBlocks());
         }
 
         if (rows.isEmpty()) {
@@ -491,6 +496,7 @@ public class AiChatServiceImpl implements AiChatService {
         columns.add("조정재원");
 
         JSONArray dataList = new JSONArray();
+        java.util.HashSet<String> detailEmitted = new java.util.HashSet<String>();
         for (int i = 0; i < rows.size(); i++) {
             Map<String, Object> row = rows.get(i);
             JSONObject obj = new JSONObject();
@@ -498,6 +504,7 @@ public class AiChatServiceImpl implements AiChatService {
             String bizLabel = AiReportContextBuilder.buildBizLabel(row);
             String deptLabel = (AiReportContextBuilder.getStr(row, "office_nm") + " "
                     + AiReportContextBuilder.getStr(row, "dept_nm")).trim();
+            String grpKey = fisYearVal + "|" + bizLabel + "|" + deptLabel;
             obj.put("연도", fisYearVal);
             obj.put("사업명", bizLabel);
             obj.put("소관부서", deptLabel);
@@ -509,14 +516,15 @@ public class AiChatServiceImpl implements AiChatService {
             obj.put("요구액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "demand_bgt_amt")));
             obj.put("조정액(백만원)", AiReportContextBuilder.toMillion(AiReportContextBuilder.getLong(row, "bgt_amt")));
             obj.put("조정재원", AiReportContextBuilder.formatFrscForRow(row));
-            // 표 클릭 상세: JSON 행 목록(4열) — 클라이언트에서 표 생성, [구분] 열 없음
+            // 상세 JSON은 사업명 그룹당 1회만 — 동일 HTML을 모든 차수 행에 중복 실지 않음(응답·렌더 속도)
             JSONArray detailRows = detailRowsByRow.get(row);
-            if (detailRows != null && !detailRows.isEmpty()) {
+            String detailKey = bizLabel;
+            obj.put("_detailKey", detailKey);
+            if (detailRows != null && !detailRows.isEmpty() && detailEmitted.add(detailKey)) {
                 obj.put("_detailRows", detailRows);
             }
             obj.put("_detailTitle", bizLabel);
-            // 표 그룹 키(연도+사업명+부서) — 프런트에서 같은 사업의 차수 행을 셀 병합(그룹화)하는 데 사용
-            obj.put("_grpKey", fisYearVal + "|" + bizLabel + "|" + deptLabel);
+            obj.put("_grpKey", grpKey);
             dataList.add(obj);
         }
         result.put("columns", columns);
@@ -1001,10 +1009,10 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
-        // 연도를 명시하지 않은 경우에만 인근 연도 확장 (운영 DB 부하 방지 — 기본 1개년)
+        // 연도를 명시하지 않은 경우에만 인근 연도 확장 (운영 기본 0 — PC 대비 데이터량 차이 최소화)
         if (!explicitYear) {
             String anchor = years.isEmpty() ? getMaxFisYear(jdbcTemplate) : years.get(0);
-            int nearbyCount = getIntProp("Globals.AiNearbyYearCount", 1);
+            int nearbyCount = getIntProp("Globals.AiNearbyYearCount", 0);
             if (anchor.length() == 4 && nearbyCount > 0) {
                 int base = Integer.parseInt(anchor);
                 for (int i = 1; i <= nearbyCount; i++) {
