@@ -15,9 +15,13 @@ Globals.ClovaTimeoutMs = 120000
 Globals.AiReportDbOnly = true
 Globals.AiMaxReportBlocks = 50
 
-# 운영 검색 속도 (2026-07-06 배포)
-Globals.AiNearbyYearCount = 1
+# 운영 검색 속도 (2026-07-08)
+# 연도 명시 질의(예: 2026년 …)는 해당 연도만. 미지정 시 인근 연도 확장 없음(0)
+Globals.AiNearbyYearCount = 0
 Globals.AiSearchAllYearsFallback = false
+# CLOB 넓은 검색 OFF — 사업명으로 못 찾을 때만 true
+Globals.AiEnableBroadSearch = false
+Globals.AiFrscBatchSize = 40
 Globals.AiPerfLog = true
 
 # (하위호환) 일반 SQL 조회 최대 행

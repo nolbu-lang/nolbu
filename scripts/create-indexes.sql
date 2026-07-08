@@ -19,6 +19,8 @@ CREATE INDEX ix_dgrcompo_dept ON tb_dgrcompo(fis_year, bgt_dgr, dept_cd);
 CREATE INDEX ix_dgrcompo_dbiz ON tb_dgrcompo(fis_year, bgt_dgr, dbiz_cd);
 /* 통계목 범위 필터 */
 CREATE INDEX ix_dgrcompo_temng ON tb_dgrcompo(fis_year, bgt_dgr, te_mng_mok_cd);
+/* AI 예산도우미: 세세사업명(comp_ground) 좁은 검색 */
+CREATE INDEX ix_dgrcompo_compground ON tb_dgrcompo(fis_year, bgt_dgr, comp_ground);
 /* 병합그룹 조회 (BudgetApply CNG_TYPE) */
 CREATE INDEX ix_dgrcompo_grp ON tb_dgrcompo(fis_year, bgt_dgr, grp_id, grp_lvl);
 
@@ -34,6 +36,8 @@ CREATE INDEX ix_dgrcompochar_te ON tb_dgrcompochar(fis_year, bgt_dgr, te_bgt_com
 CREATE INDEX ix_dgrbiz_dbiz ON tb_dgrbiz(fis_year, bgt_dgr, dbiz_cd);
 CREATE INDEX ix_dgrbiz_fisfg ON tb_dgrbiz(fis_year, bgt_dgr, fis_fg_cd);
 CREATE INDEX ix_dgrbiz_fisfgmst ON tb_dgrbiz(fis_year, bgt_dgr, fis_fg_mst_cd);
+/* AI 예산도우미: 세부사업명 LIKE 보조 (좁은 사업명 검색) */
+CREATE INDEX ix_dgrbiz_dbiz_nm ON tb_dgrbiz(fis_year, bgt_dgr, dbiz_nm);
 CREATE INDEX ix_dgrdept_dept ON tb_dgrdept(fis_year, bgt_dgr, dept_cd);
 CREATE INDEX ix_dgrdept_office ON tb_dgrdept(fis_year, bgt_dgr, office_cd);
 CREATE INDEX ix_dgrtemngmok_cd ON tb_dgrtemngmok(fis_year, bgt_dgr, te_mng_mok_cd);

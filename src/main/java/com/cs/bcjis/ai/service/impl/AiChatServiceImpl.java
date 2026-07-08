@@ -211,6 +211,19 @@ public class AiChatServiceImpl implements AiChatService {
         }
     }
 
+    /**
+     * 사업명 넓은 검색(검토의견·요구내용 CLOB LIKE). 운영 대용량 DB에서는 매우 느림.
+     * 기본 false — 사업명·세부사업명으로 못 찾을 때만 수동으로 true.
+     */
+    private boolean isBroadSearchEnabled() {
+        try {
+            String v = config.getProperty("Globals.AiEnableBroadSearch", "false");
+            return "true".equalsIgnoreCase(v.trim());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean isPerfLogEnabled() {
         try {
             String v = config.getProperty("Globals.AiPerfLog", "true");
@@ -513,9 +526,14 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     private List<Map<String, Object>> queryReport(JdbcTemplate jdbcTemplate, String sql, List<Object> args) {
+        long t0 = System.currentTimeMillis();
         try {
-            return jdbcTemplate.queryForList(sql, args.toArray());
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, args.toArray());
+            logPerf("queryReport", t0, "rows=" + (rows == null ? 0 : rows.size())
+                    + " args=" + (args == null ? 0 : args.size()));
+            return rows;
         } catch (Exception e) {
+            logPerf("queryReportERR", t0, e.getMessage() == null ? "" : e.getMessage());
             logger.error("심사조서 RAG 조회 오류. sql=" + sql, e);
             return new ArrayList<Map<String, Object>>();
         }
@@ -571,51 +589,64 @@ public class AiChatServiceImpl implements AiChatService {
                 continue;
             }
 
-            StringBuilder inClause = new StringBuilder();
-            for (int i = 0; i < pairArgs.size(); i += 2) {
-                if (inClause.length() > 0) {
-                    inClause.append(",");
-                }
-                inClause.append("(?,?)");
+            // IN (많은 쌍) 한 방은 운영 CUBRID에서 느림 → 배치 단위로 쪼개 조회
+            int pairCount = pairArgs.size() / 2;
+            int batchSize = getIntProp("Globals.AiFrscBatchSize", 40);
+            if (batchSize < 10) {
+                batchSize = 10;
             }
-
-            List<Object> args = new ArrayList<Object>();
-            args.add(fisYear);
-            args.addAll(pairArgs);
-
-            String sql = "SELECT BB.BGT_DGR AS bgt_dgr\n"
-                    + "     , BB.TE_BGT_COMPO_ID AS te_bgt_compo_id\n"
-                    + "     , A.FRSC_FG_NM AS frsc_fg_nm\n"
-                    + "     , NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) AS adj_def_frsc_amt\n"
-                    + "  FROM TB_YEARFRSC A\n"
-                    + " INNER JOIN TB_DGRCOMPOFRSC BB\n"
-                    + "    ON A.FIS_YEAR = BB.FIS_YEAR\n"
-                    + "   AND A.FRSC_FG_CD = BB.FRSC_FG_CD\n"
-                    + " WHERE A.FIS_YEAR = ?\n"
-                    + "   AND (BB.BGT_DGR, BB.TE_BGT_COMPO_ID) IN (" + inClause + ")\n"
-                    + " GROUP BY BB.BGT_DGR, BB.TE_BGT_COMPO_ID, A.FRSC_FG_CD, A.FRSC_FG_NM\n"
-                    + "HAVING NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) <> 0";
-
-            List<Map<String, Object>> frscRows;
-            try {
-                frscRows = jdbcTemplate.queryForList(sql, args.toArray());
-            } catch (Exception e) {
-                logger.error("재원 일괄 조회 오류 year=" + fisYear, e);
-                continue;
-            }
-
             java.util.HashMap<String, List<Map<String, Object>>> linesByCompo =
                     new java.util.HashMap<String, List<Map<String, Object>>>();
-            for (int i = 0; i < frscRows.size(); i++) {
-                Map<String, Object> line = frscRows.get(i);
-                String k = AiReportContextBuilder.getLong(line, "bgt_dgr") + "\u0001"
-                        + AiReportContextBuilder.getStr(line, "te_bgt_compo_id");
-                List<Map<String, Object>> list = linesByCompo.get(k);
-                if (list == null) {
-                    list = new ArrayList<Map<String, Object>>();
-                    linesByCompo.put(k, list);
+
+            for (int offset = 0; offset < pairCount; offset += batchSize) {
+                int end = Math.min(offset + batchSize, pairCount);
+                StringBuilder orClause = new StringBuilder();
+                List<Object> args = new ArrayList<Object>();
+                args.add(fisYear);
+                for (int p = offset; p < end; p++) {
+                    if (orClause.length() > 0) {
+                        orClause.append(" OR ");
+                    }
+                    orClause.append("(BB.BGT_DGR = ? AND BB.TE_BGT_COMPO_ID = ?)");
+                    args.add(pairArgs.get(p * 2));
+                    args.add(pairArgs.get(p * 2 + 1));
                 }
-                list.add(line);
+
+                String sql = "SELECT BB.BGT_DGR AS bgt_dgr\n"
+                        + "     , BB.TE_BGT_COMPO_ID AS te_bgt_compo_id\n"
+                        + "     , A.FRSC_FG_NM AS frsc_fg_nm\n"
+                        + "     , NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) AS adj_def_frsc_amt\n"
+                        + "  FROM TB_DGRCOMPOFRSC BB\n"
+                        + " INNER JOIN TB_YEARFRSC A\n"
+                        + "    ON A.FIS_YEAR = BB.FIS_YEAR\n"
+                        + "   AND A.FRSC_FG_CD = BB.FRSC_FG_CD\n"
+                        + " WHERE BB.FIS_YEAR = ?\n"
+                        + "   AND (" + orClause + ")\n"
+                        + " GROUP BY BB.BGT_DGR, BB.TE_BGT_COMPO_ID, A.FRSC_FG_CD, A.FRSC_FG_NM\n"
+                        + "HAVING NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) <> 0";
+
+                List<Map<String, Object>> frscRows;
+                try {
+                    long tFrscQ = System.currentTimeMillis();
+                    frscRows = jdbcTemplate.queryForList(sql, args.toArray());
+                    logPerf("frscBatch", tFrscQ, "year=" + fisYear + " pairs=" + (end - offset)
+                            + " lines=" + (frscRows == null ? 0 : frscRows.size()));
+                } catch (Exception e) {
+                    logger.error("재원 일괄 조회 오류 year=" + fisYear + " batch=" + offset, e);
+                    continue;
+                }
+
+                for (int i = 0; i < frscRows.size(); i++) {
+                    Map<String, Object> line = frscRows.get(i);
+                    String k = AiReportContextBuilder.getLong(line, "bgt_dgr") + "\u0001"
+                            + AiReportContextBuilder.getStr(line, "te_bgt_compo_id");
+                    List<Map<String, Object>> list = linesByCompo.get(k);
+                    if (list == null) {
+                        list = new ArrayList<Map<String, Object>>();
+                        linesByCompo.put(k, list);
+                    }
+                    list.add(line);
+                }
             }
 
             for (int i = 0; i < yearRows.size(); i++) {
@@ -712,7 +743,6 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         // 1차: 사업명 좁은 검색(이름 컬럼만) — 대용량 검토의견 텍스트를 읽지 않아 매우 빠름.
-        //      필터가 조인 내부로 push down 되어 사업명 검색은 여기서 즉시 처리된다(주 경로).
         if (bizKeyword.length() > 0) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
@@ -724,8 +754,8 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
-        // 2차: 사업명 넓은 검색 — 이름으로 못 찾은 경우에만 검토의견·검색태그 텍스트까지 확장(느림).
-        if (bizKeyword.length() > 0) {
+        // 2차: 사업명 넓은 검색 — CLOB 전수 LIKE(운영에서 수십 초). Globals.AiEnableBroadSearch=true 일만.
+        if (bizKeyword.length() > 0 && isBroadSearchEnabled()) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
                     "", "", "", true);
@@ -734,17 +764,29 @@ public class AiChatServiceImpl implements AiChatService {
                         + " kw=" + bizKeyword + " rows=" + rows.size());
                 return rows;
             }
+        } else if (bizKeyword.length() > 0) {
+            logger.info("AI RAG skip[2-biz-broad] AiEnableBroadSearch=false kw=" + bizKeyword);
         }
 
-        // 3차: 규칙 추출 사업명 키워드 (LLM이 비우거나 틀린 경우)
+        // 3차: 규칙 추출 사업명 키워드 — 좁은 검색 우선 (넓은 검색은 옵션)
         if (ruleBizKeyword.length() > 0 && !ruleBizKeyword.equals(bizKeyword)) {
             List<Map<String, Object>> rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
                     mergeAllYears, bgtCompoFg, addTimes, ruleBizKeyword, deptKeyword, tagKeyword,
-                    "", "", "", true);
+                    "", "", "", false);
             if (!rows.isEmpty()) {
-                logger.info("AI RAG hit[3-rule-biz] years=" + years.size() + " merge=" + mergeAllYears
+                logger.info("AI RAG hit[3-rule-biz-narrow] years=" + years.size() + " merge=" + mergeAllYears
                         + " kw=" + ruleBizKeyword + " rows=" + rows.size());
                 return rows;
+            }
+            if (isBroadSearchEnabled()) {
+                rows = collectReportRowsAcrossYears(jdbcTemplate, reportCd, years,
+                        mergeAllYears, bgtCompoFg, addTimes, ruleBizKeyword, deptKeyword, tagKeyword,
+                        "", "", "", true);
+                if (!rows.isEmpty()) {
+                    logger.info("AI RAG hit[3-rule-biz-broad] years=" + years.size() + " merge=" + mergeAllYears
+                            + " kw=" + ruleBizKeyword + " rows=" + rows.size());
+                    return rows;
+                }
             }
         }
 
@@ -824,21 +866,42 @@ public class AiChatServiceImpl implements AiChatService {
      * 검색 대상 연도를 순회한다.
      * mergeAllYears=true(연도 범위·연도별 질문)이면 각 연도 결과를 모두 합쳐 반환하고,
      * false이면 첫 번째 hit 연도만 반환한다.
+     * 조서구분 미지정(010+020)일 때는 UNION ALL 대신 010→020 순차 조회로
+     * 대용량 조인계획을 피한다(운영 DB 속도).
      */
     private List<Map<String, Object>> collectReportRowsAcrossYears(JdbcTemplate jdbcTemplate, String reportCd,
             List<String> years, boolean mergeAllYears, String bgtCompoFg, int addTimes,
             String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
             String contentField, String contentKeyword, boolean broadKeyword) {
 
-        // 연도별로 개별(단일 연도) 질의를 수행한다.
-        // 단일 연도 질의는 fis_year = ? 로 인덱스 범위 스캔이 적용돼 빠르지만,
-        // 여러 연도를 IN/BETWEEN 으로 합치면 집계 서브쿼리 조인이 나쁜 중첩 루프 계획으로
-        // 바뀌어 급격히 느려진다. 따라서 범위 검색도 연도별 개별 질의 후 결과를 합친다.
         List<Map<String, Object>> merged = new ArrayList<Map<String, Object>>();
         for (int i = 0; i < years.size(); i++) {
-            List<Map<String, Object>> rows = runReportQuery(jdbcTemplate, reportCd, years.get(i),
-                    bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
-                    implKeyword, contentField, contentKeyword, broadKeyword);
+            String year = years.get(i);
+            List<Map<String, Object>> rows;
+            // 경상·투자 동시: UNION 한 방보다 단품 조서가 인덱스·옵티마이저에 유리
+            if (reportCd == null || reportCd.length() == 0
+                    || (!"010".equals(reportCd) && !"020".equals(reportCd))) {
+                rows = runReportQuery(jdbcTemplate, "010", year,
+                        bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
+                        implKeyword, contentField, contentKeyword, broadKeyword);
+                if (rows.isEmpty()) {
+                    rows = runReportQuery(jdbcTemplate, "020", year,
+                            bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
+                            implKeyword, contentField, contentKeyword, broadKeyword);
+                } else if (mergeAllYears) {
+                    List<Map<String, Object>> inv = runReportQuery(jdbcTemplate, "020", year,
+                            bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
+                            implKeyword, contentField, contentKeyword, broadKeyword);
+                    if (!inv.isEmpty()) {
+                        rows = new ArrayList<Map<String, Object>>(rows);
+                        rows.addAll(inv);
+                    }
+                }
+            } else {
+                rows = runReportQuery(jdbcTemplate, reportCd, year,
+                        bgtCompoFg, addTimes, bizKeyword, deptKeyword, tagKeyword,
+                        implKeyword, contentField, contentKeyword, broadKeyword);
+            }
             if (!rows.isEmpty()) {
                 if (mergeAllYears) {
                     merged.addAll(rows);
@@ -846,7 +909,6 @@ public class AiChatServiceImpl implements AiChatService {
                         break;
                     }
                 } else {
-                    // 단일 연도·인근연도 우선(first-hit): 처음 hit 연도만 반환
                     return rows;
                 }
             }
@@ -1572,8 +1634,8 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("                 OR B.dbiz_nm LIKE '%기본경비%' OR B.dbiz_nm LIKE '%인력운영비%'))\n");
 
         // 사업명 키워드: 쉼표(,)로 여러 개를 받아 OR 검색.
-        // 좁은 검색(!broadKeyword): 세세사업명·세부사업명만 — REPLACE 6컬럼 OR 은 대용량 DB에서 급격히 느림.
-        // 넓은 검색: 검토의견·검색태그까지 확장(느림, 1차 실패 시에만).
+        // 좁은 검색(!broadKeyword): 세세사업명·세부사업명 — 공백 없는 키워드는 REPLACE 없이 LIKE(운영 속도).
+        // 넓은 검색: 검토의견·검색태그까지 확장(느림, AiEnableBroadSearch=true 시에만).
         if (bizKeyword.length() > 0) {
             String[] keywords = bizKeyword.split("[,;]");
             StringBuilder kwSql = new StringBuilder();
@@ -1592,8 +1654,16 @@ public class AiChatServiceImpl implements AiChatService {
                     kwSql.append(" OR UPPER(R.srch_val) LIKE ? OR UPPER(R.demand_cont) LIKE ? OR UPPER(R.exam_cont) LIKE ?");
                     addCaseInsensitiveLikeArgs(args, kw, 3);
                 } else {
-                    kwSql.append(spaceInsensitiveLikeCol("B.dbiz_nm")).append(" OR ").append(spaceInsensitiveLikeCol("C.comp_ground"));
-                    addSpaceInsensitiveLikeArgs(args, kw, 2);
+                    // 평문 LIKE(빠름) + 키워드에 공백이 있을 때만 띄어쓰기무시 OR
+                    boolean needSpaceIgnore = kw.indexOf(' ') >= 0 || kw.indexOf('\t') >= 0;
+                    kwSql.append("(UPPER(B.dbiz_nm) LIKE ? OR UPPER(C.comp_ground) LIKE ?");
+                    addCaseInsensitiveLikeArgs(args, kw, 2);
+                    if (needSpaceIgnore) {
+                        kwSql.append(" OR ").append(spaceInsensitiveLikeCol("B.dbiz_nm"))
+                                .append(" OR ").append(spaceInsensitiveLikeCol("C.comp_ground"));
+                        addSpaceInsensitiveLikeArgs(args, kw, 2);
+                    }
+                    kwSql.append(")");
                 }
             }
             if (kwSql.length() > 0) {
