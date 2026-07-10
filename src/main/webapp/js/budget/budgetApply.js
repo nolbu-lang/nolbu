@@ -538,6 +538,10 @@ $(document).ready(function() {
         if($(this).attr("enabledYn") != "Y"){
             return;
         }
+        
+        if(checkCloseYn(saveReportParam) == false){
+            return;
+        }
 
         var selectedDatas = getSelectedData(budgetApplyGrid, budgetApplyGrid[0].rows);
         
@@ -587,7 +591,7 @@ $(document).ready(function() {
             return;
         }
          
-        if(_mainNorthPowGrCd != "BC001" && rowData.editableYn != "Y"){
+        if(!(_mainNorthPowGrCd == "BC001" || _mainNorthPowGrCd == "BC003") && rowData.editableYn != "Y"){
             $.csAlert({
                 msg : "등록할 권한이 없는 부서 자료입니다."
             });
@@ -631,6 +635,10 @@ $(document).ready(function() {
     	if($(this).attr("enabledYn") != "Y"){
             return;
         }
+    	
+    	if(checkCloseYn(saveReportParam) == false){
+            return;
+        }
 
         var selectedDatas = getSelectedData(budgetApplyGrid, budgetApplyGrid[0].rows);
         
@@ -670,7 +678,7 @@ $(document).ready(function() {
             return;
         }
          
-        if(_mainNorthPowGrCd != "BC001" && rowData.editableYn != "Y"){
+        if(!(_mainNorthPowGrCd == "BC001" || _mainNorthPowGrCd == "BC003") && rowData.editableYn != "Y"){
             $.csAlert({
                 msg : "수정할 권한이 없는 부서 자료입니다."
             });
@@ -690,6 +698,7 @@ $(document).ready(function() {
         if(cngType == 'CH01'){
         	$("#dialogDgrModiListCngHistoryId", $("#dialogDgrModiListDiv")).val(rowData.grpId);
         	$("#dialogDgrModiListCallBackFunction", $("#dialogDgrModiListDiv")).val("budgetModifyDialogDgrcompoRegiCallBackFunction");
+        	$("#dialogDgrModiCompoGroundCallBackFunction", $("#dialogDgrModiListDiv")).val("budgetModifyDialogDgrcompoGroundUpdateCallBackFunction");
             $("#dialogDgrModiListDgrcompoId", $("#dialogDgrModiListDiv")).val(rowData.dgrcompoId);
             $("#dialogDgrModiListFisYear", $("#dialogDgrModiListDiv")).val(rowData.fisYear);
             $("#dialogDgrModiListBgtDgr", $("#dialogDgrModiListDiv")).val(rowData.bgtDgr);
@@ -721,6 +730,10 @@ $(document).ready(function() {
     
     $("#sortBtn", tabObj).click(function() {
     	if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+    	
+    	if(checkCloseYn(saveReportParam) == false){
             return;
         }
 
@@ -762,7 +775,7 @@ $(document).ready(function() {
             return;
         }
          
-        if(_mainNorthPowGrCd != "BC001" && rowData.editableYn != "Y"){
+        if(!(_mainNorthPowGrCd == "BC001" || _mainNorthPowGrCd == "BC003") && rowData.editableYn != "Y"){
             $.csAlert({
                 msg : "변경할 권한이 없는 부서 자료입니다."
             });
@@ -790,6 +803,11 @@ $(document).ready(function() {
     
     budgetModifyDialogDgrcompoRegiCallBackFunction = function(param){
         doSearch();
+    };
+    
+    budgetModifyDialogDgrcompoGroundUpdateCallBackFunction = function(param){
+    	doSearchRlk();
+    	doSearch();
     };
     
     function getData(data){
@@ -859,7 +877,7 @@ $(document).ready(function() {
                 msg : "적용할 자료를 선택하여 주십시오."
             });
             
-            return;
+            return;1
         }
         
         //console.log(selectedDatas);
@@ -947,9 +965,12 @@ $(document).ready(function() {
         var officeCd = $("#condOfficeCd option:selected", tabObj).val();
         var teMngMokCdFr = $("#condTeMngMokCdFr option:selected", tabObj).val();
         var teMngMokCdTo = $("#teMngMokCdTo option:selected", tabObj).val();
-        if(fisFgMstCd == "100" && isEmpty(teMngMokCdFr) == true && isEmpty(teMngMokCdTo) == true && isEmpty(officeCd) == true){
+        
+        var deptCd = $("#condDeptCdFr", tabObj).val();
+        
+        if(isEmpty(officeCd) == true && isEmpty(deptCd) == true){
             $.csAlert({
-                msg : "일반회계, 통계목 전체는 실국을 선택하셔야 합니다.",
+                msg : "실국 또는 부서를 선택하셔야 합니다.",
                 callBack : function() {
                     $("#condOfficeCd", tabObj).focus();
                 }
@@ -957,7 +978,18 @@ $(document).ready(function() {
             
             return;
         }
-
+        /* 부서만 선택한다면 전체 조회 가능하도록 수정 _ 20210527 */
+/*        if(fisFgMstCd == "100" && isEmpty(teMngMokCdFr) == true && isEmpty(teMngMokCdTo) == true && isEmpty(officeCd) == true){
+        	$.csAlert({
+        		msg : "일반회계, 통계목 전체는 실국을 선택하셔야 합니다.",
+        		callBack : function() {
+        			$("#condOfficeCd", tabObj).focus();
+        		}
+        	});
+        	
+        	return;
+        }
+*/
         doSearchRlk();
         doSearch();
     });
@@ -1010,6 +1042,10 @@ $(document).ready(function() {
     $("#sepBtn", tabObj).click(function() {
     	
         if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+        
+        if(checkCloseYn(saveReportParam) == false){
             return;
         }
 
@@ -1070,7 +1106,7 @@ $(document).ready(function() {
             return;
         }*/
         
-        if(_mainNorthPowGrCd != "BC001" && rowData.editableYn != "Y"){
+        if(!(_mainNorthPowGrCd == "BC001" || _mainNorthPowGrCd == "BC003") && rowData.editableYn != "Y"){
             $.csAlert({
                 msg : "등록할 권한이 없는 부서 자료입니다."
             });
@@ -1110,6 +1146,10 @@ $(document).ready(function() {
             return;
         }
 
+        if(checkCloseYn(saveReportParam) == false){
+            return;
+        }
+        
         var selectedDatas = getSelectedData(budgetApplyGrid, budgetApplyGrid[0].rows);
         
         if(isEmpty(selectedDatas) == true || selectedDatas.length < 1){
@@ -1161,7 +1201,7 @@ $(document).ready(function() {
                 return;
             }
              
-            if(_mainNorthPowGrCd != "BC001" && rowData.editableYn != "Y"){
+            if(!(_mainNorthPowGrCd == "BC001" || _mainNorthPowGrCd == "BC003") && rowData.editableYn != "Y"){
                 $.csAlert({
                     msg : "병합할 권한이 없는 부서 자료입니다."
                 });

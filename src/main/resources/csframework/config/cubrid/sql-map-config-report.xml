@@ -10,6 +10,7 @@
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite010.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite020.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite030.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite030_2.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite040.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite050.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite055.xml"/>

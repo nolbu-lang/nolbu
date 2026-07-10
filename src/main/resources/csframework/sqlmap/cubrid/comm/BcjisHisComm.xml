@@ -34,6 +34,35 @@
            AND OFFICE_CD = #officeCd#
     </insert>
     
+    <insert id="BcjisHisComm.insertTbDgroffice010H" parameterClass="Map" >
+        /*BcjisHisComm.insertTbDgroffice010H*/
+        INSERT 
+          INTO TB_DGROFFICE010_H(
+               FIS_YEAR
+             , BGT_DGR
+             , OFFICE_CD
+             , HIS_SEQ
+             , HIS_FG
+             , OFFICE_RANK
+             , OFFICE_RANK010
+             , REGI_ID
+             , REGI_DATE)
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , OFFICE_CD
+             , (SELECT NVL(MAX(HIS_SEQ), 0) + 1 FROM TB_DGROFFICE010_H Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD) AS HIS_SEQ
+             , #hisFg#
+             , OFFICE_RANK
+             , OFFICE_RANK010
+             , #userId#
+             , SYSTIMESTAMP
+          FROM TB_DGROFFICE010 A
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND OFFICE_CD = #officeCd#
+    </insert>
+    
     <insert id="BcjisHisComm.insertTbDgrcompoH" parameterClass="Map" >
         /*BcjisHisComm.insertTbDgrcompoH*/
         INSERT 

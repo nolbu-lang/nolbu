@@ -14,4 +14,7 @@ public interface ManageUserService {
     @SuppressWarnings("rawtypes")
     public void deleteUser(Map map) throws Exception;
     
+    @SuppressWarnings("rawtypes")
+    public void updateManageUserStopYn(Map map) throws Exception;
+    
 }

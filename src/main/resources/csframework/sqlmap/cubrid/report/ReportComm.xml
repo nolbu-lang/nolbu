@@ -38,7 +38,7 @@
              , #userId#
              , SYSTIMESTAMP)
     </insert> 
-    
+
     <update id="ReportComm.updateReport" parameterClass="Map" >
         /*ReportComm.updateReport*/
         UPDATE TB_REPORT
@@ -378,13 +378,13 @@
              , NVL(#preInvFrscAmt1#, 0)
              , NVL(#preInvFrscAmt2#, 0)
              , NVL(#preInvFrscAmt3#, 0)
-             , NVL(#preInvFrscAmt4#, 0)
+             , NVL(#preInvFrscAmt4#, 0) 
              , NVL(#preInvFrscAmt5#, 0)
              , NVL(#preInvFrscAmt6#, 0)
              , NVL(#preInvCharAmt1#, 0)
              , NVL(#preInvCharAmt2#, 0)
              , NVL(#preInvCharAmt3#, 0)
-             , NVL(#mayorReportYn#, 'Y')
+             , NVL(#mayorReportYn#, 'N')
              , NVL(#investPlan#, '')
              , #userId#
              , SYSTIMESTAMP
@@ -1929,4 +1929,274 @@
            AND BGT_DGR = #bgtDgr#
            AND TE_BGT_COMPO_ID = #teBgtCompoId#
     </update>
+    
+    <insert id="ReportComm.insertDefaultNewStyle" parameterClass="Map" >
+        /*ReportComm.insertDefaultNewStyle*/
+        INSERT INTO
+			tb_reportstyle (
+				report_cd,
+				report_detl_cd,
+				fis_year,
+				bgt_dgr,
+				style_nm,
+				font_height,
+				font_nm,
+				font_weight_yn,
+				font_weight,
+				alignment,
+				v_alignment,
+				border_right_yn,
+				border_right,
+				border_right_color,
+				border_left_yn,
+				border_left,
+				border_left_color,
+				border_top_yn,
+				border_top,
+				border_top_color,
+				border_bottom_yn,
+				border_bottom,
+				border_bottom_color,
+				fore_fill_yn,
+				fore_ground_color_r,
+				fore_ground_color_b,
+				fore_ground_color_g,
+				fill_pattern,
+				wrap_text_yn,
+				data_format,
+				font_color_yn,
+				font_color_r,
+				font_color_b,
+				font_color_g,
+				user_data_format,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date
+			)
+		SELECT report_cd,
+				report_detl_cd,
+				#fisYear# as fis_year,
+				#bgtDgr# AS bgt_dgr,
+				style_nm,
+				font_height,
+				font_nm,
+				font_weight_yn,
+				font_weight,
+				alignment,
+				v_alignment,
+				border_right_yn,
+				border_right,
+				border_right_color,
+				border_left_yn,
+				border_left,
+				border_left_color,
+				border_top_yn,
+				border_top,
+				border_top_color,
+				border_bottom_yn,
+				border_bottom,
+				border_bottom_color,
+				fore_fill_yn,
+				fore_ground_color_r,
+				fore_ground_color_b,
+				fore_ground_color_g,
+				fill_pattern,
+				wrap_text_yn,
+				data_format,
+				font_color_yn,
+				font_color_r,
+				font_color_b,
+				font_color_g,
+				user_data_format,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date  FROM
+		        TB_REPORTSTYLE          
+		    WHERE
+		        1 = 1            
+		        AND REPORT_CD =  #reportCd#            
+		        AND REPORT_DETL_CD =  #reportDetlCd#            
+		        AND FIS_YEAR =  '2019'            
+		        AND BGT_DGR =  '3'   
+    </insert>
+    
+    <insert id="ReportComm.insertDefaultNewInfo" parameterClass="Map" >
+        /*ReportComm.insertDefaultNewInfo*/
+        INSERT INTO
+			tb_reportinfo (
+				report_cd,
+				report_detl_cd,
+				fis_year,
+				bgt_dgr,
+				report_nm, 
+				sheet_nm,
+				print_paper_size,
+				print_scale,
+				right_margin,
+				left_margin,
+				top_margin,
+				bottom_margin,
+				header_margin,
+				footer_margin,
+				zoom,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date
+			)
+			SELECT 
+				report_cd,
+				report_detl_cd,
+				#fisYear# as fis_year,
+				#bgtDgr# AS bgt_dgr,
+				REPLACE(REPORT_NM, '1', (SELECT B.ADD_TIMES FROM TB_BGTDGR B WHERE B.fis_year = #fisYear# AND B.BGT_DGR = #bgtDgr#)) AS REPORT_NM,
+				sheet_nm,
+				print_paper_size,
+				print_scale,
+				right_margin,
+				left_margin,
+				top_margin,
+				bottom_margin,
+				header_margin,
+				footer_margin,
+				zoom,
+				regi_id,
+				SYSTIMESTAMP,
+				modi_id,
+				SYSTIMESTAMP 
+		  	FROM
+		        tb_reportinfo          
+		    WHERE
+		        1 = 1            
+		        AND REPORT_CD =  #reportCd#            
+		        AND REPORT_DETL_CD =  #reportDetlCd#            
+		        AND FIS_YEAR =  '2019' 
+		        <isEqual prepend="AND" property="bgtDgr" compareValue="1">
+		        BGT_DGR =  '1'
+		        </isEqual>           
+		        <isNotEqual prepend="AND" property="bgtDgr" compareValue="1">
+		        BGT_DGR =  '3'
+		        </isNotEqual>           
+    </insert>
+    
+    <insert id="ReportComm.insertDefaultNewColWidth" parameterClass="Map" >
+        /*ReportComm.insertDefaultNewColWidth*/
+        INSERT INTO
+			tb_reportcolwidth (
+				report_cd,
+				report_detl_cd,
+				fis_year,
+				bgt_dgr,
+				col_seq,
+				col_width,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date
+			)
+		SELECT report_cd,
+				report_detl_cd,
+				#fisYear# as fis_year,
+				#bgtDgr# AS bgt_dgr,
+				col_seq,
+				col_width,
+				regi_id,
+				SYSTIMESTAMP,
+				modi_id,
+				SYSTIMESTAMP
+				FROM tb_reportcolwidth 
+		WHERE 1=1
+		  AND fis_year = '2019' 
+		  <isEqual prepend="AND" property="bgtDgr" compareValue="1">
+        	BGT_DGR =  '1'
+          </isEqual>           
+          <isNotEqual prepend="AND" property="bgtDgr" compareValue="1">
+          	BGT_DGR =  '3'
+          </isNotEqual>   
+		  AND REPORT_CD =  #reportCd#            
+		  AND REPORT_DETL_CD =  #reportDetlCd#  
+    </insert>
+    
+    <insert id="ReportComm.insertDefaultNewMerge" parameterClass="Map" >
+        /*ReportComm.insertDefaultNewMerge*/
+        INSERT INTO
+			tb_reportmerge (
+				report_cd,
+				report_detl_cd,
+				fis_year,
+				bgt_dgr,
+				merge_seq,
+				merge_val,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date
+			)
+		SELECT report_cd,
+				report_detl_cd,
+				#fisYear# as fis_year,
+				#bgtDgr# AS bgt_dgr,
+				merge_seq,
+				merge_val,
+				regi_id,
+				SYSTIMESTAMP,
+				modi_id,
+				SYSTIMESTAMP
+		 FROM tb_reportmerge 
+		WHERE 1=1
+		  AND fis_year = '2019' 
+		  <isEqual prepend="AND" property="bgtDgr" compareValue="1">
+	        BGT_DGR =  '1'
+	      </isEqual>           
+	      <isNotEqual prepend="AND" property="bgtDgr" compareValue="1">
+	      	BGT_DGR =  '3'
+	      </isNotEqual>   
+		  AND REPORT_CD =  #reportCd#            
+		  AND REPORT_DETL_CD =  #reportDetlCd#   
+    </insert>
+    
+    <insert id="ReportComm.insertDefaultNewHeader" parameterClass="Map" >
+        /*ReportComm.insertDefaultNewHeader*/
+        INSERT INTO
+			tb_reportheader (
+				report_cd,
+				report_detl_cd,
+				fis_year,
+				bgt_dgr,
+				row_seq,
+				cell_seq,
+				header_cont,
+				regi_id,
+				regi_date,
+				modi_id,
+				modi_date
+			)
+		SELECT report_cd,
+				report_detl_cd,
+				#fisYear# as fis_year,
+				#bgtDgr# AS bgt_dgr,
+				row_seq,
+				cell_seq,
+				header_cont,
+				regi_id,
+				SYSTIMESTAMP,
+				modi_id,
+				SYSTIMESTAMP
+		 FROM tb_reportheader 
+		WHERE 1=1
+		  AND fis_year = '2019' 
+		  <isEqual prepend="AND" property="bgtDgr" compareValue="1">
+	        BGT_DGR =  '1'
+	      </isEqual>           
+	      <isNotEqual prepend="AND" property="bgtDgr" compareValue="1">
+	      	BGT_DGR =  '3'
+	      </isNotEqual> 
+		  AND REPORT_CD =  #reportCd#            
+		  AND REPORT_DETL_CD =  #reportDetlCd#   
+
+   
+    </insert>
+    
 </sqlMap>

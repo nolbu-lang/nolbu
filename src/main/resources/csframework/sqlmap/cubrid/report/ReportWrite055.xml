@@ -302,6 +302,7 @@
                          ELSE ''
                     END) AS DGRCOMPO_NM
              , T.DEPT_CD AS DEPT_CD
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
              , DECODE(T.DGR_LEVEL, 6, T.SRCH_VAL, '') AS SRCH_VAL
           FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
                      , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID

@@ -47,6 +47,18 @@ public class BudgetCommDAO extends BcjisCommAbstractDAO {
         
         update("BudgetComm.updateDgrcompofrsc", map);
     }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void mergeDgrcompofrsc(Map map) throws Exception{
+    	try{
+    		map.put("hisFg", "020");
+    		insert("BcjisHisComm.insertTbDgrcompofrscH", map);
+    	}catch(Exception e){
+    		logger.error("mergeDgrcompofrsc(map)", e);
+    	}
+    	
+    	update("BudgetComm.mergeDgrcompofrsc", map);
+    }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void deleteDgrcompofrsc(Map map) throws Exception{
@@ -226,13 +238,49 @@ public class BudgetCommDAO extends BcjisCommAbstractDAO {
     }
     
     @SuppressWarnings("rawtypes")
+    public void updateDgrcompoDiffAmtDmn(Map map) throws Exception {
+        update("BudgetComm.updateDgrcompoDiffAmtDmn", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateDgrcompofrscDiffAmtDmn(Map map) throws Exception {
+        update("BudgetComm.updateDgrcompofrscDiffAmtDmn", map);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void updateDgrcompocharDiffAmtDmn(Map map) throws Exception {
+        update("BudgetComm.updateDgrcompocharDiffAmtDmn", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void updateDgrcompoSrchVal(Map map) throws Exception {
+    	update("BudgetComm.updateDgrcompoSrchVal", map);
+    }
+    
+    public void updateDiffAmtByReflegFgDmn(JSONObject jsonParam) throws Exception {
+        if("Y".equals(jsonParam.get("reflegFgYn")) == false) {
+            return;
+        }
+        
+        if("010".equals(jsonParam.get("reflectFg")) == false) {
+            return;
+        }
+        
+        updateDgrcompoDiffAmtDmn(jsonParam);
+        updateDgrcompofrscDiffAmtDmn(jsonParam);
+        updateDgrcompocharDiffAmtDmn(jsonParam);
+        
+        saveUpDgrcompoInfoAll(jsonParam);
+    }
+    
+    @SuppressWarnings("rawtypes")
     public boolean isCompoBgt(Map map){
         String srcFisYear = String.valueOf(map.get("srcFisYear"));
         String srcBgtDgr = String.valueOf(map.get("srcBgtDgr"));
         String fisYear = String.valueOf(map.get("fisYear"));
         String bgtDgr = String.valueOf(map.get("bgtDgr"));
         
-        //동일 회계연도에 본예산을 추경에 적용할 경우
+        //���� ȸ�迬���� �������� �߰濡 ������ ���
         if(fisYear.equals(srcFisYear) == true && "1".equals(srcBgtDgr) == true && "1".equals(bgtDgr) == false){
             return true;
         }

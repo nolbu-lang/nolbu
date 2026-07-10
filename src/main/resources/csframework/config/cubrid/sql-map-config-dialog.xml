@@ -10,6 +10,7 @@
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoCng.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoTeMngRegi.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrDeptSelt.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgroffice010Sort.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgroffice020Sort.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageCloseHis.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogManageCommcdModify.xml"/>
@@ -21,7 +22,6 @@
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogReport070OrderYmdModify.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogReport0C0Detl.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogTeMngVeri.xml"/>
-    
     <sqlMap resource="csframework/sqlmap/cubrid/dialog/DialogDgrcompoDbiz.xml"/>
     
 </sqlMapConfig>

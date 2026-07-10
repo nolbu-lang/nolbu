@@ -1,5 +1,6 @@
 package com.cs.bcjis.report.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,7 +11,11 @@ import net.sf.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import com.cs.bcjis.budget.service.impl.BudgetCommDAO;
+import com.cs.bcjis.comm.util.BcjisNumberUtil;
+import com.cs.bcjis.comm.util.BcjisStringUtil;
 import com.cs.bcjis.report.service.ReportWrite020Service;
+
+import egovframework.rte.psl.dataaccess.util.EgovMap;
 
 @Service("reportWrite020Service")
 public class ReportWrite020ServiceImpl implements ReportWrite020Service {
@@ -35,7 +40,65 @@ public class ReportWrite020ServiceImpl implements ReportWrite020Service {
 
     @SuppressWarnings("rawtypes")
     public List selectReport020PageList(Map map) throws Exception {
-        return reportWrite020DAO.selectReport020PageList(map);
+    	//return reportWrite020DAO.selectReport020PageList(map);
+    	List list = reportWrite020DAO.selectReport020PageList(map);
+    	
+    	for(int i=0 ; i<list.size() ; i++){
+    		EgovMap data = (EgovMap)list.get(i);
+    		String fisYear = BcjisStringUtil.nullConvert(data.get("fisYear"));
+    		int bgtDgr = BcjisNumberUtil.nullConvertToInt(data.get("bgtDgr"));
+    		String teBgtCompoId = BcjisStringUtil.nullConvert(data.get("teBgtCompoId"));
+    		String reportCd = BcjisStringUtil.nullConvert(data.get("reportCd"));
+    		String reportDetlCd = BcjisStringUtil.nullConvert(data.get("reportDetlCd"));
+    		
+    		Map<String, String> vo = new HashMap<String, String>();
+    		vo.put("fisYear", fisYear);
+    		vo.put("bgtDgr", String.valueOf(bgtDgr)); 
+    		vo.put("teBgtCompoId", teBgtCompoId);
+    		vo.put("reportCd", reportCd);
+    		vo.put("reportDetlCd", reportDetlCd);
+    		
+    		Map res = reportWrite020DAO.selectReport020DData(vo);
+    		
+    		if(res == null){
+    			data.put("CHECK_YN_3250000", "N");
+    			data.put("CHECK_YN_3260000", "N");
+    			data.put("CHECK_YN_3270000", "N");
+    			data.put("CHECK_YN_3280000", "N");
+    			data.put("CHECK_YN_3290000", "N");
+    			data.put("CHECK_YN_3300000", "N");
+    			data.put("CHECK_YN_3310000", "N");
+    			data.put("CHECK_YN_3320000", "N");
+    			data.put("CHECK_YN_3330000", "N");
+    			data.put("CHECK_YN_3340000", "N");
+    			data.put("CHECK_YN_3350000", "N");
+    			data.put("CHECK_YN_3360000", "N");
+    			data.put("CHECK_YN_3370000", "N");
+    			data.put("CHECK_YN_3380000", "N");
+    			data.put("CHECK_YN_3390000", "N");
+    			data.put("CHECK_YN_3400000", "N");
+    		}else{
+    			data.put("CHECK_YN_3250000", BcjisStringUtil.nullConvert(res.get("checkYn3250000")));
+    			data.put("CHECK_YN_3260000", BcjisStringUtil.nullConvert(res.get("checkYn3260000")));
+    			data.put("CHECK_YN_3270000", BcjisStringUtil.nullConvert(res.get("checkYn3270000")));
+    			data.put("CHECK_YN_3280000", BcjisStringUtil.nullConvert(res.get("checkYn3280000")));
+    			data.put("CHECK_YN_3290000", BcjisStringUtil.nullConvert(res.get("checkYn3290000")));
+    			data.put("CHECK_YN_3300000", BcjisStringUtil.nullConvert(res.get("checkYn3300000")));
+    			data.put("CHECK_YN_3310000", BcjisStringUtil.nullConvert(res.get("checkYn3310000")));
+    			data.put("CHECK_YN_3320000", BcjisStringUtil.nullConvert(res.get("checkYn3320000")));
+    			data.put("CHECK_YN_3330000", BcjisStringUtil.nullConvert(res.get("checkYn3330000")));
+    			data.put("CHECK_YN_3340000", BcjisStringUtil.nullConvert(res.get("checkYn3340000")));
+    			data.put("CHECK_YN_3350000", BcjisStringUtil.nullConvert(res.get("checkYn3350000")));
+    			data.put("CHECK_YN_3360000", BcjisStringUtil.nullConvert(res.get("checkYn3360000")));
+    			data.put("CHECK_YN_3370000", BcjisStringUtil.nullConvert(res.get("checkYn3370000")));
+    			data.put("CHECK_YN_3380000", BcjisStringUtil.nullConvert(res.get("checkYn3380000")));
+    			data.put("CHECK_YN_3390000", BcjisStringUtil.nullConvert(res.get("checkYn3390000")));
+    			data.put("CHECK_YN_3400000", BcjisStringUtil.nullConvert(res.get("checkYn3400000")));
+    		}
+    		
+    	}
+    	
+    	return list;
     }
 
     @SuppressWarnings("rawtypes")
@@ -138,6 +201,10 @@ public class ReportWrite020ServiceImpl implements ReportWrite020Service {
 
             if ("Y".equals(tempParam.get("reflegFgYn")) == true && "020".equals(tempParam.get("reflectFg")) == true) {
                 budgetCommDAO.updateDiffAmtByReflegFg(tempParam);
+            }
+            
+            if ("Y".equals(tempParam.get("reflegFgYn")) == true && "010".equals(tempParam.get("reflectFg")) == true) {
+            	budgetCommDAO.updateDiffAmtByReflegFgDmn(tempParam);
             }
         }
     }

@@ -31,7 +31,9 @@
                || CASE WHEN R034 = 'Y'AND FIS_FG_MST_CD = '200' AND V130 = 0 THEN 'E35,' ELSE '' END 
                || CASE WHEN STA3 = 'Y' AND V140 = 0 THEN 'E36,' ELSE '' END 
                || CASE WHEN STA5 = 'Y' AND V150 = 0 THEN 'E37,' ELSE '' END 
-                AS COL79
+                AS COL79,
+                T.INDI_ATTR AS COL80,
+                T.ADVNC_PROC AS COL81 
           FROM (
                 SELECT A.FIS_YEAR AS FIS_YEAR
                      , A.BGT_DGR AS BGT_DGR
@@ -129,7 +131,8 @@
                                 , TB_COMMCDDETL Z2
                             WHERE 1 = 1
                               AND Z2.DETL_CD = Z1.REPORT_DETL_CD
-                              AND Z2.CL_CD = 'RP002'
+                              <!-- AND Z2.CL_CD = 'RP002' -->
+                              AND Z2.CL_CD = 'RP012'
                               AND Z1.FIS_YEAR = A.FIS_YEAR 
                               AND Z1.BGT_DGR = A.BGT_DGR 
                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
@@ -391,6 +394,32 @@
                      , V130 AS V130
                      , V140 AS V140
                      , V150 AS V150
+                     , NVL((SELECT GROUP_CONCAT(Z1.INDI_ATTR SEPARATOR '§') AS INDI_ATTR
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD != '030'
+							   AND Z1.REPORT_CD != '070'
+							   AND Z1.REPORT_CD != '0A0'
+							   AND Z1.REPORT_CD != '0B0'
+							   AND Z1.REPORT_CD != '0C0'
+							   AND Z1.REPORT_CD != '0D0'
+                       ), '') AS INDI_ATTR 
+                     , NVL((SELECT GROUP_CONCAT(Z1.ADVNC_PROC SEPARATOR '§') AS ADVNC_PROC
+                              FROM TB_REPORT Z1
+                             WHERE 1 = 1
+                               AND Z1.FIS_YEAR = A.FIS_YEAR
+                               AND Z1.BGT_DGR = A.BGT_DGR
+                               AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                               AND Z1.REPORT_CD != '030'
+							   AND Z1.REPORT_CD != '070'
+							   AND Z1.REPORT_CD != '0A0'
+							   AND Z1.REPORT_CD != '0B0'
+							   AND Z1.REPORT_CD != '0C0'
+							   AND Z1.REPORT_CD != '0D0'
+                       ), '') AS ADVNC_PROC 
                   FROM TB_DGRCOMPO A
                      , TB_DGRBIZ C
                      , TB_REPORT020 D
@@ -489,6 +518,7 @@
                          <isNotEmpty prepend="" property="deptRankTo">
                            AND D.DEPT_RANK <![CDATA[<=]]> #deptRankTo#
                          </isNotEmpty>
+                         AND (A.CNG_TYPE IS NULL OR A.CNG_TYPE = 'CH02' OR (A.CNG_TYPE = 'CH01' AND A.GRP_LVL != '2'))
                          GROUP BY A.FIS_YEAR
                                 , A.BGT_DGR
                                 , A.TE_BGT_COMPO_ID

@@ -20,6 +20,8 @@ import com.cs.bcjis.comm.BcjisUserDetailsHelper;
 import com.cs.bcjis.comm.util.BcjisCommUtil;
 import com.cs.bcjis.comm.web.BcjisUserVO;
 import com.cs.bcjis.pledge.service.PledgeManageService;
+import com.cs.bcjis.pledge.util.PledgeManageSheetFile;
+import com.cs.bcjis.pledge.util.PledgeReportSaveSheet1File;
 
 @Controller
 public class PledgeManageController {
@@ -33,6 +35,9 @@ public class PledgeManageController {
 
     @Resource(name = "bcjisMessageSource")
     private BcjisMessageSource bcjisMessageSource;
+    
+    @Resource(name = "pledgeManageSheetFile")
+    PledgeManageSheetFile pledgeManageSheetFile;
 
     @RequestMapping("/pledge/pledgeManage.do")
     public String pledgeManage(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
@@ -143,6 +148,41 @@ public class PledgeManageController {
 
         if (logger.isDebugEnabled()) {
             logger.debug("ajaxPledgeManageDeletePledgeBiz(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+    
+    @RequestMapping("/pledge/ajaxPledgeManageSheet.do")
+    public ModelAndView ajaxPledgeReportSaveSheet1(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxPledgeReportSaveSheet1(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+
+            JSONArray resultList = JSONArray.fromObject(pledgeManageService.selectPledgeInfoList(jsonParam));
+            jsonParam.put("resultList", resultList);
+            
+            pledgeManageSheetFile.buildExcelDocument(jsonParam, "RP", "");
+
+            jsonObject.put("fileName", jsonParam.get("fileName"));
+            jsonObject.put("realFileName", jsonParam.get("realFileName"));
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+        } catch (Exception e) {
+            logger.error("ajaxPledgeReportSaveSheet1(ModelMap, HttpServletRequest)", e);
+
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.saveSheetP10"));
+        }
+
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxPledgeReportSaveSheet1(ModelMap, HttpServletRequest) - end");
         }
         return ajaxModel;
     }

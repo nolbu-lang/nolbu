@@ -41,6 +41,8 @@ _manageBatchLogTabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <a id="batchBtn" class="btnClass" href="#">배치실행(테스트)</a>
+          <a id="batchLogBtn" class="btnClass" href="#">배치로그</a>
         </div>
       </div>
     </div>
@@ -55,3 +57,4 @@ _manageBatchLogTabId = "<%=tabId%>";
     </div>
   </div>
 </div>
+<%@include file="/WEB-INF/views/dialog/dialogBatchLogFile.jsp"%>

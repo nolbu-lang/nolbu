@@ -20,6 +20,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.comm.util.BcjisStringUtil;
 import com.cs.bcjis.comm.util.BcjisWebUtil;
 import com.cs.bcjis.report.service.impl.ReportCommDAO;
 
@@ -256,11 +257,59 @@ public class ReportSaveUtil {
 
         return sBuf.toString();
     }
+    
+    public static String getBizListRemarkUnit(JSONObject category, int unit) {
+        StringBuffer sBuf = new StringBuffer();
+
+        String amt = setUnitAmt(category.get("frscAmt2"), unit);
+        //String amt = ReportSaveUtil.getAmtStrValue(category.get("frscAmt2"));
+        String preStr = "";
+
+        if ("0".equals(amt) == false) {
+            sBuf.append("· 국비 " + amt);
+            preStr = "\n";
+        }
+
+        amt = setUnitAmt(category.get("frscAmt3"), unit);
+        //amt = ReportSaveUtil.getAmtStrValue(category.get("frscAmt3"));
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 교부세 " + amt);
+            preStr = "\n";
+        }
+
+        amt = setUnitAmt(category.get("frscAmt5"), unit);
+        //amt = ReportSaveUtil.getAmtStrValue(category.get("frscAmt5"));
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 채무 " + amt + " 별도");
+            preStr = "\n";
+        }
+
+        amt = setUnitAmt(category.get("frscAmt6"), unit);
+        //amt = ReportSaveUtil.getAmtStrValue(category.get("frscAmt6"));
+        if ("0".equals(amt) == false) {
+            sBuf.append(preStr + "· 기타 " + amt + " 별도");
+            preStr = "\n";
+        }
+
+        return sBuf.toString();
+    }
+    
+    public static String setUnitAmt(Object amtStr, int unit){
+    	//int amt = Integer.parseInt(BcjisStringUtil.nullConvert(amtStr));
+    	double rtnAmt = Double.parseDouble(BcjisStringUtil.nullConvert(amtStr));
+    	if(unit != 0){
+    		rtnAmt = (rtnAmt / (double)unit);
+    	}
+    	DecimalFormat dc = new DecimalFormat("###,###,###,###,###");	
+		String ch = dc.format(rtnAmt);
+		return ch;
+    	//return String.format("%.0f", rtnAmt);
+    }
 
     @SuppressWarnings("rawtypes")
     public static int writeLastSheet(ReportCommDAO reportCommDAO, Map model, XSSFWorkbook wb, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, int cellCnt) throws Exception {
         return writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, cellCnt, cellCnt);
-    }
+    } 
 
     @SuppressWarnings("rawtypes")
     public static int writeLastSheet(ReportCommDAO reportCommDAO, Map model, XSSFWorkbook wb, XSSFSheet sheet, int rowNum, Map<String, CellStyle> styles, Map reportInfo, int cellCnt, int printCellCnt) throws Exception {
@@ -276,7 +325,7 @@ public class ReportSaveUtil {
         }
 
         reportCommDAO.setReportColWidth(model, sheet);
-
+        
         wb.setPrintArea(wb.getSheetIndex(sheet), 0, printCellCnt, 0, rowNum - 1);
 
         return rowNum;

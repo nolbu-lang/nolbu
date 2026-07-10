@@ -21,7 +21,8 @@
              , CAST((T.BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
              , CAST((T.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
              , CAST((T.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DIFF_AMT
-             , T.FRSCES AS FRSCES
+             , T.FRSCES AS FRSCES_BAK
+             , T.FRSCES_ADJ AS FRSCES
              , T.TE_MNG_MOK_NM
              , T.TE_MNG_MOK_CD_NM
              , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN T.FIS_FG_NM
@@ -45,12 +46,14 @@
              , T.GOV_SUB
              , T.INDI_ATTR
              , T.ADVNC_PROC
+             , T.SRCH_VAL
              , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '160', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT1
              , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '110', BB.ADJ_DEF_FRSC_AMT, '120', BB.ADJ_DEF_FRSC_AMT, '130', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT2
-             , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT3
+             , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '140', BB.ADJ_DEF_FRSC_AMT, '150', BB.ADJ_DEF_FRSC_AMT, '175', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT3
              , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '180', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT4
-             , (SELECT CAST((NVL(SUM(DECODE(CC.FRSC_FG_CD, '500', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT6
-             , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '150', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT7
+             , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '190', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT5
+             , (SELECT CAST((NVL(SUM(DECODE(CC.STAND_FRSC_CD, '200', BB.ADJ_DEF_FRSC_AMT, '210', BB.ADJ_DEF_FRSC_AMT, '170', BB.ADJ_DEF_FRSC_AMT, 0)), 0)/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) FROM TB_DGRCOMPOFRSC BB, TB_YEARFRSC CC WHERE 1 = 1 AND CC.FIS_YEAR = BB.FIS_YEAR AND CC.FRSC_FG_CD = BB.FRSC_FG_CD AND BB.FIS_YEAR = T.FIS_YEAR AND BB.BGT_DGR = T.BGT_DGR AND BB.TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID) AS FRSC_AMT6
+             , 0 AS FRSC_AMT7 
              
              , NVL((SELECT CASE WHEN COUNT(TE_BGT_COMPO_ID) > 0 THEN 'Y'
                                 ELSE 'N'
@@ -252,6 +255,7 @@
                      , A.PRE_AMT AS PRE_AMT
                      , A.DIFF_AMT AS DIFF_AMT
                      , A.SORT_SEQ AS SORT_SEQ
+                     , A.SRCH_VAL
                      , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = A.FIS_FG_CD AND ROWNUM = 1), '') AS FIS_FG_NM
                      , NVL((SELECT Z.OFFICE_RANK FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), 0) AS OFFICE_RANK
                      , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.OFFICE_CD = A.OFFICE_CD AND ROWNUM = 1), '') AS OFFICE_NM
@@ -268,7 +272,8 @@
                      , DECODE(A.TE_MNG_MOK_CD, NULL, '', '00000', '', SUBSTR(A.TE_MNG_MOK_CD, 1, 3) || '-' || SUBSTR(A.TE_MNG_MOK_CD, 4)) AS TE_MNG_MOK_CD_NM
                      , NVL((SELECT COUNT(*) FROM TB_DGRCOMPO Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.UP_TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND A.COMPO_LEVEL != 1), 0) AS CHILD_CNT
                      , NVL((SELECT GROUP_CONCAT(ZZ.FRSC SEPARATOR ', ')
-                              FROM (SELECT DECODE(SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1), '자', '시', SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1)) || ':' || TRIM(TO_CHAR(CAST(((NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC
+                              <!-- FROM (SELECT DECODE(SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1), '자', '시', SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1)) || ':' || TRIM(TO_CHAR(CAST(((NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC -->
+                              FROM (SELECT SUBSTR(MAX(Z2.FRSC_FG_SHORT_NM), 0, 1) || ':' || TRIM(TO_CHAR(CAST(((NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC
                                          , NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT
                                       FROM TB_DGRCOMPOFRSC Z1
                                          , TB_YEARFRSC Z2 
@@ -285,6 +290,26 @@
                                AND ZZ.FRSC_AMT <![CDATA[<>]]> 0
                            )
                        , '') AS FRSCES
+                     , NVL((SELECT GROUP_CONCAT(ZZ.FRSC SEPARATOR ', ')
+                              <!-- FROM (SELECT DECODE(SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1), '자', '시', SUBSTR(MAX(Z2.FRSC_FG_NM), 0, 1)) || ':' || TRIM(TO_CHAR(CAST((( NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC -->
+                              FROM (SELECT SUBSTR(MAX(Z2.FRSC_FG_SHORT_NM), 0, 1) || ':' || TRIM(TO_CHAR(CAST((( NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0))/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)), '999,999,999,999,999,999,999')) AS FRSC
+                                         <!-- , NVL(SUM(Z1.PRE_DEF_FRSC_AMT), 0) + NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT --><!-- 240925 요청 더한값말고 증감액이 0이 아니면 표기 -->
+                                         , NVL(SUM(Z1.ADJ_DEF_FRSC_AMT), 0) AS FRSC_AMT
+                                      FROM TB_DGRCOMPOFRSC Z1
+                                         , TB_YEARFRSC Z2 
+                                     WHERE 1 = 1
+                                       AND Z2.FIS_YEAR = Z1.FIS_YEAR
+                                       AND Z2.FRSC_FG_CD = Z1.FRSC_FG_CD
+                                       AND Z1.FIS_YEAR = A.FIS_YEAR 
+                                       AND Z1.BGT_DGR = A.BGT_DGR 
+                                       AND Z1.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                     GROUP BY Z2.FIS_YEAR 
+                                            , Z2.FRSC_FG_CD
+                                   ) ZZ
+                             WHERE 1 = 1
+                               AND ZZ.FRSC_AMT <![CDATA[<>]]> 0
+                           )
+                       , '') AS FRSCES_ADJ
                      , NVL((SELECT GROUP_CONCAT(Z2.DETL_CD_NM SEPARATOR ', ') AS SHEET_NAMES
                              FROM TB_REPORT Z1
                                 , TB_COMMCDDETL Z2
@@ -405,6 +430,7 @@
                                      , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.PRE_AMT, 0),  A.PRE_AMT)) AS PRE_AMT
                                      , SUM(DECODE(H.CT, 1, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), 2, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), 3, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), 4, DECODE(A.COMPO_LEVEL, '1', A.DIFF_AMT, 0), A.DIFF_AMT)) AS DIFF_AMT
                                      , DECODE(H.CT, 1, 0, 2, 0, 3, 0, 4, 0, A.SORT_SEQ) AS SORT_SEQ
+                                     , DECODE(H.CT, 1, '', 2, '', 3, '', 4, '', A.SRCH_VAL) AS SRCH_VAL
                                   FROM TB_DGRCOMPO A
                                      , TB_DGRDEPT B
                                      , TB_DGRBIZ C
@@ -433,6 +459,9 @@
                                    AND A.BGT_DGR = #bgtDgr#
                                    <!-- AND A.COMPO_LEVEL = DECODE(#reportCd#, '0B0', 1, A.COMPO_LEVEL) -->
                                    AND A.COMPO_LEVEL = '1'
+                                 <isNotEmpty prepend="" property="srchVal">
+                                   AND A.SRCH_VAL LIKE '%' || #srchVal# || '%'
+                                 </isNotEmpty>
                                  <isNotEmpty prepend="" property="fisFgMstCd">
                                    AND D.FIS_FG_MST_CD = #fisFgMstCd#
                                  </isNotEmpty>
@@ -460,20 +489,37 @@
                                  <isNotEmpty prepend="" property="condAmtTo">
                                    AND CAST((A.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) <![CDATA[<=]]>  #condAmtTo#  
                                  </isNotEmpty>
-                                  <isNotEmpty prepend="" property="reportMstl">
-						            AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_MSTR = #reportMstl#) <![CDATA[>]]> 0
-						          </isNotEmpty>
-						          <isNotEmpty prepend="" property="reportCd">
-						            AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_CD = #reportCd#) <![CDATA[>]]> 0 
-						          </isNotEmpty>
-						          <isNotEmpty prepend="" property="reportDetlCd">
-						          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_DETL_CD = #reportDetlCd#) <![CDATA[>]]> 0
-						          </isNotEmpty>
-						          <isNotEmpty prepend="" property="govSub">
-						          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND GOV_SUB = #govSub#) <![CDATA[>]]> 0
-						          </isNotEmpty>
+                                 
+                                 <isNotEqual prepend="" property="reportMstl" compareValue="notSel">
+                                 	<isNotEmpty prepend="" property="reportMstl">
+							        	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_MSTR = #reportMstl#) <![CDATA[>]]> 0
+							        </isNotEmpty>
+							        <isNotEmpty prepend="" property="reportCd">
+							        	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_CD = #reportCd#) <![CDATA[>]]> 0 
+							        </isNotEmpty>
+							        <isNotEmpty prepend="" property="reportDetlCd">
+							        	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_DETL_CD = #reportDetlCd#) <![CDATA[>]]> 0
+							        </isNotEmpty>
+							        <isNotEmpty prepend="" property="govSub">
+							        	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND GOV_SUB = #govSub#) <![CDATA[>]]> 0
+							        </isNotEmpty>
+                                 </isNotEqual>
+                                 
+                                 <isEqual prepend="" property="reportMstl" compareValue="notSel">
+							        AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID) <![CDATA[=]]> 0
+							     </isEqual>
+                                  
+						          
 						          <isNotEmpty prepend="" property="advncProc">
 						          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+						          </isNotEmpty>
+						          <isNotEmpty prepend="" property="indiAttr">
+						          	<isEqual prepend="" property="indiAttr" compareValue="NOSEL">
+						          		AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_CD != '030' AND (INDI_ATTR = '' OR INDI_ATTR IS NULL)) <![CDATA[>]]> 0
+						          	</isEqual>
+						          	<isNotEqual prepend="" property="indiAttr" compareValue="NOSEL">
+						          		AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND REPORT_CD != '030' AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+						          	</isNotEqual>
 						          </isNotEmpty>
                                  <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
                                    AND EXISTS (SELECT 1 

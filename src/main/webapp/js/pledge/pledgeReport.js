@@ -1230,10 +1230,9 @@ $(document).ready(function() {
     });
     
     $("#savePledgeInfoBtn", tabObj).click(function() {
-        if($(this).attr("enabledYn") != "Y"){
+    	/*if($(this).attr("enabledYn") != "Y"){
             return;
-        }
-
+        }*/
         var param = getSearchParam();
         param["fileNm"] = "공약사업";
         param["amtUnit"] = "1000000";

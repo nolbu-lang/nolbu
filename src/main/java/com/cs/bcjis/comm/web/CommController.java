@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 
 import javax.annotation.Resource;
@@ -22,6 +23,8 @@ import net.sf.json.JSONObject;
 import org.apache.log4j.Logger;
 import org.apache.tools.zip.ZipEntry;
 import org.apache.tools.zip.ZipOutputStream;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.FileCopyUtils;
@@ -56,7 +59,10 @@ public class CommController {
     @Resource(name = "bcjisMessageSource")
     BcjisMessageSource bcjisMessageSource;
 
-
+    @Autowired
+    @Qualifier("config")
+    private Properties config;
+    
 
     @RequestMapping(value = "/comm/ajaxCommSessionExpired.do")
     public ModelAndView ajaxCommSessionExpired(ModelMap model, HttpServletRequest request) throws Exception {
@@ -210,6 +216,26 @@ public class CommController {
         if (logger.isDebugEnabled()) {
             logger.debug("cvplFileDownload(Map, HttpServletRequest, HttpServletResponse) - end");
         }
+    }
+    
+    @RequestMapping(value = "/comm/batchFileLogDown.do")
+    public void batchFileLogDown(Map<String, Object> commandMap, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("batchFileLogDown(Map, HttpServletRequest, HttpServletResponse) - start");
+    	}
+    	
+    	String fileName = BcjisCommUtil.getStringParameter(request, "fileName");
+    	
+    	Properties prop = new Properties();
+        prop.load(this.getClass().getClassLoader().getResourceAsStream("csframework/bcjisProps/api.properties"));
+        String logPath = prop.getProperty("api.LogPath");
+        
+    	File uFile = new File(logPath, fileName);
+    	fileWrite(request, response, uFile, fileName, "N");
+    	
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("batchFileLogDown(Map, HttpServletRequest, HttpServletResponse) - end");
+    	}
     }
 
     @SuppressWarnings("rawtypes")

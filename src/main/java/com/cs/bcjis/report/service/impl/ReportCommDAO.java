@@ -32,6 +32,7 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
     public void deleteReport(String reportCd, Map map) throws Exception {
         if ("070".equals(reportCd) == true) {
             deleteReport070(map);
+            deleteReport(map);
         } else {
             deleteReport(map);
         }
@@ -68,7 +69,8 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void updateReport(Map map) throws Exception {
-        
+        System.out.println("@@@@@@@@@@@@@@@@@@");
+        System.out.println(map);
     	update("ReportComm.updateReport", map);
     }
 
@@ -187,7 +189,12 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
 
     @SuppressWarnings("rawtypes")
     public Map selectReportInfo(Map map) throws Exception {
-        return (Map) selectByPk("ReportComm.selectReportInfo", map);
+    	Map result = (Map) selectByPk("ReportComm.selectReportInfo", map);
+    	if(result == null){
+    		insertDefaultNewInfo(map);
+    		result = (Map) selectByPk("ReportComm.selectReportInfo", map);
+    	}
+        return result;
     }
 
     @SuppressWarnings("rawtypes")
@@ -197,12 +204,27 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
 
     @SuppressWarnings("rawtypes")
     public List selectReportHeaderList(Map map) throws Exception {
-        return list("ReportComm.selectReportHeaderList", map);
+    	List result = list("ReportComm.selectReportHeaderList", map);
+    	
+    	if (result == null || result.size() < 1) {
+    		insertDefaultNewHeader(map);
+        	result = list("ReportComm.selectReportHeaderList", map);
+        }
+    	
+        return result;
+        //return list("ReportComm.selectReportHeaderList", map);
     }
 
     @SuppressWarnings("rawtypes")
     public List selectReportMergeList(Map map) throws Exception {
-        return list("ReportComm.selectReportMergeList", map);
+    	List result = list("ReportComm.selectReportMergeList", map);
+    	
+    	if (result == null || result.size() < 1) {
+    		insertDefaultNewMerge(map);
+        	result = list("ReportComm.selectReportMergeList", map);
+        }
+    	
+        return result;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -224,6 +246,12 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
         XSSFFont font = null;
 
         List list = selectReportStyleList(param);
+        
+        if (list == null || list.size() < 1) {
+        	insertDefaultNewStyle(param);
+        	list = selectReportStyleList(param);
+        }
+        
         Map map = null;
         for (int i = 0; i < list.size(); i++) {
             map = (Map) list.get(i);
@@ -300,6 +328,12 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
     @SuppressWarnings("rawtypes")
     public void setReportColWidth(Map param, XSSFSheet sheet) throws Exception {
         List list = selectReportColWidthList(param);
+        
+        if (list == null || list.size() < 1) {
+        	insertDefaultNewColWidth(param);
+        	list = selectReportColWidthList(param);
+        }
+        
         Map map = null;
         for (int i = 0; i < list.size(); i++) {
             map = (Map) list.get(i);
@@ -522,4 +556,30 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
             updateCheckYnChildReport(param);
         }
     }
+    
+    @SuppressWarnings("rawtypes")
+    public void insertDefaultNewStyle(Map map) throws Exception {
+        insert("ReportComm.insertDefaultNewStyle", map); 
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void insertDefaultNewInfo(Map map) throws Exception {
+        insert("ReportComm.insertDefaultNewInfo", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void insertDefaultNewColWidth(Map map) throws Exception {
+    	insert("ReportComm.insertDefaultNewColWidth", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void insertDefaultNewMerge(Map map) throws Exception {
+    	insert("ReportComm.insertDefaultNewMerge", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void insertDefaultNewHeader(Map map) throws Exception {
+    	insert("ReportComm.insertDefaultNewHeader", map);
+    }
+    
 }

@@ -326,7 +326,7 @@ public class Report030SaveFile {
             if(!"".equals(dgrcompoNm)){
                  if (dgrLevel == 0) {
                      if (sheet != null) {
-                         ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 15);
+                         ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 16);
                          reportFormulaUtil.writeCellFormula();
 
                          sheet = null;
@@ -367,7 +367,7 @@ public class Report030SaveFile {
         }
 
         if (sheet != null) {
-            ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 15);
+            ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 16);
             reportFormulaUtil.writeCellFormula();
 
             sheet = null;
@@ -404,9 +404,16 @@ public class Report030SaveFile {
         rowNum++;
         row.setHeightInPoints(25);
 
-        cell = row.createCell(15);
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
+        cell = row.createCell(16);
         cell.setCellStyle(styles.get("unit"));
-        cell.setCellValue("(단위:천원)");
+        cell.setCellValue(amtUnitNm);
+        //cell.setCellValue("(단위:천원)");
 
         repeatingStartRow = rowNum;
 
@@ -598,6 +605,9 @@ public class Report030SaveFile {
 
             cell = row.createCell(15);
             cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+            
+            cell = row.createCell(16);
+            cell.setCellStyle(styles.get(preStyleNm + "Col16"));
 
             addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);
 
@@ -762,6 +772,10 @@ public class Report030SaveFile {
         cell = row.createCell(15);
         cell.setCellStyle(styles.get(preStyleNm + "Col15"));
         cell.setCellValue(ReportSaveUtil.getStringValue(category.get("examCont")));
+        
+        cell = row.createCell(16);
+        cell.setCellStyle(styles.get(preStyleNm + "Col16"));
+        cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preBgtAmtExp")));
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);
         if (formulaFlag == true) {
@@ -841,6 +855,9 @@ public class Report030SaveFile {
 
         cell = row.createCell(15);
         cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+        
+        cell = row.createCell(16);
+        cell.setCellStyle(styles.get(preStyleNm + "Col16"));
 
         preStyleNm = "tot034";
 
@@ -898,6 +915,9 @@ public class Report030SaveFile {
 
         cell = row.createCell(15);
         cell.setCellStyle(styles.get(preStyleNm + "Col15"));
+        
+        cell = row.createCell(16);
+        cell.setCellStyle(styles.get(preStyleNm + "Col16"));
 
         addDataFormulaCell(reportFormulaUtil, ReportSaveUtil.getStringValue(category.get("dgrcompoId")), rowNum);
 

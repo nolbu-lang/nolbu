@@ -163,8 +163,8 @@
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoDbiz.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoSort.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngHistoryList.jsp"%>
-<%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngModiList.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngLog.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoModifyMerge.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogDgrcompoModifyReport.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgrcompoCngModiList.jsp"%>
 <!--ui-layout-center e-->

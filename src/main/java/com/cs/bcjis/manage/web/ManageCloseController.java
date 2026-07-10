@@ -35,6 +35,7 @@ import com.cs.bcjis.report.service.ReportWrite055Service;
 import com.cs.bcjis.report.service.ReportWrite060Service;
 import com.cs.bcjis.report.service.ReportWrite090Service;
 import com.cs.bcjis.report.util.Report000SaveFile;
+import com.cs.bcjis.report.util.Report000SaveFileNew;
 import com.cs.bcjis.report.util.Report001SaveFile;
 import com.cs.bcjis.report.util.Report002SaveFile;
 import com.cs.bcjis.report.util.Report010SaveFile;
@@ -70,6 +71,9 @@ public class ManageCloseController {
     
     @Resource(name="report000SaveFile")
     private Report000SaveFile report000SaveFile;
+    
+    @Resource(name="report000SaveFileNew")
+    private Report000SaveFileNew report000SaveFileNew;
     
     @Resource(name = "reportWrite001Service")
     private ReportWrite001Service reportWrite001Service;
@@ -238,7 +242,7 @@ public class ManageCloseController {
     public void buildSheetDocument(JSONObject jsonParam, String atchFileId) throws Exception {
         
         ManageCloseUtil manageCloseUtil = new ManageCloseUtil(jsonParam, atchFileId
-                , reportWrite000Service, report000SaveFile
+                , reportWrite000Service, report000SaveFileNew
                 , reportWrite001Service, report001SaveFile
                 , reportWrite002Service, report002SaveFile
                 , reportWrite010Service, report010SaveFile

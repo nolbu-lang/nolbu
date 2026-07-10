@@ -29,4 +29,9 @@ public class ManageUserDAO extends BcjisCommAbstractDAO {
         delete("ManageUser.deleteManageUserPowgbr", map);
     }
     
+    @SuppressWarnings("rawtypes")
+    public void updateManageUserStopYn(Map map){
+    	update("ManageUser.updateManageUserStopYn", map);
+    }
+    
 }

@@ -80,6 +80,8 @@ $(document).ready(function() {
         $("#modifyBtn", tabObj).btnChangeState(true);
         $("#deleteBtn", tabObj).btnChangeState(true);
         $("#sortBtn", tabObj).btnChangeState(true);
+        $("#getExcelFormBtn", tabObj).btnChangeState(true);
+        $("#excelUploadBtn", tabObj).btnChangeState(true);
 
         data = null;
     };
@@ -153,39 +155,52 @@ $(document).ready(function() {
         doSearch();
     };
     
-    $("#regiBizBtn", tabObj).click(function() {
+    $("#excelUploadBtn", tabObj).click(function() {
         if($(this).attr("enabledYn") != "Y"){
             return;
         }
         
-        var rowId = getSelectedRowId();
-        if(isEmpty(rowId) == true){
-            $.csAlert({
-                msg : "상위항목을 선택하여 주십시오."
-            });
-            
-            return;
-        }
-        
-        var rowData = pledgeManageGrid.getRowData(rowId);
-        if(rowData.pledgeBizLevel > 2){
-            $.csAlert({
-                msg : "최하위 사업입니다."
-            });
-            
-            return;
-        }
-        
-        var pledgeBizLevel = 1;
-        if(isEmpty(rowData.pledgeBizLevel) == false){
-            pledgeBizLevel = Number(rowData.pledgeBizLevel) + 1;
-        }
-        $("#dialogPledgeBizRegiCallBackFunction", $("#dialogPledgeBizRegiDiv")).val("pledgeManagePledgeBizRegiDialogSaveCallBackFunction");
-        $("#dialogPledgeBizRegiPledgeInfo", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeInfo);
-        $("#dialogPledgeBizRegiPledgeInfoId", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeInfoId);
-        $("#dialogPledgeBizRegiUpPledgeBizId", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeBizId);
-        $("#dialogPledgeBizRegiPledgeBizLevel", $("#dialogPledgeBizRegiDiv")).val(pledgeBizLevel);
-        $("#dialogPledgeBizRegiDiv").dialog('open');
+        $("#dialogPledgeExcelUploadCallBackFunction", $("#dialogPledgeExcelUploadDiv")).val("pledgeManagePledgeExcelUploadDialogSaveCallBackFunction");
+        $("#dialogPledgeExcelUploadDiv").dialog('open');
+    });
+    
+    pledgeManagePledgeExcelUploadDialogSaveCallBackFunction = function(param){
+        doSearch();
+    };
+    
+    $("#regiBizBtn", tabObj).click(function() {
+    	if($(this).attr("enabledYn") != "Y"){
+    		return;
+    	}
+    	
+    	var rowId = getSelectedRowId();
+    	if(isEmpty(rowId) == true){
+    		$.csAlert({
+    			msg : "상위항목을 선택하여 주십시오."
+    		});
+    		
+    		return;
+    	}
+    	
+    	var rowData = pledgeManageGrid.getRowData(rowId);
+    	if(rowData.pledgeBizLevel > 2){
+    		$.csAlert({
+    			msg : "최하위 사업입니다."
+    		});
+    		
+    		return;
+    	}
+    	
+    	var pledgeBizLevel = 1;
+    	if(isEmpty(rowData.pledgeBizLevel) == false){
+    		pledgeBizLevel = Number(rowData.pledgeBizLevel) + 1;
+    	}
+    	$("#dialogPledgeBizRegiCallBackFunction", $("#dialogPledgeBizRegiDiv")).val("pledgeManagePledgeBizRegiDialogSaveCallBackFunction");
+    	$("#dialogPledgeBizRegiPledgeInfo", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeInfo);
+    	$("#dialogPledgeBizRegiPledgeInfoId", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeInfoId);
+    	$("#dialogPledgeBizRegiUpPledgeBizId", $("#dialogPledgeBizRegiDiv")).val(rowData.pledgeBizId);
+    	$("#dialogPledgeBizRegiPledgeBizLevel", $("#dialogPledgeBizRegiDiv")).val(pledgeBizLevel);
+    	$("#dialogPledgeBizRegiDiv").dialog('open');
     });
 
     pledgeManagePledgeInfoModifyDialogSaveCallBackFunction = function(param){
@@ -335,4 +350,19 @@ $(document).ready(function() {
     });
     
     doCondInit();
+    
+    $("#getExcelFormBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+
+        var pledgeInfoId = $("#condPledgeInfoId option:selected", tabObj).val();
+
+        gridScrollPosition = $("#PLEDGE_MANAGE_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop();
+        
+        $.bcjisExcelAjaxCall({
+            url : "/pledge/ajaxPledgeManageSheet.do"
+          , data: {pledgeInfoId : pledgeInfoId }
+        });
+    });
 });

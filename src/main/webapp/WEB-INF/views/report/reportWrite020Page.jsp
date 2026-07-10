@@ -100,13 +100,16 @@ _reportWrite020PageTabId = "<%=tabId%>";
               </td>
             </tr>
             <tr>
-            	<th>사전절차</th>
+            	<th>분류항목</th>
             	<td>
-            		<select id="condAdvncProc" name="condAdvncProc" title="사전절차" style="width:90%;">
+            		<select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
 					</select>
             	</td>
-            	<td>&nbsp;</td>
-            	<td>&nbsp;</td>
+            	<th>보고항목</th>
+            	<td>
+            		<select id="condIndiAttr" name="condIndiAttr" title="보고항목" style="width:90%;">
+					</select>
+            	</td>
             	<td>&nbsp;</td>
               	<td>&nbsp;</td>
             </tr>
@@ -118,6 +121,7 @@ _reportWrite020PageTabId = "<%=tabId%>";
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
+          <a id="saveFileTotalBtn" class="btnClass" href="#">통합파일저장</a>
           <!-- <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a> -->
           <a id="saveSheetBtn2" class="btnClass" href="#">시장님보고조서저장</a>
           <a id="saveGuGunBtn" class="btnClass" href="#">구군별조서저장</a>
@@ -133,8 +137,8 @@ _reportWrite020PageTabId = "<%=tabId%>";
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;">
       <div class="btn">
         <div class="gridHeader">
-          <span id="REPORT_WRITE020PAGE_TOT">통계목 총건수 : 0건</span>,&nbsp;통계목건수
-          <select id="condRowNum" name="condRowNum" title="통계목건수">
+          <span id="REPORT_WRITE020PAGE_TOT">총건수 : 0건</span>,&nbsp;건수
+          <select id="condRowNum" name="condRowNum" title="건수">
           </select>
         </div>
         <div class="btnR">

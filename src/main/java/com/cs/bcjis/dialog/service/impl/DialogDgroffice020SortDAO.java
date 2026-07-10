@@ -26,4 +26,14 @@ public class DialogDgroffice020SortDAO extends BcjisCommAbstractDAO {
         
         update("DialogDgroffice020Sort.updateOfficeRank020", map);
     }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectDgroffice0F0List(Map map) throws Exception{
+    	return list("DialogDgroffice020Sort.selectDgroffice0F0List", map);
+    }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateOfficeRank0F0(Map map) throws Exception{
+    	update("DialogDgroffice020Sort.updateOfficeRank0F0", map);
+    }
 }

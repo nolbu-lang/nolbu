@@ -1,6 +1,7 @@
 ﻿target/
 target.zip
 src/main/resources/csframework/bcjisProps/globals.properties
+src/main/resources/csframework/bcjisProps/api.properties
 *.war
 
 # 로컬/배포 패키지 (scripts/package-*.ps1 로 생성)

@@ -11,5 +11,10 @@ public interface DialogDgroffice020SortService {
     public List selectDgroffice020List(Map map) throws Exception;
     
     public void saveOfficeRank020s(JSONObject jsonParam) throws Exception;
+    
+    @SuppressWarnings("rawtypes")
+    public List selectDgroffice0F0List(Map map) throws Exception;
+    
+    public void saveOfficeRank0F0s(JSONObject jsonParam) throws Exception;
 
 }

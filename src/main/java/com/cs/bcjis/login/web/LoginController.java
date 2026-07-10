@@ -104,6 +104,18 @@ public class LoginController {
                 return ajaxModel;
 
             }
+            
+            if ("Y".equals(bcjisUserVO.getStopYn())) {
+                jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+                jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.login.stopUser"));
+
+                ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("ajaxLogin(ModelMap, HttpServletRequest) - end");
+                }
+                return ajaxModel;
+            }
 
             request.getSession().setAttribute("bcjisUserVO", bcjisUserVO);
 

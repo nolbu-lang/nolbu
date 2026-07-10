@@ -26,16 +26,6 @@ _reportWrite0F0PageTabId = "<%=tabId%>";
           </colgroup>
           <tbody>
             <tr>
-              <th>보고항목</th>
-              <td colspan="2">
-                <select id="condIndiAttr" name="condIndiAttr" title="조서상세구분" style="width:93%;">
-                </select>
-              </td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-            </tr>
-            <tr>
               <th>회계년도</th>
               <td>
                 <select id="condFisYear" name="condFisYear" title="회계년도" style="width:90%;">
@@ -46,6 +36,16 @@ _reportWrite0F0PageTabId = "<%=tabId%>";
                 <select id="condBgtDgr" name="condBgtDgr" title="예산차수" style="width:90%;">
                 </select>
               </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
+              <th>보고항목</th>
+              <td colspan="2">
+                <select id="condIndiAttr" name="condIndiAttr" title="조서상세구분" style="width:93%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
               <td>&nbsp;</td>
               <td>&nbsp;</td>
             </tr>
@@ -90,6 +90,7 @@ _reportWrite0F0PageTabId = "<%=tabId%>";
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
           <!-- <a id="saveFileBtn2" class="btnClass" href="#">파일저장(보고)</a> -->
           <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
+          <a id="officeSortBtn" class="btnClass" href="#">실국정렬순서변경</a>
         </div>
       </div>
       <div class="unitDiv">
@@ -117,5 +118,5 @@ _reportWrite0F0PageTabId = "<%=tabId%>";
   </div>
   <!--list e-->
 </div>
-<%@include file="/WEB-INF/views/dialog/dialogDgroffice020Sort.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogDgroffice0F0Sort.jsp"%>
 <!--ui-layout-center e-->

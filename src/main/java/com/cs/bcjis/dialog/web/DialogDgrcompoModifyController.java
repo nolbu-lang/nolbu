@@ -111,5 +111,42 @@ public class DialogDgrcompoModifyController {
         }
         return ajaxModel;
     }
+    
+    @RequestMapping("/dialog/ajaxDialogDgrcompoModifySaveDgrcompoGround.do")
+    public ModelAndView ajaxDialogDgrcompoModifySaveDgrcompoGround(ModelMap model, HttpServletRequest request) throws Exception {
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxDialogDgrcompoModifySaveDgrcompos(ModelMap, HttpServletRequest) - start");
+    	}
+    	
+    	ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+    	JSONObject jsonObject = new JSONObject();
+    	
+    	try {
+    		
+    		BcjisUserVO bcjisUserVO = (BcjisUserVO) BcjisUserDetailsHelper.getAuthenticatedUser();
+    		JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+    		jsonParam.put("userId", bcjisUserVO.getUserId());
+    		dialogDgrcompoModifyService.saveDgrcompoGround(jsonParam);
+    		
+    		JSONObject dgrcompo = JSONObject.fromObject(dialogDgrcompoModifyService.selectModifyDgrcompo(jsonParam));
+    		
+    		jsonObject.put("dgrcompo", dgrcompo);
+    		
+    		jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+    		jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("success.common.save"));
+    	} catch (Exception e) {
+    		logger.error("ajaxDialogDgrcompoModifySaveDgrcompos(ModelMap, HttpServletRequest)", e);
+    		
+    		jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+    		jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.save"));
+    	}
+    	
+    	ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+    	
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxDialogDgrcompoModifySaveDgrcompos(ModelMap, HttpServletRequest) - end");
+    	}
+    	return ajaxModel;
+    }
 
 }

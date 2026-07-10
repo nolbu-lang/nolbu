@@ -30,8 +30,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.cs.bcjis.comm.service.impl.BcjisCommDAO;
 import com.cs.bcjis.comm.util.BcjisCommUtil;
 import com.cs.bcjis.report.service.impl.ReportCommDAO;
+
+import egovframework.rte.psl.dataaccess.util.EgovMap;
 
 @Component("report000SaveFileNew")
 public class Report000SaveFileNew {
@@ -42,6 +45,9 @@ public class Report000SaveFileNew {
 
     @Resource(name = "reportCommDAO")
     private ReportCommDAO reportCommDAO;
+    
+    @Resource(name = "bcjisCommDAO")
+    private BcjisCommDAO bcjisCommDAO;
 
     //엑셀 파일 출력
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -50,12 +56,30 @@ public class Report000SaveFileNew {
         if (BcjisCommUtil.isNullString(fileNm) == true) {
             fileNm = config.getProperty("Globals.SystemName");
         }
-
+        
+        String fisYear = (String)model.get("fisYear");	//예산연도
+        String bgtDgr = (String)model.get("bgtDgr");	//예산차수
+        String bgtDgrNm = (String)model.get("bgtDgrNm");	//예산차수 명칭
+        if(bgtDgrNm == null || "".equals(bgtDgrNm)){
+        	Map commMap = new HashMap();
+        	commMap.put("subQueryId", "BgtDgr");
+        	List<EgovMap> bgtDgrList = bcjisCommDAO.selectCommComboList(commMap);
+        	for(EgovMap map : bgtDgrList){
+        		String groupId = String.valueOf(map.get("groupId"));
+        		String code = String.valueOf(map.get("code"));
+        		String codeNm = String.valueOf(map.get("codeNm"));
+        		if(fisYear.equals(groupId) && bgtDgr.equals(code)){
+        			bgtDgrNm = codeNm;
+        		}
+        	}
+        	
+        	model.put("bgtDgrNm", bgtDgrNm);
+        }
+        
         XSSFWorkbook wb = new XSSFWorkbook();
 
-        //엑셀 정보 가져오기
+        //엑셀 정보 가져오기(tb_reportinfo)
         Map reportInfo = reportCommDAO.selectReportInfo(model);
-        
         //보고 탭 세팅
         makeReport(model, wb, reportInfo);
         //요약 탭 세팅
@@ -75,6 +99,10 @@ public class Report000SaveFileNew {
     //총괄 시트
     @SuppressWarnings("rawtypes")
     public void data(Map model, XSSFWorkbook wb, List<Object> categories, Map reportInfo) throws Exception {
+    	// 본예산 / 기정액 계산용으로 포함된 마지막 데이터
+    	//System.out.println("######## data categories size : " + categories.size());
+    	JSONObject last = (JSONObject) categories.remove(categories.size() - 1);
+    	
         int rowNum = 0;
         XSSFSheet sheet = null;
 
@@ -99,9 +127,12 @@ public class Report000SaveFileNew {
         JSONObject category = null;
         while (!categories.isEmpty()) {
             category = (JSONObject) categories.remove(0);
-            rowNum = writeData(sheet, rowNum, category, styles, reportFormulaUtil);
+        	rowNum = writeData(sheet, rowNum, category, styles, reportFormulaUtil);
         }
         
+        // 본예산 / 기정액 계산용으로 포함된 마지막 데이터 추가 
+        rowNum = writeDataLast(sheet, rowNum, last, styles, reportFormulaUtil);
+        int lastDataRowNum = rowNum;
         //셀 가로 길이 등 footer 세팅
         if (sheet != null) {
             ReportSaveUtil.writeLastSheet(reportCommDAO, model, wb, sheet, rowNum, styles, reportInfo, 63);
@@ -109,10 +140,32 @@ public class Report000SaveFileNew {
 
             sheet = null;
         }
+        
+        //보고탭에 본예산/기정액 계산용으로 포함된 마지막 데이터 셀 지정
+        XSSFSheet firstSheet = wb.getSheet("보고");
+        int lastRowNum = firstSheet.getLastRowNum();
+        for(int i=0 ; i<lastRowNum ; i++){
+        	Row row = firstSheet.getRow(i);
+            Cell cell = row.getCell(5);
+            if(row != null){
+            	if(cell != null){
+            		if( cell.getCellType() == Cell.CELL_TYPE_FORMULA ) {
+                        cell.setCellFormula(cell.getCellFormula().replaceAll("300", lastDataRowNum + ""));
+                    }
+            	}
+            }
+            
+        }
+        
+        
     }
     
     //요약시트
     public void data2(Map model, XSSFWorkbook wb, List<Object> categories, Map reportInfo) throws Exception {
+    	// 본예산 / 기정액 계산용으로 포함된 마지막 데이터를 지움
+    	//System.out.println("####  data2 categories size : " + categories.size());
+    	categories.remove(categories.size() - 1);
+    	
     	int rowNum = 0;
     	XSSFSheet sheet = null;
     	
@@ -123,7 +176,6 @@ public class Report000SaveFileNew {
     	tmpModel.put("fisYear", "2019");
     	tmpModel.put("bgtDgr", "3");
     	model = tmpModel;
-    	
     	//스타일 가져오기
     	Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(tmpModel, wb);
     	
@@ -269,12 +321,12 @@ public class Report000SaveFileNew {
     	rowNum++;
     	row.setHeightInPoints(21f);
     	
+    	
     	Cell titleCell = row.createCell(1);
     	titleCell.setCellStyle(styles.get("title"));
     	titleCell.setCellValue(title);
     	
     	rowNum = writeReportCont2(model, sheet, rowNum, styles, unitPos);
-    	
     	repeatingStartRow = rowNum;
     	
     	int preRowSeq = -1;
@@ -290,6 +342,7 @@ public class Report000SaveFileNew {
     		rowSeq = ReportSaveUtil.getIntValue(map.get("rowSeq"));
     		cellSeq = ReportSaveUtil.getIntValue(map.get("cellSeq"));
     		headerCont = ReportSaveUtil.getStringValue(map.get("headerCont"));
+    		
     		if (rowSeq < 0) {
     			throw new Exception("보고서 Header 정보 오류입니다.");
     		}
@@ -305,6 +358,7 @@ public class Report000SaveFileNew {
     		cell = row.createCell(cellSeq);
     		
     		cell.setCellStyle(styles.get("header" + rowSeq + "Col" + cellSeq));
+    		
     		if (BcjisCommUtil.isNullString(headerCont) == false) {
     			cell.setCellValue(headerCont);
     		}
@@ -388,7 +442,6 @@ public class Report000SaveFileNew {
     	float rowHeight = 18f;
     	Row row = null;
     	Cell cell = null;
-    	
     	List list = reportCommDAO.selectReportContList(param);
     	Map map = null;
     	for (int i = 0; i < 1; i++) {
@@ -445,6 +498,9 @@ public class Report000SaveFileNew {
             cell.setCellStyle(styles.get(preStyleNm + "Col" + i));
             if (i < 2) {
                 cell.setCellValue(ReportSaveUtil.getStringValue(category.get("col" + i)));
+                /*if(i == 1){
+                	System.out.println("@@@@@@@@  " + rowNum + "번째열 부서 : " + ReportSaveUtil.getStringValue(category.get("col" + i)) + "");
+                }*/
             } else if (i == 2) {
                 cell.setCellFormula("D" + (rowNum) + "+" + "H" + (rowNum) + "+" + "L" + (rowNum) + "+" + "M" + (rowNum) + "+" + "W" + (rowNum) + "+" + "AA" + (rowNum));
             } else if (i == 3) {
@@ -498,6 +554,71 @@ public class Report000SaveFileNew {
         if (dgrLevel < 2) {
             sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$B$" + rowNum));
         }
+
+        return rowNum;
+    }
+    
+    public int writeDataLast(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, ReportFormulaUtil reportFormulaUtil) throws Exception {
+    	Row row = null;
+        Cell cell = null;
+
+        String upDgrcompoId = ReportSaveUtil.getStringValue(category.get("upDgrcompoId"));
+
+        String preStyleNm = ReportSaveUtil.getStringValue(category.get("preStyleNm"));
+
+        row = sheet.createRow(rowNum);
+        rowNum++;
+        row.setZeroHeight(true); // 숨기기
+
+        for (int i = 0; i <= 63; i++) {
+            cell = row.createCell(i);
+            cell.setCellStyle(styles.get(preStyleNm + "Col" + i));
+            if (i < 2) {
+                cell.setCellValue(ReportSaveUtil.getStringValue(category.get("col" + i)));
+            } else if (i == 2) {
+                cell.setCellFormula("D" + (rowNum) + "+" + "H" + (rowNum) + "+" + "L" + (rowNum) + "+" + "M" + (rowNum) + "+" + "W" + (rowNum) + "+" + "AA" + (rowNum));
+            } else if (i == 3) {
+                cell.setCellFormula("E" + (rowNum) + "+" + "F" + (rowNum) + "+" + "G" + (rowNum));
+            } else if (i == 7) {
+                cell.setCellFormula("I" + (rowNum) + "+" + "J" + (rowNum) + "+" + "K" + (rowNum));
+            } else if (i == 12) {
+                cell.setCellFormula("N" + (rowNum) + "+" + "R" + (rowNum) + "+" + "V" + (rowNum));
+            } else if (i == 13) {
+                cell.setCellFormula("O" + (rowNum) + "+" + "P" + (rowNum) + "+" + "Q" + (rowNum));
+            } else if (i == 17) {
+                cell.setCellFormula("S" + (rowNum) + "+" + "T" + (rowNum) + "+" + "U" + (rowNum));
+            } else if (i == 22) {
+                cell.setCellFormula("X" + (rowNum) + "+" + "Y" + (rowNum) + "+" + "Z" + (rowNum));
+            } else if (i == 26) {
+                cell.setCellFormula("AB" + (rowNum) + "+" + "AN" + (rowNum));
+            } else if (i == 27) {
+                cell.setCellFormula("AC" + (rowNum) + "+" + "AD" + (rowNum));
+            } else if (i == 28) {
+                cell.setCellFormula("AF" + (rowNum) + "+" + "AI" + (rowNum) + "+" + "AL" + (rowNum));
+            } else if (i == 29) {
+                cell.setCellFormula("AG" + (rowNum) + "+" + "AJ" + (rowNum) + "+" + "AM" + (rowNum));
+            } else if (i == 30) {
+                cell.setCellFormula("AF" + (rowNum) + "+" + "AG" + (rowNum));
+            } else if (i == 33) {
+                cell.setCellFormula("AI" + (rowNum) + "+" + "AJ" + (rowNum));
+            } else if (i == 36) {
+                cell.setCellFormula("AL" + (rowNum) + "+" + "AM" + (rowNum));
+            } else if (i == 39) {
+                cell.setCellFormula("AO" + (rowNum) + "+" + "BH" + (rowNum));
+            } else if (i == 40) {
+                cell.setCellFormula("AP" + (rowNum) + "+" + "AQ" + (rowNum));
+            } else if (i == 42) {
+                cell.setCellFormula("AR" + (rowNum) + "+" + "AS" + (rowNum) + "+" + "BG" + (rowNum));
+            } else if (i == 44) {
+                cell.setCellFormula("AT" + (rowNum) + "+" + "AU" + (rowNum) + "+" + "AV" + (rowNum) + "+" + "AW" + (rowNum) + "+" + "AX" + (rowNum) + "+" + "AY" + (rowNum) + "+" + "AZ" + (rowNum) + "+" + "BA" + (rowNum) + "+" + "BB" + (rowNum) + "+" + "BC" + (rowNum) + "+" + "BD" + (rowNum) + "+" + "BE" + (rowNum) + "+" + "BF" + (rowNum));
+            } else if (i == 59) {
+                cell.setCellFormula("BI" + (rowNum) + "+" + "BJ" + (rowNum) + "+" + "BK" + (rowNum) + "+" + "BL" + (rowNum));
+            } else {
+                cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("col" + i)));
+            }
+        }
+
+        addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);
 
         return rowNum;
     }
@@ -1481,8 +1602,10 @@ public class Report000SaveFileNew {
         
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(tmpModel, wb);
     	
+        //데이터 입력
     	rowNum = writeReport(model, sheet, rowNum, styles);
     	
+    	//footer 마무리설정
     	if (sheet != null) {
     		tmpModel = new HashMap();
         	tmpModel.put("reportCd", "0003");
@@ -1512,9 +1635,17 @@ public class Report000SaveFileNew {
     	rowNum++;
     	row.setHeightInPoints(21f);
     	
+    	String fisYear = (String)model.get("fisYear");		//회계년도
+    	String bgtDgr = (String)model.get("bgtDgr");		//예산차수 코드
+    	String bgtDgrNm = (String)model.get("bgtDgrNm");	//예산차수 명칭
+    	
+    	String bgtDgrNmTmp = bgtDgrNm;
+    	if("1".equals(bgtDgr)){
+    		bgtDgrNmTmp = "당초예산";
+    	}
     	Cell titleCell = row.createCell(1);
     	titleCell.setCellStyle(styles.get("title"));
-    	titleCell.setCellValue("□ 2019년도 당초예산 집계표(보고서식)");
+    	titleCell.setCellValue("□ " + fisYear + "년도 " + bgtDgrNmTmp + " 집계표(보고서식)");
     	sheet.addMergedRegion(CellRangeAddress.valueOf("$B$" + rowNum + ":$I$" + rowNum));
     	
     	float rowHeight = 18f;
@@ -1542,10 +1673,7 @@ public class Report000SaveFileNew {
     	int cellSeq = -1;
     	String headerCont = "";
     	
-    	String fisYear = (String)model.get("fisYear");		//회계년도
-    	String bgtDgr = (String)model.get("bgtDgr");		//예산차수 코드
-    	String bgtDgrNm = (String)model.get("bgtDgrNm");	//예산차수 명칭
-    	
+    	//데이터 입력
     	list = getReportData(fisYear, bgtDgr, bgtDgrNm);
     	while (!list.isEmpty()) {
     		map = (Map) list.remove(0);
@@ -1719,10 +1847,11 @@ public class Report000SaveFileNew {
     	
     	if("1".equals(bgtDgr)){	//본예산
     		yearBfr = String.valueOf((Integer.parseInt(fisYear) - 1));
+        	bgtDgrNmBfr = "본예산";
     	}else{  //추경
     		yearBfr = fisYear;
+        	bgtDgrNmBfr = "기정액";
     	}
-    	bgtDgrNmBfr = "본예산";
     	
     	List header = new ArrayList();
     	
@@ -1751,7 +1880,7 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(2, 2, "", "", "depth"));
     	header.add(rtnReportData(2, 3, "", "", "depth"));
     	header.add(rtnReportData(2, 4, "", "SUM(E7:E9)", "formula"));
-    	header.add(rtnReportData(2, 5, "", "", "depth"));
+    	header.add(rtnReportData(2, 5, "", "SUM(F7:F9)", "formula"));
     	header.add(rtnReportData(2, 6, "", "SUM(G7:G9)", "formula"));
     	header.add(rtnReportData(2, 7, "", "IF(F6, G6/F6, 0)", "formula"));
     	header.add(rtnReportData(2, 8, "", "", "depth"));
@@ -1861,7 +1990,7 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(13, 2, "", "", "depth"));
     	header.add(rtnReportData(13, 3, "", "", "depth"));
     	header.add(rtnReportData(13, 4, "", "SUM(E18:E20)", "formula"));
-    	header.add(rtnReportData(13, 5, "", "", "formula"));
+    	header.add(rtnReportData(13, 5, "", "SUM(F18:F20)", "formula"));
     	header.add(rtnReportData(13, 6, "", "SUM(G18:G20)", "formula"));
     	header.add(rtnReportData(13, 7, "", "IF(F17, G17/F17, 0)", "formula"));
     	header.add(rtnReportData(13, 8, "", "", "depth"));
@@ -1870,8 +1999,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(14, 1, "", "", "depth"));
     	header.add(rtnReportData(14, 2, "기준인건비", "", "header"));
     	header.add(rtnReportData(14, 3, "", "", "depth"));
-    	header.add(rtnReportData(14, 4, "", "총괄!D8", "formula"));
-    	header.add(rtnReportData(14, 5, "", "", "depth"));
+    	header.add(rtnReportData(14, 4, "", "ROUND(총괄!D8 /1000, 0)", "formula"));
+    	header.add(rtnReportData(14, 5, "", "ROUND(총괄!D300/1000, 0)", "formula"));
     	header.add(rtnReportData(14, 6, "", "E18-F18", "formula"));
     	header.add(rtnReportData(14, 7, "", "IF(F18, G18/F18, 0)", "formula"));
     	header.add(rtnReportData(14, 8, "", "", "depth"));
@@ -1880,8 +2009,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(15, 1, "", "", "depth"));
     	header.add(rtnReportData(15, 2, "채무상환", "", "header"));
     	header.add(rtnReportData(15, 3, "", "", "depth"));
-    	header.add(rtnReportData(15, 4, "", "총괄!H8", "formula"));
-    	header.add(rtnReportData(15, 5, "", "", "depth"));
+    	header.add(rtnReportData(15, 4, "", "ROUND(총괄!H8/1000, 0)", "formula"));
+    	header.add(rtnReportData(15, 5, "", "ROUND(총괄!H300/1000, 0)", "formula"));
     	header.add(rtnReportData(15, 6, "", "E19-F19", "formula"));
     	header.add(rtnReportData(15, 7, "", "IF(F19, G19/F19, 0)", "formula"));
     	header.add(rtnReportData(15, 8, "", "", "depth"));
@@ -1890,8 +2019,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(16, 1, "", "", "depth"));
     	header.add(rtnReportData(16, 2, "예비비", "", "header"));
     	header.add(rtnReportData(16, 3, "", "", "depth"));
-    	header.add(rtnReportData(16, 4, "", "총괄!L8", "formula"));
-    	header.add(rtnReportData(16, 5, "", "", "depth"));
+    	header.add(rtnReportData(16, 4, "", "ROUND(총괄!L8/1000, 0)", "formula"));
+    	header.add(rtnReportData(16, 5, "", "ROUND(총괄!L300/1000, 0)", "formula"));
     	header.add(rtnReportData(16, 6, "", "E20-F20", "formula"));
     	header.add(rtnReportData(16, 7, "", "IF(F20, G20/F20, 0)", "formula"));
     	header.add(rtnReportData(16, 8, "", "", "depth"));
@@ -1950,8 +2079,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(22, 1, "", "", "depth"));
     	header.add(rtnReportData(22, 2, "교육청전출금", "", "header"));
     	header.add(rtnReportData(22, 3, "", "", "depth"));
-    	header.add(rtnReportData(22, 4, "", "총괄!V8", "formula"));
-    	header.add(rtnReportData(22, 5, "", "", "depth"));
+    	header.add(rtnReportData(22, 4, "", "ROUND(총괄!V8/1000, 0)", "formula"));
+    	header.add(rtnReportData(22, 5, "", "ROUND(총괄!V300/1000, 0)", "formula"));
     	header.add(rtnReportData(22, 6, "", "E26-F26", "formula"));
     	header.add(rtnReportData(22, 7, "", "IF(F26, G26/F26, 0)", "formula"));
     	header.add(rtnReportData(22, 8, "", "", "depth"));
@@ -1960,8 +2089,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(23, 1, "", "", "depth"));
     	header.add(rtnReportData(23, 2, "자치구교부금", "", "header"));
     	header.add(rtnReportData(23, 3, "", "", "depth"));
-    	header.add(rtnReportData(23, 4, "", "총괄!N8", "formula"));
-    	header.add(rtnReportData(23, 5, "", "", "depth"));
+    	header.add(rtnReportData(23, 4, "", "ROUND(총괄!N8/1000, 0)", "formula"));
+    	header.add(rtnReportData(23, 5, "", "ROUND(총괄!N300/1000, 0)", "formula"));
     	header.add(rtnReportData(23, 6, "", "E27-F27", "formula"));
     	header.add(rtnReportData(23, 7, "", "IF(F27, G27/F27, 0)", "formula"));
     	header.add(rtnReportData(23, 8, "", "", "depth"));
@@ -1980,8 +2109,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(25, 1, "", "", "depth"));
     	header.add(rtnReportData(25, 2, "", "", "depth"));
     	header.add(rtnReportData(25, 3, "기금전출금", "", "header"));
-    	header.add(rtnReportData(25, 4, "", "총괄!U8", "formula"));
-    	header.add(rtnReportData(25, 5, "", "", "depth"));
+    	header.add(rtnReportData(25, 4, "", "ROUND(총괄!U8/1000, 0)", "formula"));
+    	header.add(rtnReportData(25, 5, "", "ROUND(총괄!U300/1000, 0)", "formula"));
     	header.add(rtnReportData(25, 6, "", "E29-F29", "formula"));
     	header.add(rtnReportData(25, 7, "", "IF(F29, G29/F29, 0)", "formula"));
     	header.add(rtnReportData(25, 8, "", "", "depth"));
@@ -1990,8 +2119,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(26, 1, "", "", "depth"));
     	header.add(rtnReportData(26, 2, "", "", "depth"));
     	header.add(rtnReportData(26, 3, "기타회계전출금", "", "header"));
-    	header.add(rtnReportData(26, 4, "", "총괄!T8", "formula"));
-    	header.add(rtnReportData(26, 5, "", "", "depth"));
+    	header.add(rtnReportData(26, 4, "", "ROUND(총괄!T8/1000, 0)", "formula"));
+    	header.add(rtnReportData(26, 5, "", "ROUND(총괄!T300/1000, 0)", "formula"));
     	header.add(rtnReportData(26, 6, "", "E30-F30", "formula"));
     	header.add(rtnReportData(26, 7, "", "IF(F30, G30/F30, 0)", "formula"));
     	header.add(rtnReportData(26, 8, "", "", "depth"));
@@ -2000,8 +2129,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(27, 1, "", "", "depth"));
     	header.add(rtnReportData(27, 2, "", "", "depth"));
     	header.add(rtnReportData(27, 3, "국고대여장학금 전출금", "", "header"));
-    	header.add(rtnReportData(27, 4, "", "총괄!S8", "formula"));
-    	header.add(rtnReportData(27, 5, "", "", "depth"));
+    	header.add(rtnReportData(27, 4, "", "ROUND(총괄!S8/1000, 0)", "formula"));
+    	header.add(rtnReportData(27, 5, "", "ROUND(총괄!S300/1000, 0)", "formula"));
     	header.add(rtnReportData(27, 6, "", "E31-F31", "formula"));
     	header.add(rtnReportData(27, 7, "", "IF(F31, G31/F31, 0)", "formula"));
     	header.add(rtnReportData(27, 8, "", "", "depth"));
@@ -2010,8 +2139,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(28, 1, "", "", "depth"));
     	header.add(rtnReportData(28, 2, "교육청 전입금", "", "header"));
     	header.add(rtnReportData(28, 3, "", "", "depth"));
-    	header.add(rtnReportData(28, 4, "", "총괄!Y8", "formula"));
-    	header.add(rtnReportData(28, 5, "", "", "depth"));
+    	header.add(rtnReportData(28, 4, "", "ROUND(총괄!Y8/1000, 0)", "formula"));
+    	header.add(rtnReportData(28, 5, "", "ROUND(총괄!Y300/1000, 0)", "formula"));
     	header.add(rtnReportData(28, 6, "", "E32-F32", "formula"));
     	header.add(rtnReportData(28, 7, "", "IF(F32, G32/F32, 0)", "formula"));
     	header.add(rtnReportData(28, 8, "", "", "depth"));
@@ -2020,8 +2149,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(29, 1, "", "", "depth"));
     	header.add(rtnReportData(29, 2, "운수업체보조금", "", "header"));
     	header.add(rtnReportData(29, 3, "", "", "depth"));
-    	header.add(rtnReportData(29, 4, "", "총괄!X8", "formula"));
-    	header.add(rtnReportData(29, 5, "", "", "depth"));
+    	header.add(rtnReportData(29, 4, "", "ROUND(총괄!X8/1000, 0)", "formula"));
+    	header.add(rtnReportData(29, 5, "", "ROUND(총괄!X300/1000, 0)", "formula"));
     	header.add(rtnReportData(29, 6, "", "E33-F33", "formula"));
     	header.add(rtnReportData(29, 7, "", "IF(F33, G33/F33, 0)", "formula"));
     	header.add(rtnReportData(29, 8, "", "", "depth"));
@@ -2030,7 +2159,7 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(30, 1, "", "", "depth"));
     	header.add(rtnReportData(30, 2, "소방안전교부세", "", "header"));
     	header.add(rtnReportData(30, 3, "", "", "depth"));
-    	//header.add(rtnReportData(30, 4, "", "총괄!AA8", "formula"));
+    	//header.add(rtnReportData(30, 4, "", "ROUND(총괄!AA8", "formula"));
     	header.add(rtnReportData(30, 4, "", "", "formula"));
     	header.add(rtnReportData(30, 5, "", "", "depth"));
     	header.add(rtnReportData(30, 6, "", "", "formula"));
@@ -2044,7 +2173,7 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(31, 2, "특별교부세", "", "header"));
     	header.add(rtnReportData(31, 3, "", "", "depth"));
     	header.add(rtnReportData(31, 4, "", "", "formula"));
-    	//header.add(rtnReportData(31, 4, "", "총괄!Z8", "formula"));
+    	//header.add(rtnReportData(31, 4, "", "ROUND(총괄!Z8", "formula"));
     	header.add(rtnReportData(31, 5, "", "", "depth"));
     	header.add(rtnReportData(31, 6, "", "", "formula"));
     	//header.add(rtnReportData(31, 6, "", "E35-F35", "formula"));
@@ -2056,8 +2185,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(32, 1, "", "", "depth"));
     	header.add(rtnReportData(32, 2, "국고보조반환금", "", "header"));
     	header.add(rtnReportData(32, 3, "", "", "depth"));
-    	header.add(rtnReportData(32, 4, "", "총괄!Z8", "formula"));
-    	header.add(rtnReportData(32, 5, "", "", "depth"));
+    	header.add(rtnReportData(32, 4, "", "ROUND(총괄!Z8/1000, 0)", "formula"));
+    	header.add(rtnReportData(32, 5, "", "ROUND(총괄!Z300/1000, 0)", "formula"));
     	header.add(rtnReportData(32, 6, "", "E36-F36", "formula"));
     	header.add(rtnReportData(32, 7, "", "IF(F36, G36/F36, 0)", "formula"));
     	header.add(rtnReportData(32, 8, "", "", "depth"));
@@ -2116,8 +2245,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(38, 1, "", "", "depth"));
     	header.add(rtnReportData(38, 2, "보조사업비", "", "header"));
     	header.add(rtnReportData(38, 3, "", "", "depth"));
-    	header.add(rtnReportData(38, 4, "", "총괄!AC8", "formula"));
-    	header.add(rtnReportData(38, 5, "", "", "depth"));
+    	header.add(rtnReportData(38, 4, "", "ROUND(총괄!AC8/1000, 0)", "formula"));
+    	header.add(rtnReportData(38, 5, "", "ROUND(총괄!AC300/1000, 0)", "formula"));
     	header.add(rtnReportData(38, 6, "", "E42-F42", "formula"));
     	header.add(rtnReportData(38, 7, "", "IF(F42, G42/F42, 0)", "formula"));
     	header.add(rtnReportData(38, 8, "", "", "depth"));
@@ -2136,8 +2265,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(40, 1, "", "", "depth"));
     	header.add(rtnReportData(40, 2, "", "", "depth"));
     	header.add(rtnReportData(40, 3, "매칭시비", "", "header"));
-    	header.add(rtnReportData(40, 4, "", "총괄!AD8+총괄!AP8", "formula"));
-    	header.add(rtnReportData(40, 5, "", "", "depth"));
+    	header.add(rtnReportData(40, 4, "", "ROUND((총괄!AD8+총괄!AP8)/1000, 0)", "formula"));
+    	header.add(rtnReportData(40, 5, "", "ROUND((총괄!AD300+총괄!AP300)/1000, 0)", "formula"));
     	header.add(rtnReportData(40, 6, "", "E44-F44", "formula"));
     	header.add(rtnReportData(40, 7, "", "IF(F44, G44/F44, 0)", "formula"));
     	header.add(rtnReportData(40, 8, "", "", "depth"));
@@ -2146,8 +2275,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(41, 1, "", "", "depth"));
     	header.add(rtnReportData(41, 2, "", "", "depth"));
     	header.add(rtnReportData(41, 3, "순시비", "", "header"));
-    	header.add(rtnReportData(41, 4, "", "총괄!AQ8", "formula"));
-    	header.add(rtnReportData(41, 5, "", "", "depth"));
+    	header.add(rtnReportData(41, 4, "", "ROUND(총괄!AQ8/1000, 0)", "formula"));
+    	header.add(rtnReportData(41, 5, "", "ROUND(총괄!AQ300/1000, 0)", "formula"));
     	header.add(rtnReportData(41, 6, "", "E45-F45", "formula"));
     	header.add(rtnReportData(41, 7, "", "IF(F45, G45/F45, 0)", "formula"));
     	header.add(rtnReportData(41, 8, "", "", "depth"));
@@ -2166,8 +2295,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(43, 1, "", "", "depth"));
     	header.add(rtnReportData(43, 2, "", "", "depth"));
     	header.add(rtnReportData(43, 3, "매칭시비", "", "header"));
-    	header.add(rtnReportData(43, 4, "", "총괄!BJ8+총괄!BK8", "formula"));
-    	header.add(rtnReportData(43, 5, "", "", "depth"));
+    	header.add(rtnReportData(43, 4, "", "ROUND((총괄!BJ8+총괄!BK8)/1000, 0)", "formula"));
+    	header.add(rtnReportData(43, 5, "", "ROUND((총괄!BJ300+총괄!BK300)/1000, 0)", "formula"));
     	header.add(rtnReportData(43, 6, "", "E47-F47", "formula"));
     	header.add(rtnReportData(43, 7, "", "IF(F47, G47/F47, 0)", "formula"));
     	header.add(rtnReportData(43, 8, "", "", "depth"));
@@ -2176,8 +2305,8 @@ public class Report000SaveFileNew {
     	header.add(rtnReportData(44, 1, "", "", "depth"));
     	header.add(rtnReportData(44, 2, "", "", "depth"));
     	header.add(rtnReportData(44, 3, "순시비", "", "header"));
-    	header.add(rtnReportData(44, 4, "", "총괄!BI8+총괄!BL8", "formula"));
-    	header.add(rtnReportData(44, 5, "", "", "depth"));
+    	header.add(rtnReportData(44, 4, "", "ROUND((총괄!BI8+총괄!BL8)/1000, 0)", "formula"));
+    	header.add(rtnReportData(44, 5, "", "ROUND((총괄!BI300+총괄!BL300)/1000, 0)", "formula"));
     	header.add(rtnReportData(44, 6, "", "E48-F48", "formula"));
     	header.add(rtnReportData(44, 7, "", "IF(F48, G48/F48, 0)", "formula"));
     	header.add(rtnReportData(44, 8, "", "", "depth"));

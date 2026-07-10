@@ -97,4 +97,68 @@ public class DialogDgroffice020SortController {
         return ajaxModel;
     }
     
+    @RequestMapping("/dialog/ajaxDgroffice0F0SortDgroffice0F0List.do")
+    public ModelAndView ajaxDgroffice0F0SortDgroffice0F0List(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxDgroffice0F0SortDgroffice0F0List(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+
+            JSONArray resultList = JSONArray.fromObject(dialogDgroffice020SortService.selectDgroffice0F0List(jsonParam));
+
+            jsonObject.put("dataList", resultList);
+
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+        } catch (Exception e) {
+            logger.error("ajaxDgroffice0F0SortDgroffice0F0List(ModelMap, HttpServletRequest)", e);
+
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.select"));
+        }
+
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxDgroffice0F0SortDgroffice0F0List(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+
+    @RequestMapping("/dialog/ajaxDialogDgroffice0F0SaveOfficeRank0F0s.do")
+    public ModelAndView ajaxDialogDgrcompoRegiSaveDgrcompos0F0(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxDialogDgrcompoRegiSaveDgrcompos(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            
+            BcjisUserVO bcjisUserVO = (BcjisUserVO) BcjisUserDetailsHelper.getAuthenticatedUser();
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+            jsonParam.put("userId", bcjisUserVO.getUserId());
+            dialogDgroffice020SortService.saveOfficeRank0F0s(jsonParam);
+            
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("success.common.save"));
+        } catch (Exception e) {
+            logger.error("ajaxDialogDgrcompoRegiSaveDgrcompos(ModelMap, HttpServletRequest)", e);
+                        
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.save"));
+        }
+        
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxDialogDgrcompoRegiSaveDgrcompos(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+    
 }

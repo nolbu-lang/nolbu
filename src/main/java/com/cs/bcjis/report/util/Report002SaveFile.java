@@ -23,8 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.cs.bcjis.budget.service.BudgetCommCdService;
+import com.cs.bcjis.budget.service.impl.BudgetCommCdDAO;
 import com.cs.bcjis.comm.util.BcjisCommUtil;
 import com.cs.bcjis.report.service.impl.ReportCommDAO;
+
+import egovframework.rte.psl.dataaccess.util.EgovMap;
 
 @Component("report002SaveFile")
 public class Report002SaveFile {
@@ -35,6 +39,9 @@ public class Report002SaveFile {
 
     @Resource(name = "reportCommDAO")
     private ReportCommDAO reportCommDAO;
+    
+    @Resource(name = "budgetCommCdDAO")
+    private BudgetCommCdDAO budgetCommCdDAO;
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void buildSheetDocument(Map model, String KeyStr, String storePath) throws Exception {
@@ -61,6 +68,11 @@ public class Report002SaveFile {
         int rowNum = 0;
         XSSFSheet sheet = null;
 
+        JSONObject indiParam = new JSONObject();
+        indiParam.put("codeId", "RP014");
+        List indiAttrList = budgetCommCdDAO.selectList(indiParam); 
+        indiParam.put("codeId", "RP015");
+        List advncProcList = budgetCommCdDAO.selectList(indiParam);
         Map reportInfo = reportCommDAO.selectReportInfo(model);
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(model, wb);
 
@@ -71,11 +83,11 @@ public class Report002SaveFile {
         JSONObject category = null;
         while (!categories.isEmpty()) {
             category = (JSONObject) categories.remove(0);
-            rowNum = writeData(sheet, rowNum, category, styles);
+            rowNum = writeData(sheet, rowNum, category, styles, indiAttrList, advncProcList);
         }
 
         if (sheet != null) {
-            writeLastSheet(model, wb, sheet, rowNum, styles, reportInfo, 79);
+            writeLastSheet(model, wb, sheet, rowNum, styles, reportInfo, 81);
             sheet = null;
         }
     }
@@ -150,7 +162,7 @@ public class Report002SaveFile {
         return rowNum;
     }
 
-    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles) throws Exception {
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, List<EgovMap> indiAttrList, List<EgovMap> advncProcList) throws Exception {
         float rowHeight = 12.75f;
         Row row = null;
         Cell cell = null;
@@ -162,7 +174,7 @@ public class Report002SaveFile {
         row.setHeightInPoints(rowHeight);
 
         String value = "";
-        for (int i = 0; i <= 79; i++) {
+        for (int i = 0; i <= 81; i++) {
             cell = row.createCell(i);
             cell.setCellStyle(styles.get(preStyleNm + "Col" + i));
             if (i < 9
@@ -174,7 +186,9 @@ public class Report002SaveFile {
                     || i == 76
                     || i == 77
                     || i == 78
-                    || i == 79) {
+                    || i == 79
+                    || i == 80
+                    || i == 81) {
                 if(i == 79){
                     value = ReportSaveUtil.getStringValue(category.get("col" + i));
                     if(value != null && value.length() > 0){
@@ -182,6 +196,10 @@ public class Report002SaveFile {
                     }
                     
                     cell.setCellValue(value);
+                }else if(i == 80){
+                	cell.setCellValue(rtnIndiStr(indiAttrList, ReportSaveUtil.getStringValue(category.get("col" + i))));
+                }else if(i == 81){
+                	cell.setCellValue(rtnAdvncStr(advncProcList, ReportSaveUtil.getStringValue(category.get("col" + i))));
                 }else{
                     cell.setCellValue(ReportSaveUtil.getStringValue(category.get("col" + i)));
                 }
@@ -228,5 +246,71 @@ public class Report002SaveFile {
                 sheet.addMergedRegion(CellRangeAddress.valueOf(mergeVal));
             }
         }
+    }
+    
+    public String rtnIndiStr(List<EgovMap> indiAttrList, String value){
+    	String rtnVal = "";
+    	
+    	if(value != null && !value.equals("")){
+    		String[] valueArrR = value.split("§");
+    		if(valueArrR.length > 0){
+    			for(int i=0 ; i<valueArrR.length ; i++){
+    				String[] valueArr = valueArrR[i].split(",");
+                	
+    				for(int j=0 ; j<valueArr.length ; j++){
+    					String val = valueArr[j];
+    					for(int k=0 ; k<indiAttrList.size() ; k++){
+                    		EgovMap map = indiAttrList.get(k);
+                    		String detlCd = ReportSaveUtil.getStringValue(map.get("detlCd"));
+                    		String detlCdNm = ReportSaveUtil.getStringValue(map.get("detlCdNm"));
+                    		if(val.equals(detlCd)){
+                    			if(rtnVal.equals("")){
+                    				rtnVal = detlCdNm;
+                    			}else{
+                    				rtnVal += ", " + detlCdNm;
+                    			}
+                    		}
+                    	}
+    				}
+                	
+    			}
+    		}
+    	}
+    	
+    	
+    	return rtnVal;
+    }
+    
+    public String rtnAdvncStr(List<EgovMap> AdvncProcList, String value){
+    	String rtnVal = "";
+    	
+    	if(value != null && !value.equals("")){
+    		String[] valueArrR = value.split("§");
+    		if(valueArrR.length > 0){
+    			for(int i=0 ; i<valueArrR.length ; i++){
+    				String[] valueArr = valueArrR[i].split(",");
+    				
+    				for(int j=0 ; j<valueArr.length ; j++){
+    					String val = valueArr[j];
+    					for(int k=0 ; k<AdvncProcList.size() ; k++){
+    						EgovMap map = AdvncProcList.get(k);
+    						String detlCd = ReportSaveUtil.getStringValue(map.get("detlCd"));
+    						String detlCdNm = ReportSaveUtil.getStringValue(map.get("detlCdNm"));
+    						if(val.equals(detlCd)){
+    							if(rtnVal.equals("")){
+    								rtnVal = detlCdNm;
+    							}else{
+    								rtnVal += ", " + detlCdNm;
+    							}
+    						}
+    					}
+    				}
+    				
+    			}
+    		}
+    	}
+    	
+    	
+    	return rtnVal;
     }
 }

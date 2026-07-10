@@ -277,6 +277,8 @@
                          ELSE ''
                     END) AS DGRCOMPO_NM
              , T.DEMAND_COMP_FORMULAR AS DEMAND_COMP_FORMULAR
+             , T.DEPT_CD AS DEPT_CD
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
              , CAST((T.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
              , T.COMP_FORMULAR AS COMP_FORMULAR
              , CAST((T.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT

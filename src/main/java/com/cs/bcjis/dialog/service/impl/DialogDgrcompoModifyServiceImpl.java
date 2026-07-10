@@ -56,7 +56,11 @@ public class DialogDgrcompoModifyServiceImpl implements DialogDgrcompoModifyServ
             tempParam.put("amtUnit", jsonParam.get("amtUnit"));
             tempParam.put("userId", jsonParam.get("userId"));
             
-            budgetCommDAO.updateDgrcompofrsc(tempParam);
+            if("116".equals(tempParam.get("frscFgCd"))){ //지방소멸대응기금 추가
+            	budgetCommDAO.mergeDgrcompofrsc(tempParam);
+            }else{
+            	budgetCommDAO.updateDgrcompofrsc(tempParam);
+            } 
         }
         
         tempParam = null;
@@ -80,5 +84,11 @@ public class DialogDgrcompoModifyServiceImpl implements DialogDgrcompoModifyServ
     @SuppressWarnings("rawtypes")
     public Map selectModifyDgrcompo(Map map) throws Exception {
         return dialogDgrcompoModifyDAO.selectModifyDgrcompo(map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public void saveDgrcompoGround(JSONObject jsonParam) throws Exception {
+        dialogDgrcompoModifyDAO.updateDgrcompoGround(jsonParam);
+        
     }
 }

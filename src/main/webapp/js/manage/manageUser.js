@@ -2,6 +2,23 @@ $(document).ready(function() {
     var tabId = _manageUserTabId;
     var tabObj = $("#"+tabId);
     
+    var stopYnFormatter = function(cellValue, options, rowObject){
+    	
+    	if(isEmpty(cellValue) == true){
+    		cellValue = "";
+    	}
+    	
+    	var rVal = '';
+    	
+    	if(rowObject.stopYn == 'Y'){
+    		rVal = '사용중지';
+    	}else{
+    		rVal = '사용중';
+    	}
+    	
+    	return rVal;
+    };
+    
     var manageUsercolNames = ['', 
                     '순번', 
                     '사용자ID', 
@@ -9,6 +26,8 @@ $(document).ready(function() {
                     '권한명',
                     '최종접속시각',
                     '최종접속IP',
+                    '사용중지',
+                    'stopYn',
                     'userId',
                     'powGrCd',
                     'pswd'
@@ -26,6 +45,8 @@ $(document).ready(function() {
                         {name : 'powGrNm', index : 'powGrNm', width : 80, sortable : false, fixed : true, align : 'left'},
                         {name : 'finalConnectDate', index : 'finalConnectDate', width : 150, sortable : false, fixed : true, align : 'left'},
                         {name : 'finalConnectIp', index : 'finalConnectIp', width : 150, sortable : false, fixed : true, align : 'left'},
+                        {name : 'stopYnVal', index : 'stopYnVal', width : 80, sortable : false, fixed : true, align : 'center', formatter:stopYnFormatter},
+                        {name : 'stopYn', index : 'stopYn', width : 0, sortable : false, fixed : true, hidden : true},
                         {name : 'userId', index : 'userId', width : 0, sortable : false, fixed : true, hidden : true },
                         {name : 'powGrCd', index : 'powGrCd', width : 0, sortable : false, fixed : true, hidden : true },
                         {name : 'pswd', index : 'pswd', width : 0, sortable : false, fixed : true, hidden : true }
@@ -190,6 +211,64 @@ $(document).ready(function() {
         });
     });
     
+  //사용중지
+    $("#stopBtn", tabObj).click(function() {
+        
+        var rowId = getSelectedRowId();
+        if(isEmpty(rowId) == true){
+            $.csAlert({
+                msg : "사용중지할 사용자를 선택하여 주십시오."
+            });
+            
+            return;
+        }
+        
+        var rowData = manageUsergridGrid.getRowData(rowId);
+        var stopYn = rowData["stopYn"];
+        
+        if(stopYn != 'N'){
+        	$.csAlert({
+                msg : "이미 사용중지된 사용자 입니다.."
+            });
+            
+            return;
+        }
+       
+        $.csConfirm({
+            msg : "사용중지하시겠습니까?",
+            callBack : userStopDoUpdate
+        });
+    });
+    
+    //사용중지
+    $("#stopRtnBtn", tabObj).click(function() {
+    	
+    	var rowId = getSelectedRowId();
+    	if(isEmpty(rowId) == true){
+    		$.csAlert({
+    			msg : "사용중지해제할 사용자를 선택하여 주십시오."
+    		});
+    		
+    		return;
+    	}
+    	
+    	var rowData = manageUsergridGrid.getRowData(rowId);
+        var stopYn = rowData["stopYn"];
+        
+        if(stopYn != 'Y'){
+        	$.csAlert({
+                msg : "이미 사용중인 사용자 입니다.."
+            });
+            
+            return;
+        }
+    	
+    	$.csConfirm({
+    		msg : "사용중지해제하시겠습니까?",
+    		callBack : userStopDoUpdate
+    	});
+    });
+    
     userModifyDoDelete = function(params){
         if(params.confirmData != "Y"){
             return;
@@ -202,6 +281,44 @@ $(document).ready(function() {
             url : "/manage/ajaxManageUserDeleteUserList.do",
             data : {
                 deleteUserId : rowData.userId
+            }
+        });
+        
+        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+            $.csAlert({
+                msg : data.bcjisMessage
+            });
+            
+            return;
+        }
+                
+        $.csAlert({
+            msg : data.bcjisMessage,
+            callBack : function() {
+                manageUserSearch();
+            }
+        });
+    };
+    
+    userStopDoUpdate = function(params){
+        if(params.confirmData != "Y"){
+            return;
+        }
+
+        var rowId = getSelectedRowId();
+        var rowData = manageUsergridGrid.getRowData(rowId);
+        var stopYn = rowData["stopYn"];
+        
+        if(stopYn == 'Y'){
+        	stopYn = 'N';
+        }else{
+        	stopYn = 'Y';
+        }
+        
+        var data = $.csAjaxCall({
+            url : "/manage/ajaxManageUserStopYnUpdate.do",
+            data : {
+                stopUserId : rowData.userId, stopYn:stopYn
             }
         });
         

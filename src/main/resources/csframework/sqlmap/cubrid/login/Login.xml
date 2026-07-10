@@ -39,6 +39,7 @@
         <result property="modiDate" column="MODI_DATE" columnIndex="31"/>
         <result property="userDeptYn" column="USER_DEPT_YN" columnIndex="32"/>
         <result property="powGrCd" column="POW_GR_CD" columnIndex="33"/>
+        <result property="stopYn" column="STOP_YN" columnIndex="34"/>
     </resultMap>
     
     <select id="Login.selectLoginInfo" parameterClass="Map" resultMap="bcjisUserVoInfo" >
@@ -89,6 +90,7 @@
                        AND Z.USE_YN = 'Y' 
                    )
                , 'Y') AS USER_DEPT_YN
+             , A.STOP_YN
           FROM TB_USER A
          WHERE 1 = 1
          <isNotEmpty prepend="" property="userId">

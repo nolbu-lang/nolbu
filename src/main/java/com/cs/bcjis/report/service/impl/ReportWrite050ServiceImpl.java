@@ -59,6 +59,10 @@ public class ReportWrite050ServiceImpl  implements ReportWrite050Service {
             if("Y".equals(tempParam.get("reflegFgYn")) == true && "020".equals(tempParam.get("reflectFg")) == true){
                 budgetCommDAO.updateDiffAmtByReflegFg(tempParam);
             }
+            
+            if ("Y".equals(tempParam.get("reflegFgYn")) == true && "010".equals(tempParam.get("reflectFg")) == true) {
+            	budgetCommDAO.updateDiffAmtByReflegFgDmn(tempParam);
+            }
         }
     }
 }

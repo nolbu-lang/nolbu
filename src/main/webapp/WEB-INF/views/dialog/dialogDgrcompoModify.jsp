@@ -279,6 +279,7 @@ $(document).ready(function (){
                 sumAdjDefFrscAmt += adjDefFrscAmt;
                 sumFrscAmt += frscAmt;
                 sumPreFrscAmt += preFrscAmt;
+                //console.log('rowData.frscFgCd : ' + rowData.frscFgCd + '   sumDmnDefFrscAmt : ' + sumDmnDefFrscAmt + '   dmnDefFrscAmt :  ' + dmnDefFrscAmt);
             }
         }
         
@@ -584,6 +585,16 @@ $(document).ready(function (){
     };
     
     var dialogDgrcompoModifySaveBtnClick = function(){
+    	
+    	var param = {
+                fisYear: $("#dialogDgrcompoModifyFisYear", dialogObj).val(),
+                bgtDgr: $("#dialogDgrcompoModifyBgtDgr", dialogObj).val(),
+        };
+    	
+    	if(checkCloseYn(param) == false){
+            return;
+        }
+    	
         if(frscEditIRow !== 0 && frscEditICol !== 0){
             dialogDgrcompoModifyFrscGrid.saveCell(frscEditIRow, frscEditICol);
         }

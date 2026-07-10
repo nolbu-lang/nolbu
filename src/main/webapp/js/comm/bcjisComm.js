@@ -316,6 +316,7 @@ function checkCloseYn(param){
         
         return false;
     }
+    
 /*
     if(param.reportCheckYn == "Y" && data.data.userReportYn == "Y" && data.data.reportYn != "Y"){
         $.csAlert({
@@ -326,4 +327,18 @@ function checkCloseYn(param){
     }
 */    
     return true;
+}
+
+function checkCloseYnRtn(param){    
+    var data = $.csAjaxCall({
+        url : "/comm/ajaxSelectIsCloseYn.do",
+        data : param
+    });
+    
+    
+    if(data.data.closeYn != "N"){
+        return false;
+    }else{
+    	return true;
+    }
 }

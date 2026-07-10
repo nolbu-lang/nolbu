@@ -48,6 +48,29 @@ $(document).ready(function() {
         return rVal;
     };
     
+    var preBgtAmtExpFormatter = function(cellValue, options, rowObject){
+    	if(isEmpty(cellValue) == true){
+    		cellValue = "";
+    	}
+    	
+    	var readOnlyStr = "";
+    	var classStr = 'class="amtInput030 ui-state-enabled"';
+    	/*if(rowObject.dbizCd == "0000000000000000"){
+    		readOnlyStr = "readonly";
+    		classStr = 'class="amtInput030 ui-state-disabled"';
+    	}else{
+    		classStr = 'class="amtInput030 ui-state-enabled"';
+    	}*/
+    	var rVal = ''; 
+    	if(rowObject.dbizCd != "0000000000000000"){
+    	rVal = '<input id="preBgtAmtExp_'+rowObject.dgrcompoId+'" value="'+addCommaMinusStr(cellValue)+'" '+classStr+' '+readOnlyStr+' />';
+    	}
+    	
+    	return rVal;
+    };
+    
+    
+    
     var natnBizNmFormatter = function(cellValue, options, rowObject){
         if(isEmpty(cellValue) == true){
             cellValue = "";
@@ -159,10 +182,10 @@ $(document).ready(function() {
     	return rVal;
     };
     
-    var colNames = ['구분(부서-사업)', '통계목', '계', '국비', '시비', '계', '국비', '시비', '계', '국비', '시비', '구·군비(※별도)', '국가사업명', '부처명', '국비', '시비', '구비', '비고', '조건검색어',
+    var colNames = ['구분(부서-사업)', '통계목', '계', '국비', '시비', '계', '국비', '시비', '계', '국비', '시비', '구·군비(※별도)', '국가사업명', '부처명', '국비', '시비', '구비', '전년도 예산', '비고', '조건검색어',
                     '국고보조',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'deptCd', 'dbizCd', 'demandCont', 'examCont', 'reflectFg', 'srchVal',
-                    'guGoonExp', 'natnBizNm', 'mnstryNm', 'natnBudnRate', 'siBudnRate', 'guBudnRate',
+                    'guGoonExp', 'preBgtAmtExp', 'natnBizNm', 'mnstryNm', 'natnBudnRate', 'siBudnRate', 'guBudnRate',
                     'indiAttr','advncProc'
                    ];
 
@@ -195,6 +218,9 @@ $(document).ready(function() {
                         {name : 'guBudnRateView', index : 'natnBudnRateView', width : 30, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
                             formatter:guBudnRateFormatter
                         },
+                        {name : 'preBgtAmtExpView', index : 'preBgtAmtExpView', width : 90, sortable : false, fixed : true, align : 'center', cellattr: myCellattr,
+                            formatter:preBgtAmtExpFormatter
+                        },
                         {name : 'examContView', index : 'examContView', width : 150, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
                             formatter:examContFormatter
                         },
@@ -218,6 +244,7 @@ $(document).ready(function() {
                         {name : 'reflectFg', index : 'reflectFg', width : 0, sortable : false, hidden : true},
                         {name : 'srchVal', index : 'srchVal', width : 0, sortable : false, hidden : true},
                         {name : 'guGoonExp', index : 'guGoonExp', width : 0, sortable : false, hidden : true},
+                        {name : 'preBgtAmtExp', index : 'preBgtAmtExp', width : 0, sortable : false, hidden : true},
                         {name : 'natnBizNm', index : 'natnBizNm', width : 0, sortable : false, hidden : true},
                         {name : 'mnstryNm', index : 'mnstryNm', width : 0, sortable : false, hidden : true},
                         {name : 'natnBudnRate', index : 'natnBudnRate', width : 0, sortable : false, hidden : true},
@@ -383,6 +410,7 @@ $(document).ready(function() {
 
         data = null;
         srchReportDetlCd = $("#condReportDetlCd", tabObj).val();
+        chkDiv();
     };
     
     var getSearchParam = function(){
@@ -453,6 +481,13 @@ $(document).ready(function() {
             comboType : '',
             comboTypeValue : ''
         });
+        
+      //2018 이전 년도 제외
+        $('#condFisYear').children('option').each(function(){
+        	if($(this).val() <= 2018){
+        		$(this).remove();
+        	}
+        });
        
         var fisYear = $("#condFisYear option:selected", tabObj).val();
         condBgtDgrCreateCombo(fisYear, '');
@@ -496,6 +531,7 @@ $(document).ready(function() {
         var guBudnRate = "";
         var indiAttr = "";
         var advncProc = "";
+        var preBgtAmtExp = "";
         
        
         for(var i = 0; i < gridRows.length; i++) {
@@ -512,6 +548,7 @@ $(document).ready(function() {
                 guBudnRate = $('#guBudnRate_'+rowId, tabObj).val();
                 indiAttr = getIndiAttrCheckVal(rowData.dgrcompoId);
                 advncProc = getAdvncProcCheckVal(rowData.dgrcompoId);
+                preBgtAmtExp = $('#preBgtAmtExp_'+rowId, tabObj).val().replaceAll(",", "");
                 
                 if(rowData.examCont != examCont
                         || rowData.srchVal != srchVal
@@ -522,7 +559,8 @@ $(document).ready(function() {
                         || rowData.siBudnRate != siBudnRate
                         || rowData.guBudnRate != guBudnRate
                         || rowData.indiAttr != indiAttr
-                        || rowData.advncProc != advncProc){
+                        || rowData.advncProc != advncProc
+                        || rowData.preBgtAmtExp != preBgtAmtExp){
                     
                     saveData = {};
                     saveData["fisYear"] = rowData.fisYear;
@@ -544,6 +582,7 @@ $(document).ready(function() {
                     saveData["guBudnRate"] = guBudnRate;
                     saveData["indiAttr"] = indiAttr;
                     saveData["advncProc"] = advncProc;
+                    saveData["preBgtAmtExp"] = preBgtAmtExp;
                     
                     if(rowData.indiAttr != indiAttr
                             || rowData.advncProc != advncProc){
@@ -579,7 +618,7 @@ $(document).ready(function() {
     	return rtnData;
     }
     
-    //사전절차 체크된 코드 가져오기
+    //분류항목 체크된 코드 가져오기
     var getAdvncProcCheckVal = function(dgrcompoId){
     	var itemList = comboData['advncProc'];
     	var rtnData = '';
@@ -671,11 +710,39 @@ $(document).ready(function() {
             return;
     	}
         
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite030SaveFile.do"
+          , data: param
+        });*/
+    });
+    var doSaveFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+        param["fileNm"] = "국고보조사업심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite030SaveFile.do"
           , data: param
         });
-    });
+    }
     
     $("#saveSheetBtn", tabObj).click(function() {
         var param = getSearchParam();
@@ -690,11 +757,40 @@ $(document).ready(function() {
             return;
     	}
         
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveSeetFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite030SaveSheet.do"
+          , data: param
+        });*/
+    });
+    
+    var doSaveSeetFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+        param["fileNm"] = "국고보조사업심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite030SaveSheet.do"
           , data: param
         });
-    });
+    }
     
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
@@ -892,4 +988,26 @@ $(document).ready(function() {
     };
     
     doCondInit();
+    
+    
+    var chkDiv = function(){
+    	checkEvent($('#REPORT_WRITE030_DIV').find('textarea'));
+    	checkEvent($('#REPORT_WRITE030_DIV').find('input'));
+    }
+    
+    var checkEvent = function(obj){
+    	$(obj).click(function(){
+    		checkDetlCd();
+    	});
+    	$(obj).keydown(function(){
+    		checkDetlCd();
+    	});
+    };
+    var checkDetlCd = function(){
+    	if(srchReportDetlCd == ''){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+    	}
+    };
 });

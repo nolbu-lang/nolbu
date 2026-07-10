@@ -118,9 +118,9 @@ _reportWrite010PageTabId = "<%=tabId%>";
               <td>&nbsp;</td>
             </tr>
             <tr>
-            	<th>사전절차</th>
+            	<th>분류항목</th>
             	<td>
-            		<select id="condAdvncProc" name="condAdvncProc" title="사전절차" style="width:90%;">
+            		<select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
 					</select>
             	</td>
             	<td>&nbsp;</td>
@@ -136,7 +136,9 @@ _reportWrite010PageTabId = "<%=tabId%>";
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
-          <!-- <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a> -->
+          <a id="saveFileTotalBtn" class="btnClass" href="#">통합파일저장</a>
+          <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a>
+          <a id="rankBtn" class="btnDisabledClass" href="#" enabledYn="N">실국정렬변경</a>
           <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
         </div>
       </div>
@@ -148,12 +150,13 @@ _reportWrite010PageTabId = "<%=tabId%>";
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;">
       <div class="btn">
         <div class="gridHeader">
-          <span id="REPORT_WRITE010PAGE_TOT">통계목 총건수 : 0건</span>,&nbsp;통계목건수
-          <select id="condRowNum" name="condRowNum" title="통계목건수">
+          <span id="REPORT_WRITE010PAGE_TOT">총건수 : 0건</span>,&nbsp;건수
+          <select id="condRowNum" name="condRowNum" title="건수">
           </select>
         </div>
         <div class="btnR">
           <a id="saveBtn" class="btnDisabledClass" href="#" enabledYn="N">저장</a>
+          <a id="saveEtcBtn" class="btnDisabledClass" href="#" enabledYn="N">내용저장</a>
         </div>
       </div>
       <div id="REPORT_WRITE010PAGE_DIV" class="csGrid" style="border:0px;">
@@ -165,4 +168,5 @@ _reportWrite010PageTabId = "<%=tabId%>";
   </div>
   <!--list e-->
 </div>
+<%@include file="/WEB-INF/views/dialog/dialogDgroffice010Sort.jsp"%>
 <!--ui-layout-center e-->

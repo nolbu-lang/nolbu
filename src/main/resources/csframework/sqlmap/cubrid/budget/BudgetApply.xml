@@ -171,6 +171,22 @@
                                  <isNotEmpty prepend="" property="teMngMokCdTo">
                                    AND A.TE_MNG_MOK_CD <![CDATA[<=]]> #teMngMokCdTo#
                                  </isNotEmpty>
+                                 <isEqual prepend="" property="frscFrCdYn" compareValue="Y">
+                                   AND EXISTS (SELECT 1
+                                                 FROM TB_DGRCOMPOFRSC_RLK Z
+                                                WHERE 1 = 1
+                                                  AND Z.FIS_YEAR = A.FIS_YEAR
+                                                  AND Z.BGT_DGR = A.BGT_DGR
+                                                  AND Z.TE_BGT_COMPO_SEQ = A.TE_BGT_COMPO_SEQ
+                                                  AND Z.ADJ_DEF_FRSC_AMT <![CDATA[<>]]> 0                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdFr">
+                                                  AND Z.FRSC_FG_CD <![CDATA[>=]]> #frscFgCdFr#
+                                                </isNotEmpty>                                                      
+                                                <isNotEmpty prepend="" property="frscFgCdTo">
+                                                  AND Z.FRSC_FG_CD <![CDATA[<=]]> #frscFgCdTo#
+                                                </isNotEmpty>
+                                              )
+                                 </isEqual> 
                                  GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || C.FIS_FG_CD || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000' || '_' || '0000000000'
                                                      , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || C.FIS_FG_CD || '_' || B.OFFICE_CD || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000' || '_' || '0000000000'
                                                      , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || C.FIS_FG_CD || '_' || B.OFFICE_CD || '_' || A.DEPT_CD || '_' || '0000000000000000' || '_' || '00000' || '_' || '0000000000'

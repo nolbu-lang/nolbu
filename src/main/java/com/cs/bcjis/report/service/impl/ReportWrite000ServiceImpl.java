@@ -25,6 +25,19 @@ public class ReportWrite000ServiceImpl  implements ReportWrite000Service {
     
     @SuppressWarnings("rawtypes")
     public List selectReport000SheetListNew(Map map) throws Exception {
-    	return reportWrite000DAO.selectReport000SheetListNew(map);
+    	
+    	List list = reportWrite000DAO.selectReport000SheetListNew(map);
+    	// 본예산 => 전년도 최종예산액 추가
+    	if ("1".equals(map.get("bgtDgr"))) {
+    		list.addAll(reportWrite000DAO.selectReport000SheetListNewPre(map));
+    	}	
+    	// 추경 1차 => 기정액 추가
+    	//추경 코드가 3이 고정이 아니므로 else 로 변경
+    	//else if ("3".equals(map.get("bgtDgr"))) {
+    	else{
+    		list.addAll(reportWrite000DAO.selectReport000SheetListNewPreDef(map));
+    	}
+    	
+    	return list;
     }
 }

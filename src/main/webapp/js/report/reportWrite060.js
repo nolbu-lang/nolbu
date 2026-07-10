@@ -94,11 +94,13 @@ $(document).ready(function() {
         
         var styleStr = "";
         if(rowObject.compoLevel != 1){
-            styleStr = 'style="width:280px;display:none;"';
+            //styleStr = 'style="width:280px;display:none;"';
+            styleStr = 'style="width:242px;display:none;"';
         }else{
-            styleStr = 'style="width:280px;"';
+            //styleStr = 'style="width:280px;"';
+            styleStr = 'style="width:242px;"';
         }
-        
+         
         var rVal = '<div>'
                  + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" '+styleStr+'>'
                  + reflectFgCreateCombo('RP003', rowObject.reflectFg)
@@ -122,11 +124,12 @@ $(document).ready(function() {
         if(rowObject.compoLevel != 1){
             styleStr = 'style="display:none;"';
         }else{
-            styleStr = 'style="width:240px;ime-mode:active;height:50px;"';
+            //styleStr = 'style="width:240px;ime-mode:active;height:50px;"';
+            styleStr = 'style="width:240px;ime-mode:active;"';
         }
         
         var rVal = '<div>'
-                 + '<textarea id="srchVal_'+rowObject.dgrcompoId+'" '+styleStr+'">'+cellValue+'</textarea>'
+                 + '<textarea id="srchVal_'+rowObject.dgrcompoId+'" '+styleStr+'" rows="13">'+cellValue+'</textarea>'
                  + '</div>';
 
         return rVal;
@@ -157,7 +160,7 @@ var govSubFormatter = function(cellValue, options, rowObject){
     	return rVal;
     };
     
-    var colNames = ['', '구분(실국-부서-세부사업)', '요구액', '조정액', '예산액', '예산액', '증감액', '검토내용', '재원정보', '조건검색어',
+    var colNames = ['', '구분(실국-부서-세부사업)', '요구액', '조정액', '기정액', '전년도 예산액', '증감액', '검토내용', '재원정보', '조건검색어',
                     '국고보조',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal'
                    ];
@@ -333,6 +336,7 @@ var govSubFormatter = function(cellValue, options, rowObject){
 
         data = null;
         srchReportDetlCd = $("#condReportDetlCd", tabObj).val();
+        chkDiv();
     };
     
     var getSearchParam = function(){
@@ -469,6 +473,8 @@ var govSubFormatter = function(cellValue, options, rowObject){
                     saveData["srchValYn"] = rowData.srchVal != srchVal ? "Y" : "N";
                     if(rowData.reflectFg != reflectFg && reflectFg === "020"){
                         saveData["reflegFgYn"] = "Y";
+                    }else if(rowData.reflectFg != reflectFg && reflectFg === "010"){
+                        saveData["reflegFgYn"] = "Y";
                     }else{
                         saveData["reflegFgYn"] = "N";
                     }
@@ -539,8 +545,8 @@ var govSubFormatter = function(cellValue, options, rowObject){
     });
     
     $("#saveFileBtn", tabObj).click(function() {
-        var param = getSearchParam();
-        param["fileNm"] = "공통심사조서";
+        /*var param = getSearchParam();
+        param["fileNm"] = "공통심사조서";*/
         
         if(srchReportDetlCd == ""){
     		$.csAlert({
@@ -550,16 +556,37 @@ var govSubFormatter = function(cellValue, options, rowObject){
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite060SaveFile.do"
           , data: param
-        });
+        });*/
     });
     
+    var doSaveFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "공통심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite060SaveFile.do"
+          , data: param
+        });
+    }
+    
     $("#saveSheetBtn", tabObj).click(function() {
-        var param = getSearchParam();
+        /*var param = getSearchParam();
         param.reportDetlCd = "";
-        param["fileNm"] = "공통심사조서";
+        param["fileNm"] = "공통심사조서";*/
         
         if(srchReportDetlCd == ""){
     		$.csAlert({
@@ -569,11 +596,32 @@ var govSubFormatter = function(cellValue, options, rowObject){
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveSeetFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite060SaveSheet.do"
           , data: param
-        });
+        });*/
     });
+    
+    var doSaveSeetFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "공통심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite060SaveSheet.do"
+          , data: param
+        });
+    }
     
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
@@ -772,4 +820,26 @@ var govSubFormatter = function(cellValue, options, rowObject){
     };
     
     doCondInit();
+    
+    var chkDiv = function(){
+    	checkEvent($('#REPORT_WRITE060_DIV').find('textarea'));
+    	checkEvent($('#REPORT_WRITE060_DIV').find('input'));
+    	checkEvent($('#REPORT_WRITE060_DIV').find('select'));
+    }
+    
+    var checkEvent = function(obj){
+    	$(obj).click(function(){
+    		checkDetlCd();
+    	});
+    	$(obj).keydown(function(){
+    		checkDetlCd();
+    	});
+    };
+    var checkDetlCd = function(){
+    	if(srchReportDetlCd == ''){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+    	}
+    };
 });

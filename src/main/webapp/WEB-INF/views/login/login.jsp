@@ -75,9 +75,6 @@ $(document).ready(function (){
 -->
 
 
-<!--container e-->
-<div class="space10">&nbsp;</div>
-
 <div class="login_wrap">
 	<div class="login_box">
 		<div class="visual">
@@ -97,4 +94,8 @@ $(document).ready(function (){
 		</form>
 	</div><!-- .login_box -->
 </div><!-- .login_wrap -->
+
+
+<!--container e-->
+<div class="space10">&nbsp;</div>
 <%@include file="/jsp/comm/commFooter.jsp"%>

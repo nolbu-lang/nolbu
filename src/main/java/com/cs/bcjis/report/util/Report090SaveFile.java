@@ -164,9 +164,16 @@ public class Report090SaveFile {
         rowNum++;
         row.setHeightInPoints(15f);
 
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(unitPos);
         cell.setCellStyle(styles.get("unit"));
-        cell.setCellValue("(단위:천원)");
+        cell.setCellValue(amtUnitNm);
+        //cell.setCellValue("(단위:천원)");
 
         repeatingStartRow = rowNum;
 
@@ -495,6 +502,7 @@ public class Report090SaveFile {
         param.put("reportDetlCd", "0F1");
         param.put("fisYear", model.get("fisYear"));
         param.put("bgtDgr", model.get("bgtDgr"));
+        param.put("amtUnit", model.get("amtUnit"));
 
         Map reportInfo = reportCommDAO.selectReportInfo(param);
         //boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
@@ -565,8 +573,15 @@ public class Report090SaveFile {
         rowNum++;
         row.setHeightInPoints(33.75f);
 
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(7);
-        cell.setCellValue("※ 시비 금액\n(단위 : 백만원)");
+        cell.setCellValue(amtUnitNm);
+        //cell.setCellValue("(단위 : 백만원)");
         cell.setCellStyle(styles.get("unit"));
 
         repeatingStartRow = rowNum;
@@ -648,7 +663,8 @@ public class Report090SaveFile {
     }
     
     public int writeDataListData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) {
-    	int unit = 1000;
+    	int unit = 1;
+    	//int unit = 1000;
         float rowHeight = 34.5f;
         Row row = null;
         Cell cell = null;
@@ -735,7 +751,7 @@ public class Report090SaveFile {
 
         cell = row.createCell(8);
         cell.setCellStyle(styles.get(preStyleNm + "Col8"));
-        cell.setCellFormula("K" + rowNum + "+" + "L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum + "+" + "P" + rowNum);
+        cell.setCellFormula("J" + rowNum + "+" + "K" + rowNum + "+" + "L" + rowNum + "+" + "M" + rowNum + "+" + "N" + rowNum + "+" + "O" + rowNum);
         
         cell = row.createCell(9);
         cell.setCellStyle(styles.get(preStyleNm + "Col9"));

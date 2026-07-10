@@ -32,6 +32,7 @@
                                        END, 'N') AS DEPT_YN 
                                      , NVL(CASE WHEN C.POW_GR_CD IN ('BC001', 'BC002') THEN 'Y'
                                                 WHEN A.UP_MENU_CD NOT IN ('MUBR00000') THEN 'Y'
+                                                WHEN A.MENU_CD IN ('MUBRF0000', 'MUBRZ0000', 'MUBRY0000') THEN 'Y'
                                                 WHEN (SELECT COUNT(1) 
                                                         FROM TB_USERREPORT Z 
                                                        WHERE Z.USER_ID = C.USER_ID 
@@ -41,6 +42,7 @@
                                                                                            , 'MUBR20000', '020'
                                                                                            , 'MUBR2T000', '020'
                                                                                            , 'MUBR30000', '030'
+                                                                                           , 'MUBR30001', '030'
                                                                                            , 'MUBR40000', '040'
                                                                                            , 'MUBR50000', '050'
                                                                                            , 'MUBR55000', '055'
@@ -52,7 +54,7 @@
                                                                                            , 'MUBRB0000', '090'
                                                                                            , 'MUBRC0000', '090'
                                                                                            , 'MUBRD0000', '090'
-                                                                                           , Z.REPORT_CD)
+                                                                                           , Z.REPORT_CD) 
                                                      ) > 0 THEN 'Y' 
                                                 ELSE 'N'
                                        END, 'N') AS REPORT_YN

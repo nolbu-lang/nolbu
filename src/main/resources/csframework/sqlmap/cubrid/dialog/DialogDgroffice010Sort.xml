@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="DialogDgroffice010Sort">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+    
+    <select id="DialogDgroffice010Sort.selectDgroffice010List" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgroffice010Sort.selectDgroffice010List*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.OFFICE_CD AS OFFICE_CD
+             , A.OFFICE_RANK010 AS OFFICE_RANK010
+             , (SELECT Z.OFFICE_NM 
+                  FROM TB_DGRDEPT Z 
+                 WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                   AND Z.BGT_DGR = A.BGT_DGR 
+                   AND Z.OFFICE_CD = A.OFFICE_CD 
+                   AND ROWNUM = 1
+               ) AS OFFICE_NM
+          FROM TB_DGROFFICE010 A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+         ORDER BY A.OFFICE_RANK010
+    </select>
+    
+    <update id="DialogDgroffice010Sort.updateOfficeRank010" parameterClass="Map" >
+        /*DialogDgroffice010Sort.updateOfficeRank010*/
+        UPDATE TB_DGROFFICE010 A
+           SET OFFICE_RANK010 = #officeRank010#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.OFFICE_CD = #officeCd#
+    </update>
+    
+    <select id="DialogDgroffice010Sort.selectDgroffice0F0List" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgroffice010Sort.selectDgroffice0F0List*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.OFFICE_CD AS OFFICE_CD
+             , NVL(A.OFFICE_RANK0F0, A.OFFICE_RANK) AS OFFICE_RANK0F0
+             , (SELECT Z.OFFICE_NM 
+                  FROM TB_DGRDEPT Z 
+                 WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                   AND Z.BGT_DGR = A.BGT_DGR 
+                   AND Z.OFFICE_CD = A.OFFICE_CD 
+                   AND ROWNUM = 1
+               ) AS OFFICE_NM
+          FROM TB_DGROFFICE010 A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+         ORDER BY NVL(A.OFFICE_RANK0F0, A.OFFICE_RANK)
+    </select>
+     
+    <update id="DialogDgroffice010Sort.updateOfficeRank0F0" parameterClass="Map" >
+        /*DialogDgroffice010Sort.updateOfficeRank0F0*/
+        UPDATE TB_DGROFFICE010 A
+           SET OFFICE_RANK0F0 = #officeRank0F0#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.OFFICE_CD = #officeCd#
+    </update>
+    
+    <update id="DialogDgroffice010Sort.initOfficeRank010" parameterClass="Map" >
+        /*DialogDgroffice010Sort.initOfficeRank010*/
+        MERGE INTO TB_DGROFFICE010 A
+			  USING (
+			 	   SELECT A.FIS_YEAR 
+			             , A.BGT_DGR 
+			             , A.OFFICE_CD 
+			             , MAX(A.OFFICE_RANK) AS OFFICE_RANK 
+			             , (SELECT CASE WHEN COUNT(Z.OFFICE_CD) > 0 THEN 'Y' ELSE 'N' END OFFICE_YN 
+			                  FROM TB_DGROFFICE010 Z 
+			                 WHERE Z.FIS_YEAR = A.FIS_YEAR 
+			                   AND Z.BGT_DGR = A.BGT_DGR  
+			                   AND Z.OFFICE_CD = A.OFFICE_CD 
+			               ) AS OFFICE_YN 
+			          FROM TB_DGRDEPT_RLK A 
+			         WHERE 1 = 1 
+			           AND TRNN_ID = (SELECT MAX(TRNN_ID) FROM TB_DGRDEPT_RLK WHERE FIS_YEAR = #fisYear# AND BGT_DGR = #bgtDgr#)
+			         GROUP BY A.FIS_YEAR 
+			                , A.BGT_DGR 
+			                , A.OFFICE_CD 
+					) B
+				 ON A.FIS_YEAR = B.FIS_YEAR
+				AND A.BGT_DGR = B.BGT_DGR
+				AND A.OFFICE_CD = B.OFFICE_CD
+			   WHEN MATCHED THEN
+			 		UPDATE SET OFFICE_RANK = B.OFFICE_RANK
+			 			 , OFFICE_RANK010 = B.OFFICE_RANK
+			 			 , MODI_ID = #userId#
+			 			 , MODI_DATE = SYSTIMESTAMP
+			   WHEN NOT MATCHED THEN
+			 INSERT (A.FIS_YEAR, A.BGT_DGR, A.OFFICE_CD, A.OFFICE_RANK, A.OFFICE_RANK010, A.REGI_ID, A.REGI_DATE, A.MODI_ID, A.MODI_DATE )
+			 VALUES (B.FIS_YEAR, B.BGT_DGR, B.OFFICE_CD, B.OFFICE_RANK, B.OFFICE_RANK, #userId#, SYSTIMESTAMP, #userId#, SYSTIMESTAMP)
+    </update>
+</sqlMap>

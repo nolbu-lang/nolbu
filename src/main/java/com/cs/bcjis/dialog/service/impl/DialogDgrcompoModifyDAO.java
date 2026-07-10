@@ -41,4 +41,16 @@ public class DialogDgrcompoModifyDAO extends BcjisCommAbstractDAO {
     public Map selectModifyDgrcompo(Map map) throws Exception{
         return (Map)selectByPk("DialogDgrcompoModify.selectModifyDgrcompo", map);
     }
+    
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void updateDgrcompoGround(Map map) throws Exception{
+        try{
+            map.put("hisFg", "020");
+            insert("BcjisHisComm.insertTbDgrcompoH", map);
+        }catch(Exception e){
+            logger.error("updateDgrcompo(map)", e);
+        }
+        
+        update("DialogDgrcompoModify.updateDgrcompoGround", map);
+    }
 }

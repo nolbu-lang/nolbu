@@ -19,6 +19,7 @@ import com.cs.bcjis.report.service.ReportWrite055Service;
 import com.cs.bcjis.report.service.ReportWrite060Service;
 import com.cs.bcjis.report.service.ReportWrite090Service;
 import com.cs.bcjis.report.util.Report000SaveFile;
+import com.cs.bcjis.report.util.Report000SaveFileNew;
 import com.cs.bcjis.report.util.Report001SaveFile;
 import com.cs.bcjis.report.util.Report002SaveFile;
 import com.cs.bcjis.report.util.Report010SaveFile;
@@ -36,6 +37,8 @@ public class ManageCloseUtil implements Runnable {
 
     private ReportWrite000Service reportWrite000Service = null;
     private Report000SaveFile report000SaveFile = null;
+    
+    private Report000SaveFileNew report000SaveFileNew = null;
 
     private ReportWrite001Service reportWrite001Service = null;
     private Report001SaveFile report001SaveFile = null;
@@ -70,7 +73,7 @@ public class ManageCloseUtil implements Runnable {
     private BcjisFileMngService bcjisFileMngService = null;
 
     public ManageCloseUtil(JSONObject jsonParam, String atchFileId
-            , ReportWrite000Service reportWrite000Service, Report000SaveFile report000SaveFile
+            , ReportWrite000Service reportWrite000Service, Report000SaveFileNew report000SaveFile
             , ReportWrite001Service reportWrite001Service, Report001SaveFile report001SaveFile
             , ReportWrite002Service reportWrite002Service, Report002SaveFile report002SaveFile
             , ReportWrite010Service reportWrite010Service, Report010SaveFile report010SaveFile
@@ -87,7 +90,7 @@ public class ManageCloseUtil implements Runnable {
         this.jsonParam = jsonParam;
         this.atchFileId = atchFileId;
         this.reportWrite000Service = reportWrite000Service;
-        this.report000SaveFile = report000SaveFile;
+        this.report000SaveFileNew = report000SaveFile;
         
         this.reportWrite001Service = reportWrite001Service;
         this.report001SaveFile = report001SaveFile;
@@ -121,6 +124,7 @@ public class ManageCloseUtil implements Runnable {
         
         this.bcjisFileMngService = bcjisFileMngService;
     }
+    
 
     public void run() {
 
@@ -131,9 +135,10 @@ public class ManageCloseUtil implements Runnable {
             jsonParam.put("reportDetlCd", "000");
             jsonParam.put("fisFgMstCd", "100");
 
-            JSONArray resultList = JSONArray.fromObject(reportWrite000Service.selectReport000SheetList(jsonParam));
+            JSONArray resultList = JSONArray.fromObject(reportWrite000Service.selectReport000SheetListNew(jsonParam));
             jsonParam.put("dataList", resultList);
-            report000SaveFile.buildSheetDocument(jsonParam, "CL", "");
+            jsonParam.put("dataList2", resultList);
+            report000SaveFileNew.buildSheetDocument(jsonParam, "CL", "");
             insertFileInfo("1");
             jsonParam.put("fisFgMstCd", "");
 

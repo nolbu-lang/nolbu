@@ -392,6 +392,15 @@
         	}else{
         		this.append("<option value='" + options.comboTypeValue + "' " + getSelectedStr(options.selectedValue, options.comboTypeValue) + ">선택</option>");
         	}
+        }else if(options.comboType == "TSA"){ //타이틀 셀렉트 미선택 추가
+        	var title = this.attr('title');
+        	if(title){
+        		this.append("<option value='" + options.comboTypeValue + "' " + getSelectedStr(options.selectedValue, options.comboTypeValue) + ">" + title + " 선택</option>");
+        		this.append("<option value='NOSEL' " + getSelectedStr(options.selectedValue, 'NOSEL') + ">미선택</option>");
+        	}else{
+        		this.append("<option value='" + options.comboTypeValue + "' " + getSelectedStr(options.selectedValue, options.comboTypeValue) + ">선택</option>");
+        		this.append("<option value='NOSEL' " + getSelectedStr(options.selectedValue, 'NOSEL') + ">미선택</option>");
+        	}
         }
         
         var tempData = {};
@@ -578,10 +587,14 @@
     
     jQuery.fn.btnChangeState = function(flag){
         var tFlag = flag;
+        
         if(_mainNorthPowGrCd == "BC002"){
             tFlag = false;
         }
-        
+/*        if(_mainNorthPowGrCd == "BC002" || _mainNorthPowGrCd == "BC003"){
+        	tFlag = false;
+        }
+*/        
         if(tFlag){
             $(this).removeClass("btnDisabledClass");
             $(this).addClass("btnClass");
@@ -792,6 +805,55 @@
                     if(isEmpty(params.callBack) == false){
                         params.callBack(params);
                     }
+                }
+            }
+        };
+
+        $.extend(confirmParams, params);
+
+        $("#bcjisDialogMsg").dialog(confirmParams);
+        $("#bcjisDialogMsgDiv").html(confirmParams.msg);
+        
+        if (navigator.userAgent.match(/msie [6]/i) || navigator.userAgent.match(/msie [7]/i) ) {
+            var w = $("#bcjisDialogMsg #bcjisDialogMsgDiv")[0].clientWidth + 20;
+            $("#bcjisDialogMsg").dialog('option', {'width':w});
+        }
+        
+        if($("#bcjisDialogMsg").width() < confirmParams.minWidth){
+            $("#bcjisDialogMsg").width(confirmParams.minWidth);
+        }
+   
+    };
+    
+    jQuery.csConfirmAmtUnit = function(params, callback) {
+        confirmParams = {
+            resizable : false,
+            height : "auto",
+            width: "auto",
+            minWidth: 200,
+            modal : true,
+            title : "선택",
+            buttons : {
+                "백만원" : function() {
+                    $(this).dialog("close");
+                    params["confirmData"] = "1000000";
+                    if(isEmpty(params.callBack) == false){
+                        params.callBack(params);
+                    }
+                },
+                "천원" : function() {
+                    $(this).dialog("close");
+                    params["confirmData"] = "1000";
+                    if(isEmpty(params.callBack) == false){
+                        params.callBack(params);
+                    }
+                },
+                "취소" : function() {
+                	$(this).dialog("close");
+                	params["confirmData"] = "N";
+                	if(isEmpty(params.callBack) == false){
+                		params.callBack(params);
+                	}
                 }
             }
         };

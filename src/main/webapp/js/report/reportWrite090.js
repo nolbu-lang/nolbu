@@ -93,7 +93,7 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>'
-                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:260px;">'
+                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:197px;">'
                  + reflectFgCreateCombo('RP003', rowObject.reflectFg)
                  + '</select>'+'<br>'
                  + '<textarea id="examCont_'+rowObject.dgrcompoId+'" style="width:195px;ime-mode:active;" cols="22" rows="12">'+cellValue+'</textarea>'
@@ -255,8 +255,43 @@ $(document).ready(function() {
     	var itemList = comboData['indiAttr'];
     	
     	var rVal = '<div>';
+    	var cellArr = cellValue.split(',');
+    	
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
+        	var checked = '';
+        	
+        	var groupId = data.groupId;
+        	var groupIdArr = groupId.split('|');
+        	var fisYear = '';
+        	var groupFisYear = '';
+        	var groupBgtDgr = '';
+        	if(groupIdArr.length == 2){
+        		groupFisYear = groupIdArr[0];
+        		groupBgtDgr = groupIdArr[1];
+        	}
+        	
+        	if(rowObject.fisYear == groupFisYear && rowObject.bgtDgr == groupBgtDgr){
+        		for(var j=0 ; j<cellArr.length ; j++){
+            		var cellVal = cellArr[j];
+            		if(cellVal == data.code){
+                		checked = 'checked';
+                	}
+            	}
+
+            	//rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><input type="checkbox" id="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '" value="' + data.code + '" class="chkBudgetSelect" onchange="javascript:onChangeFlag(\'' + rowObject.dgrcompoId + '\', this);" style="margin-top: 5px;" ' + checked + ' /><label for="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
+            	rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><input type="checkbox" id="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '" value="' + data.code + '" class="chkBudgetSelect" style="margin-top: 5px;" ' + checked + ' /><label for="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
+        	}
+        	
+        }
+        rVal += '</div>';
+        
+    	return rVal;
+    	
+    	/*var rVal = '<div>';
+        for(var i=0 ; i<itemList.length ; i++){
+        	var data = itemList[i];
+        	var groupId = data.groupId;
         	var checked = '';
         	
         	if(cellValue.includes(data.code)){
@@ -266,10 +301,10 @@ $(document).ready(function() {
         }
         rVal += '</div>';
         
-    	return rVal;
+    	return rVal;*/
     };
     
-    //사전절차 그리드fomatter
+    //분류항목 그리드fomatter
     var advncProcFgFormatter = function(cellValue, options, rowObject){
     	if(isEmpty(cellValue) == true){
     		cellValue = "";
@@ -283,24 +318,30 @@ $(document).ready(function() {
         	cellValue = rowObject.advncProc;
         }
     	
+    	var fisYear = rowObject.fisYear;
+    	var bgtDgr = rowObject.bgtDgr;
+    	var groupId = fisYear + '|' + bgtDgr;
+    	
     	var itemList = comboData['advncProc'];
     	var rVal = '<div>';
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
         	var checked = '';
         	
-        	if(cellValue.includes(data.code)){
-        		checked = 'checked';
+        	if(groupId == data.groupId){
+        		if(cellValue.includes(data.code)){
+            		checked = 'checked';
+            	}
+            	rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><input type="checkbox" id="checkYnAdvncProc_' + rowObject.dgrcompoId + '_' +data.code + '" value="' + data.code + '" class="chkBudgetSelect" style="margin-top: 5px;" ' + checked + ' /><label for="checkYnAdvncProc_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
         	}
-        	rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><input type="checkbox" id="checkYnAdvncProc_' + rowObject.dgrcompoId + '_' +data.code + '" value="' + data.code + '" class="chkBudgetSelect" style="margin-top: 5px;" ' + checked + ' /><label for="checkYnAdvncProc_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
         }
         rVal += '</div>';
     	
     	return rVal;
     };
     
-    var colNames = ['', '구분(실국-부서-세부사업)', '요구액', '조정액', '예산액', '예산액', '증감액', '비고', '재원정보', '조건검색어',
-                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '사전절차',
+    var colNames = ['', '구분(실국-부서-세부사업)', '요구액', '조정액', '기정액', '전년도 예산액', '증감액', '비고', '재원정보', '조건검색어',
+                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '분류항목',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal',
                     'indiAttr','advncProc'
                    ];
@@ -316,7 +357,7 @@ $(document).ready(function() {
                         {name : 'preAmt', index : 'preAmt', width : 100, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, cellattr: myCellattr},
                         {name : 'preBgtAmt', index : 'preBgtAmt', width : 100, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, cellattr: myCellattr},
                         {name : 'diffAmt', index : 'diffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, cellattr: myCellattr},
-                        {name : 'examContView', index : 'examContView', width : 270, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        {name : 'examContView', index : 'examContView', width : 220, sortable : false, fixed : true, align : 'left', cellattr: myCellattr,
                             formatter:examContFormatter
                         },
                         {name : 'frsces', index : 'frsces', width : 130, sortable : false, fixed : true, align : 'left', cellattr: myCellattr},
@@ -498,6 +539,7 @@ $(document).ready(function() {
 
         data = null;
         srchReportDetlCd = $("#condReportDetlCd", tabObj).val();
+        chkDiv();
     };
     
     var getSearchParam = function(){
@@ -642,6 +684,8 @@ $(document).ready(function() {
                     saveData["srchValYn"] = rowData.srchVal != srchVal ? "Y" : "N";
                     if(rowData.reflectFg != reflectFg && reflectFg === "020"){
                         saveData["reflegFgYn"] = "Y";
+                    }else if(rowData.reflectFg != reflectFg && reflectFg === "010"){
+                        saveData["reflegFgYn"] = "Y";
                     }else{
                         saveData["reflegFgYn"] = "N";
                     }
@@ -682,7 +726,7 @@ $(document).ready(function() {
     	return rtnData;
     }
     
-    //사전절차 체크된 코드 가져오기
+    //분류항목 체크된 코드 가져오기
     var getAdvncProcCheckVal = function(dgrcompoId){
     	var itemList = comboData['advncProc'];
     	var rtnData = '';
@@ -760,8 +804,8 @@ $(document).ready(function() {
     });
     
     $("#saveFileBtn", tabObj).click(function() {
-        var param = getSearchParam();
-        param["fileNm"] = "무기계약심사조서";
+        /*var param = getSearchParam();
+        param["fileNm"] = "무기계약심사조서";*/
         
         if(srchReportDetlCd == ""){
     		$.csAlert({
@@ -771,16 +815,37 @@ $(document).ready(function() {
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite090SaveFile.do"
           , data: param
-        });
+        });*/
     });
     
+    var doSaveFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "무기계약심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite090SaveFile.do"
+          , data: param
+        });
+    }
+    
     $("#saveSheetBtn", tabObj).click(function() {
-        var param = getSearchParam();
+        /*var param = getSearchParam();
         param.reportDetlCd = "";
-        param["fileNm"] = "무기계약심사조서";
+        param["fileNm"] = "무기계약심사조서";*/
         
         if(srchReportDetlCd == ""){
     		$.csAlert({
@@ -790,11 +855,32 @@ $(document).ready(function() {
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveSeetFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite090SaveSheet.do"
           , data: param
-        });
+        });*/
     });
+    
+    var doSaveSeetFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "무기계약심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite090SaveSheet.do"
+          , data: param
+        });
+    }
     
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
@@ -997,4 +1083,26 @@ $(document).ready(function() {
     };
     
     doCondInit();
+    
+    var chkDiv = function(){
+    	checkEvent($('#REPORT_WRITE090_DIV').find('textarea'));
+    	checkEvent($('#REPORT_WRITE090_DIV').find('input'));
+    	checkEvent($('#REPORT_WRITE090_DIV').find('select'));
+    }
+    
+    var checkEvent = function(obj){
+    	$(obj).click(function(){
+    		checkDetlCd();
+    	});
+    	$(obj).keydown(function(){
+    		checkDetlCd();
+    	});
+    };
+    var checkDetlCd = function(){
+    	if(srchReportDetlCd == ''){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+    	}
+    };
 });

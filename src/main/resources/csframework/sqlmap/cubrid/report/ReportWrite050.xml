@@ -266,6 +266,9 @@
              , T.REPORT_DETL_CD AS REPORT_DETL_CD
              , T.FIS_FG_MST_CD AS FIS_FG_MST_CD
              , T.FIS_FG_CD AS FIS_FG_CD
+             , T.DEPT_CD AS DEPT_CD
+             , T.DBIZ_CD AS DBIZ_CD
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
              , CAST((T.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
              , CAST((T.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS BGT_AMT
              , CAST((T.PRE_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT

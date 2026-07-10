@@ -72,16 +72,28 @@ public class BudgetCopyNewController {
     }
 
     @RequestMapping("/budget/budgetCopyNew.do")
-    public String budgetCopy(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
+    public String budgetCopyNew(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
         if (logger.isDebugEnabled()) {
-            logger.debug("budgetCopy(Map, ModelMap, HttpServletRequest) - start");
+            logger.debug("budgetCopyNew(Map, ModelMap, HttpServletRequest) - start");
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("budgetCopy(Map, ModelMap, HttpServletRequest) - end");
+            logger.debug("budgetCopyNew(Map, ModelMap, HttpServletRequest) - end");
         }
-        // 전년도예산조서적용[신규] — 개선 화면(budgetCopyNew.jsp: 매핑·일괄적용)
         return "budget/budgetCopyNew";
+    }
+
+    @RequestMapping("/budget/budgetCopyMap.do")
+    public String budgetCopyMap(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("budgetCopyMap(Map, ModelMap, HttpServletRequest) - start");
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("budgetCopyMap(Map, ModelMap, HttpServletRequest) - end");
+        }
+        // 전년도예산/조서 적용[매핑일괄] — 개선 화면(budgetCopyMap.jsp: 매핑·일괄적용)
+        return "budget/budgetCopyMap";
     }
     
     @RequestMapping("/budget/ajaxBudgetCopyNewList.do")

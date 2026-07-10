@@ -143,16 +143,15 @@ public class BcjisFileMngUtil {
     }
 
     /**
-     * 파일 저장
+     * 
      * 
      * @param MultipartFile
-     * @param String 파일의 절대경로 +파일명
+     * @param String
      * @return String
      * @throws
      */
     public static String createNewFile(String filePath) {
 
-        // 인자값 유효하지 않은 경우 블랭크 리턴
         if (filePath == null || filePath.equals("")) {
             return "";
         }
@@ -163,7 +162,6 @@ public class BcjisFileMngUtil {
             if (file.exists()) {
                 result = filePath;
             } else {
-                // 존재하지 않으면 생성함
                 new File(file.getParent()).mkdirs();
                 if (file.createNewFile()) {
                     result = file.getAbsolutePath();

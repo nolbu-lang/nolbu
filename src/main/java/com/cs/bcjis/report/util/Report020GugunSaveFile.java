@@ -368,7 +368,7 @@ public class Report020GugunSaveFile {
         cell = row.createCell(6);
         cell.setCellStyle(styles.get(preStyleNm + "Col6"));
         if (formulaFlag == false) {
-            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("dmnDefFrscAmt0")));
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("dmnDefFrscAmt160")));
         }
 
         cell = row.createCell(7);
@@ -380,7 +380,7 @@ public class Report020GugunSaveFile {
         cell = row.createCell(8);
         cell.setCellStyle(styles.get(preStyleNm + "Col8"));
         if (formulaFlag == false) {
-            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("dmnDefFrscAmt140")));
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("dmnDefFrscAmt3")));
         }
 
         cell = row.createCell(9);
@@ -390,7 +390,7 @@ public class Report020GugunSaveFile {
         cell = row.createCell(10);
         cell.setCellStyle(styles.get(preStyleNm + "Col10"));
         if (formulaFlag == false) {
-            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt0")));
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt160")));
         }
 
         cell = row.createCell(11);
@@ -402,7 +402,7 @@ public class Report020GugunSaveFile {
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "Col12"));
         if (formulaFlag == false) {
-            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt140")));
+            cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("frscAmt3")));
         }
 
         cell = row.createCell(13);

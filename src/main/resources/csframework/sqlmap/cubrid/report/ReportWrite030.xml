@@ -37,6 +37,8 @@
              , T.SRCH_VAL AS SRCH_VAL_VIEW
              , CAST((T.GU_GOON_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS GU_GOON_EXP
              , CAST((T.GU_GOON_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS GU_GOON_EXP_VIEW
+             , CAST((T.PRE_BGT_AMT_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT_EXP
+             , CAST((T.PRE_BGT_AMT_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT_EXP_VIEW
              , T.NATN_BIZ_NM AS NATN_BIZ_NM
              , T.NATN_BIZ_NM AS NATN_BIZ_NM_VIEW
              , T.MNSTRY_NM AS MNSTRY_NM
@@ -89,6 +91,7 @@
                      , A.EXAM_CONT AS EXAM_CONT
                      , A.SRCH_VAL AS SRCH_VAL
                      , A.GU_GOON_EXP AS GU_GOON_EXP
+                     , A.PRE_BGT_AMT_EXP AS PRE_BGT_AMT_EXP
                      , A.NATN_BIZ_NM AS NATN_BIZ_NM
                      , A.MNSTRY_NM AS MNSTRY_NM
                      , A.NATN_BUDN_RATE AS NATN_BUDN_RATE
@@ -142,6 +145,7 @@
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.EXAM_CONT, '')) AS EXAM_CONT
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.SRCH_VAL, '')) AS SRCH_VAL
                                      , SUM(E.GU_GOON_EXP) AS GU_GOON_EXP
+                                     , SUM(E.PRE_BGT_AMT_EXP) AS PRE_BGT_AMT_EXP
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.NATN_BIZ_NM, '')) AS NATN_BIZ_NM
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.MNSTRY_NM, '')) AS MNSTRY_NM
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.NATN_BUDN_RATE, '')) AS NATN_BUDN_RATE
@@ -352,6 +356,7 @@
              , T.NATN_BUDN_RATE AS NATN_BUDN_RATE
              , T.SI_BUDN_RATE AS SI_BUDN_RATE
              , T.GU_BUDN_RATE AS GU_BUDN_RATE
+             , CAST((T.PRE_BGT_AMT_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT_EXP
           FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
                      , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
                      , A.DGR_LEVEL AS DGR_LEVEL
@@ -380,6 +385,7 @@
                      , A.NATN_BUDN_RATE AS NATN_BUDN_RATE
                      , A.SI_BUDN_RATE AS SI_BUDN_RATE
                      , A.GU_BUDN_RATE AS GU_BUDN_RATE
+                     , A.PRE_BGT_AMT_EXP AS PRE_BGT_AMT_EXP
                      , NVL((SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP002' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_DETL_NM
                      , NVL((SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP005' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_TITLE
                      , NVL((SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP003' AND Z.DETL_CD = A.REFLECT_FG AND ROWNUM = 1), '') AS REFLECT_FG_NM
@@ -430,6 +436,7 @@
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.NATN_BUDN_RATE, '')) AS NATN_BUDN_RATE
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.SI_BUDN_RATE, '')) AS SI_BUDN_RATE
                                      , DECODE(H.CT, 1, '', 2, '', NVL(E.GU_BUDN_RATE, '')) AS GU_BUDN_RATE
+                                     , NVL(SUM(E.PRE_BGT_AMT_EXP), 0) AS PRE_BGT_AMT_EXP
                                   FROM (SELECT C.REPORT_CD
                                              , C.REPORT_DETL_CD
                                              , A.FIS_YEAR
@@ -591,6 +598,7 @@
              , T.NATN_BUDN_RATE AS NATN_BUDN_RATE
              , T.SI_BUDN_RATE AS SI_BUDN_RATE
              , T.GU_BUDN_RATE AS GU_BUDN_RATE
+             , CAST((T.PRE_BGT_AMT_EXP/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_BGT_AMT_EXP
           FROM (SELECT A.DGRCOMPO_ID AS DGRCOMPO_ID
                      , A.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
                      , A.DGR_LEVEL AS DGR_LEVEL
@@ -620,6 +628,7 @@
                      , A.NATN_BUDN_RATE AS NATN_BUDN_RATE
                      , A.SI_BUDN_RATE AS SI_BUDN_RATE
                      , A.GU_BUDN_RATE AS GU_BUDN_RATE
+                     , A.PRE_BGT_AMT_EXP AS PRE_BGT_AMT_EXP
                      , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.FIS_FG_CD = A.FIS_FG_CD AND ROWNUM = 1), '') AS FIS_FG_NM
                      , NVL((SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP002' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_DETL_NM
                      , NVL((SELECT Z.DETL_CD_NM FROM TB_COMMCDDETL Z WHERE Z.CL_CD = 'RP005' AND Z.DETL_CD = A.REPORT_DETL_CD AND ROWNUM = 1), '') AS REPORT_TITLE
@@ -674,6 +683,7 @@
                                      , DECODE(H.CT, 1, '', 2, '', 3, '', NVL(E.NATN_BUDN_RATE, '')) AS NATN_BUDN_RATE
                                      , DECODE(H.CT, 1, '', 2, '', 3, '', NVL(E.SI_BUDN_RATE, '')) AS SI_BUDN_RATE
                                      , DECODE(H.CT, 1, '', 2, '', 3, '', NVL(E.GU_BUDN_RATE, '')) AS GU_BUDN_RATE
+                                     , NVL(SUM(E.PRE_BGT_AMT_EXP), 0) AS PRE_BGT_AMT_EXP
                                   FROM (SELECT C.REPORT_CD
                                              , C.REPORT_DETL_CD
                                              , A.FIS_YEAR
@@ -996,6 +1006,7 @@
              , GU_BUDN_RATE = #guBudnRate#
              , MODI_ID = #userId#
              , MODI_DATE = SYSTIMESTAMP
+             , PRE_BGT_AMT_EXP = NVL(#preBgtAmtExp#, 0) * NVL(#amtUnit#, 1)
          WHERE 1 = 1
            AND REPORT_CD = #reportCd# 
            AND REPORT_DETL_CD = #reportDetlCd#

@@ -18,4 +18,14 @@ public class ReportWrite000DAO extends BcjisCommAbstractDAO {
     public List selectReport000SheetListNew(Map map) throws Exception {
     	return list("ReportWrite000.selectReport000SheetListNew", map);
     }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetListNewPre(Map map) throws Exception {
+    	return list("ReportWrite000.selectReport000SheetListNewPre", map);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public List selectReport000SheetListNewPreDef(Map map) throws Exception {
+    	return list("ReportWrite000.selectReport000SheetListNewPreDef", map);
+    }
 }

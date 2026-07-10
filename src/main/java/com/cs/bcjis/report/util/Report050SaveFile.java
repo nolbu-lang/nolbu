@@ -193,10 +193,17 @@ public class Report050SaveFile {
         row = sheet.createRow(rowNum);
         rowNum++;
         row.setHeightInPoints(18f);
-
+        
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(unitPos);
         cell.setCellStyle(styles.get("unit"));
-        cell.setCellValue("(단위 : 천원)");
+        cell.setCellValue(amtUnitNm);
+        //cell.setCellValue("(단위 : 천원)");
 
         repeatingStartRow = rowNum;
 
@@ -489,6 +496,7 @@ public class Report050SaveFile {
         param.put("reportDetlCd", "0F1");
         param.put("fisYear", model.get("fisYear"));
         param.put("bgtDgr", model.get("bgtDgr"));
+        param.put("amtUnit", model.get("amtUnit"));
 
         Map reportInfo = reportCommDAO.selectReportInfo(param);
         //boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
@@ -559,8 +567,15 @@ public class Report050SaveFile {
         rowNum++;
         row.setHeightInPoints(33.75f);
 
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(7);
-        cell.setCellValue("※ 시비 금액\n(단위 : 백만원)");
+        cell.setCellValue(amtUnitNm);
+        //cell.setCellValue("(단위 : 백만원)");
         cell.setCellStyle(styles.get("unit"));
 
         repeatingStartRow = rowNum;
@@ -642,7 +657,8 @@ public class Report050SaveFile {
     }
     
     public int writeDataListData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) {
-    	int unit = 1000;
+    	int unit = 1;
+    	//int unit = 1000;
         float rowHeight = 34.5f;
         Row row = null;
         Cell cell = null;
@@ -773,8 +789,11 @@ public class Report050SaveFile {
 
         if (formulaFlag == true) {
         	addBizDataFormulaCellList(reportFormulaUtil, rtnMergeKey(category, "dgrcompoId"), rowNum, bgtCompoFlag);
+        	System.out.println("nm : " + ReportSaveUtil.getStringValue(category.get("dgrcompoNm")) + "  rowNum : " + rowNum + "  key : " + rtnMergeKey(category, "dgrcompoId"));
         } 
         addBizDataFormulaValueList(reportFormulaUtil, rtnMergeKey(category, "upDgrcompoId"), rowNum, bgtCompoFlag);
+        System.out.println("nm : " + ReportSaveUtil.getStringValue(category.get("dgrcompoNm")) + "  rowNum : " + rowNum + "  key : " + rtnMergeKey(category, "upDgrcompoId"));
+        
         
         return rowNum;
     }
@@ -784,10 +803,12 @@ public class Report050SaveFile {
     	
     	int dgrLevel = 0;
     	String deptCd = "";
+    	String dbizCd = "";
     	String teBgtCompoId = "";
         try {
             dgrLevel = Integer.parseInt(String.valueOf(category.get("dgrLevel")));
             deptCd = ReportSaveUtil.getStringValue(category.get("deptCd"));
+            dbizCd = ReportSaveUtil.getStringValue(category.get("dbizCd"));
         	teBgtCompoId = ReportSaveUtil.getStringValue(category.get("teBgtCompoId"));
         } catch (NumberFormatException nfe) {
             throw nfe;
@@ -795,21 +816,21 @@ public class Report050SaveFile {
         
     	if("dgrcompoId".equals(type)){
     		if(dgrLevel == 0){
-    			rtnYear = "1" + "_" + "0000000" + "_" + "00000000000";
+    			rtnYear = "1" + "_" + "0000000" + "_" + "0000000000000000" + "_" + "00000000000";
     		}else if(dgrLevel == 5){
-    			rtnYear = "2" + "_" + deptCd + "_" + "00000000000";
+    			rtnYear = "2" + "_" + deptCd + "_" + dbizCd + "_" + "00000000000";
     		}else if(dgrLevel == 6){
-    			rtnYear = "3" + "_" + deptCd + "_" + teBgtCompoId;
+    			rtnYear = "3" + "_" + deptCd + "_" + dbizCd + "_" + teBgtCompoId;
     		}
     	}else{
     		if(dgrLevel == 0){
-    			rtnYear = "0" + "_" + "0000000" + "_" + "00000000000";
+    			rtnYear = "0" + "_" + "0000000" + "_" + "0000000000000000" + "_" + "00000000000";
     		}else if(dgrLevel == 5){
-    			rtnYear = "1" + "_" + "0000000" + "_" + "00000000000";
+    			rtnYear = "1" + "_" + "0000000" + "_" + "0000000000000000" + "_" + "00000000000";
     		}else if(dgrLevel == 6){
-    			rtnYear = "2" + "_" + deptCd + "_" + "00000000000";
+    			rtnYear = "2" + "_" + deptCd + "_" + dbizCd + "_" + "00000000000";
     		}
-    	}
+    	} 
     	
     	return rtnYear;
     }

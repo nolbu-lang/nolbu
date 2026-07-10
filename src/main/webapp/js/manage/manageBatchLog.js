@@ -98,4 +98,53 @@ $(document).ready(function() {
     
     manageBatchLogSearch();
     
+    var doProcEhosjo = function(params){
+
+    	if(params.confirmData != "Y"){
+            return;
+        }
+    	
+    	$.csAjaxCall({
+            url : "/manage/ajaxManageBatchProc.do",
+            data : {},
+            async : true,
+            callBack : doProcEhosjoCallBack
+        });
+    };
+    
+    var doProcEhosjoCallBack = function(data){
+        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+            $.csAlert({
+                msg : data.bcjisMessage
+            });
+            
+            return;
+        }
+        
+        $.csAlert({
+            msg : data.bcjisMessage,
+            callBack : function() {
+                doSearchRlk();
+                doSearch();
+            }
+        });
+    };
+    
+    $("#batchBtn").click(function() {
+    	
+    	$.csConfirm({
+            msg : "배치를 실행하시겠습니까?",
+            callBack : doProcEhosjo
+        });
+    });
+    
+    $("#batchLogBtn", tabObj).click(function(){
+        openDialogBatchLogFile(1);
+    });
+    
+    var openDialogBatchLogFile = function(){
+
+        $("#dialogBatchLogFileDiv").dialog('open');
+    };
+    
 });

@@ -36,4 +36,36 @@
            AND A.BGT_DGR = #bgtDgr#
            AND A.OFFICE_CD = #officeCd#
     </update>
+    
+    <select id="DialogDgroffice020Sort.selectDgroffice0F0List" parameterClass="Map" resultClass="egovMap" >
+        /*DialogDgroffice020Sort.selectDgroffice0F0List*/
+        SELECT A.FIS_YEAR AS FIS_YEAR
+             , A.BGT_DGR AS BGT_DGR
+             , A.OFFICE_CD AS OFFICE_CD
+             , NVL(A.OFFICE_RANK0F0, A.OFFICE_RANK) AS OFFICE_RANK0F0
+             , (SELECT Z.OFFICE_NM 
+                  FROM TB_DGRDEPT Z 
+                 WHERE Z.FIS_YEAR = A.FIS_YEAR 
+                   AND Z.BGT_DGR = A.BGT_DGR 
+                   AND Z.OFFICE_CD = A.OFFICE_CD 
+                   AND ROWNUM = 1
+               ) AS OFFICE_NM
+          FROM TB_DGROFFICE020 A
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+         ORDER BY NVL(A.OFFICE_RANK0F0, A.OFFICE_RANK)
+    </select>
+     
+    <update id="DialogDgroffice020Sort.updateOfficeRank0F0" parameterClass="Map" >
+        /*DialogDgroffice020Sort.updateOfficeRank0F0*/
+        UPDATE TB_DGROFFICE020 A
+           SET OFFICE_RANK0F0 = #officeRank0F0#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.OFFICE_CD = #officeCd#
+    </update>
 </sqlMap>

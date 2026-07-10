@@ -99,6 +99,7 @@ public class Report0F0SaveFile {
         if(!"".equals(indiAttrNm)){
         	title = title.replace("보고항목 심사조서", "\"" + indiAttrNm + "\" 심사조서");
         }
+        
         rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, title, 8);
 
         JSONObject category = null;
@@ -144,9 +145,17 @@ public class Report0F0SaveFile {
         rowNum++;
         row.setHeightInPoints(28);
 
+        row.setHeightInPoints(19.5f);
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(unitPos);
         cell.setCellStyle(styles.get("unit"));
-        cell.setCellValue("(단위 : 백만원)");
+        //cell.setCellValue("(단위 : 백만원)");
+        cell.setCellValue(amtUnitNm);
         repeatingStartRow = rowNum;
 
         int preRowSeq = -1;
@@ -315,6 +324,8 @@ public class Report0F0SaveFile {
             addBizDataFormulaCell(reportFormulaUtil, "sum" + startRow, rowNum, bgtCompoFlag); //기준 합계row 등록
     	}
     	
+    	String print = "lineNumData : " + lineNumData;
+    	
     	preStyleNm = "deptNm";
 
         row = sheet.createRow(rowNum);
@@ -330,6 +341,8 @@ public class Report0F0SaveFile {
         cell.setCellStyle(styles.get(preStyleNm + "Col1"));
         cell.setCellValue(ReportSaveUtil.getStringValue(category.get("dgrcompoNm")));
 
+        print += " dgrcompoNm : " + ReportSaveUtil.getStringValue(category.get("dgrcompoNm"));
+        
         cell = row.createCell(2);
         cell.setCellStyle(styles.get(preStyleNm + "Col2"));
         //cell.setCellValue("계");
@@ -338,9 +351,13 @@ public class Report0F0SaveFile {
         cell.setCellStyle(styles.get(preStyleNm + "Col3"));
         cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("totFrscAmt0")));
 
+        print += " totFrscAmt0 : " + ReportSaveUtil.getAmtValue(category.get("totFrscAmt0"));
+        
         cell = row.createCell(4);
         cell.setCellStyle(styles.get(preStyleNm + "Col4"));
         cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt0")));
+        
+        print += " preInvFrscAmt0 : " + ReportSaveUtil.getAmtValue(category.get("preInvFrscAmt0"));
         
         cell = row.createCell(5);
         cell.setCellStyle(styles.get(preStyleNm + "Col5"));
@@ -350,14 +367,22 @@ public class Report0F0SaveFile {
     		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preAmt")));
     	}
 
+        print += " 본preBgtAmt : " + ReportSaveUtil.getAmtValue(category.get("preBgtAmt"));
+        print += " 추preAmt : " + ReportSaveUtil.getAmtValue(category.get("preAmt"));
+        
         cell = row.createCell(6);
         cell.setCellStyle(styles.get(preStyleNm + "Col6"));
         cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("demandDiffAmt")));
+        
+        print += " demandDiffAmt : " + ReportSaveUtil.getAmtValue(category.get("demandDiffAmt"));
         
         cell = row.createCell(7);
         cell.setCellStyle(styles.get(preStyleNm + "Col7"));
         cell.setCellValue(ReportSaveUtil.getAmtValue(category.get("diffAmt")));
 
+        print += " diffAmt : " + ReportSaveUtil.getAmtValue(category.get("diffAmt"));
+        
+        System.out.println(print);
         // 추가
         String examCont = ReportSaveUtil.getStringValue(category.get("examCont"));
         String[] examContArrayTemp = examCont.split("\n");
@@ -447,7 +472,9 @@ public class Report0F0SaveFile {
                 preDefFrscAmt = 0l;
                 frscAmt = 0l;
             }
-
+            
+            System.out.println("i : " + i + "  frscNm : " + frscNm + "  totFrscAmt : " + totFrscAmt + "  preInvFrscAmt : " + preInvFrscAmt + " 본preFrscAmt : " + preFrscAmt + "  추preDefFrscAmt : " + preDefFrscAmt + "  dmnFrscAmt : " + dmnFrscAmt + "  frscAmt : " + frscAmt);
+            
             cell = row.createCell(0);
             cell.setCellStyle(styles.get(preStyleNm + "Col0"));
 
@@ -462,17 +489,17 @@ public class Report0F0SaveFile {
             cell.setCellValue(frscNm);
 
             cell = row.createCell(3);
-            cell.setCellStyle(styles.get(preStyleNm + "Col3"));
+            cell.setCellStyle(styles.get(preStyleNm + "Col3")); //총사업비
             cell.setCellValue(totFrscAmt);
             //cell.setCellValue(0L);
 
             cell = row.createCell(4);
-            cell.setCellStyle(styles.get(preStyleNm + "Col4"));
+            cell.setCellStyle(styles.get(preStyleNm + "Col4")); //기투자
             cell.setCellValue(preInvFrscAmt);
             //cell.setCellValue(0L);
 
             cell = row.createCell(5);
-            cell.setCellStyle(styles.get(preStyleNm + "Col5"));
+            cell.setCellStyle(styles.get(preStyleNm + "Col5")); //본예산
             if("1".equals(bgtDgr)){
             	cell.setCellValue(preFrscAmt);
         	}else{
@@ -480,11 +507,11 @@ public class Report0F0SaveFile {
         	}
  
             cell = row.createCell(6);
-            cell.setCellStyle(styles.get(preStyleNm + "Col6"));
+            cell.setCellStyle(styles.get(preStyleNm + "Col6")); //요구액
             cell.setCellValue(dmnFrscAmt);
             
             cell = row.createCell(7);
-            cell.setCellStyle(styles.get(preStyleNm + "Col7"));
+            cell.setCellStyle(styles.get(preStyleNm + "Col7")); //조정액
             cell.setCellValue(frscAmt);
 
             cell = row.createCell(8);
@@ -520,6 +547,7 @@ public class Report0F0SaveFile {
         param.put("reportDetlCd", "0F1");
         param.put("fisYear", model.get("fisYear"));
         param.put("bgtDgr", model.get("bgtDgr"));
+        param.put("amtUnit", model.get("amtUnit"));
 
         Map reportInfo = reportCommDAO.selectReportInfo(param);
         //boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
@@ -581,10 +609,18 @@ public class Report0F0SaveFile {
 
         row = sheet.createRow(rowNum);
         rowNum++;
-        row.setHeightInPoints(33.75f);
+        //row.setHeightInPoints(33.75f);
+        row.setHeightInPoints(19.5f);
 
+        String amtUnit = (String)model.get("amtUnit");
+        String amtUnitNm = "(단위 : 백만원)";
+        if("1000".equals(amtUnit)){
+        	amtUnitNm = "(단위 : 천원)";
+        }
+        
         cell = row.createCell(7);
-        cell.setCellValue("※ 시비 금액\n(단위 : 백만원)");
+        /*cell.setCellValue("※ 시비 금액\n(단위 : 백만원)");*/
+        cell.setCellValue(amtUnitNm);
         cell.setCellStyle(styles.get("unit"));
 
         repeatingStartRow = rowNum;

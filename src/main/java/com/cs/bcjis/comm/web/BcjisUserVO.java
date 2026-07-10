@@ -43,6 +43,8 @@ public class BcjisUserVO implements Serializable {
 
     String userDeptYn = "Y";
     String powGrCd = "";
+    
+    String stopYn = "";
 
     public String getUserId() {
         return userId;
@@ -307,10 +309,18 @@ public class BcjisUserVO implements Serializable {
     public void setPowGrCd(String powGrCd) {
         this.powGrCd = powGrCd;
     }
+    
+    public String getStopYn() {
+    	return stopYn;
+    }
+    
+    public void setStopYn(String stopYn) {
+    	this.stopYn = stopYn;
+    }
 
     @Override
     public String toString() {
-        return "BcjisUserVO [userId=" + userId + ", resideNo=" + resideNo + ", userNm=" + userNm + ", pswd=" + pswd + ", deptCd=" + deptCd + ", posCatCd=" + posCatCd + ", posClCd=" + posClCd + ", posRankCd=" + posRankCd + ", salclassCd=" + salclassCd + ", integCustSno=" + integCustSno + ", connectYn=" + connectYn + ", finalConnectDate=" + finalConnectDate + ", finalConnectIp=" + finalConnectIp + ", useYn=" + useYn + ", finalConnectSessid=" + finalConnectSessid + ", lowDeptCd=" + lowDeptCd + ", prePswd=" + prePswd + ", pswdChngDate=" + pswdChngDate + ", loginId=" + loginId + ", loginIdFg=" + loginIdFg + ", hpgId=" + hpgId + ", hpgPswd=" + hpgPswd + ", portalId=" + portalId + ", portalIdYn=" + portalIdYn + ", loginFailCnt=" + loginFailCnt + ", userStatCd=" + userStatCd + ", userStatNm=" + userStatNm + ", regiId=" + regiId + ", regiDate=" + regiDate + ", modiId=" + modiId + ", modiDate=" + modiDate + ", userDeptYn=" + userDeptYn + ", powGrCd=" + powGrCd + "]";
+        return "BcjisUserVO [userId=" + userId + ", resideNo=" + resideNo + ", userNm=" + userNm + ", pswd=" + pswd + ", deptCd=" + deptCd + ", posCatCd=" + posCatCd + ", posClCd=" + posClCd + ", posRankCd=" + posRankCd + ", salclassCd=" + salclassCd + ", integCustSno=" + integCustSno + ", connectYn=" + connectYn + ", finalConnectDate=" + finalConnectDate + ", finalConnectIp=" + finalConnectIp + ", useYn=" + useYn + ", finalConnectSessid=" + finalConnectSessid + ", lowDeptCd=" + lowDeptCd + ", prePswd=" + prePswd + ", pswdChngDate=" + pswdChngDate + ", loginId=" + loginId + ", loginIdFg=" + loginIdFg + ", hpgId=" + hpgId + ", hpgPswd=" + hpgPswd + ", portalId=" + portalId + ", portalIdYn=" + portalIdYn + ", loginFailCnt=" + loginFailCnt + ", userStatCd=" + userStatCd + ", userStatNm=" + userStatNm + ", regiId=" + regiId + ", regiDate=" + regiDate + ", modiId=" + modiId + ", modiDate=" + modiDate + ", userDeptYn=" + userDeptYn + ", powGrCd=" + powGrCd + ", stopYn=" + stopYn + "]";
     }
 
 }

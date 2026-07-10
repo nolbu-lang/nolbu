@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SNIServerName;
+//import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
@@ -325,6 +325,8 @@ public class GeminiClient implements LlmClient {
         ctx.init(null, null, null);
 
         SSLSocket socket = (SSLSocket) ctx.getSocketFactory().createSocket();
+        
+        /*
         try {
             // SNI 를 실제 호스트명으로 설정하고, TLS 핸드셰이크 단계에서
             // 인증서-호스트명 검증(endpoint identification)을 수행하도록 지정
@@ -381,6 +383,8 @@ public class GeminiClient implements LlmClient {
                 // ignore
             }
         }
+        */
+        return null;
     }
 
     /** DNS 의 모든 IPv4 주소를 순서대로 TCP 탐색하여 접속 가능한 첫 주소를 반환 */

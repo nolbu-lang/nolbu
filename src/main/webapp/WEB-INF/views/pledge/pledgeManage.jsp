@@ -54,6 +54,8 @@ _pledgeManageTabId = "<%=tabId%>";
           <a id="modifyBtn" class="btnDisabledClass" href="#" enabledYn="N">수정</a>
           <a id="deleteBtn" class="btnDisabledClass" href="#" enabledYn="N">삭제</a>
           <a id="sortBtn" class="btnDisabledClass" href="#" enabledYn="N">정렬순서변경</a>
+          <a id="getExcelFormBtn" class="btnDisabledClass" href="#" enabledYn="N">엑셀양식다운로드</a>
+          <a id="excelUploadBtn" class="btnDisabledClass" href="#" enabledYn="N">엑셀업로드</a>
         </div>
       </div>
       <div id="PLEDGE_MANAGE_DIV" class="csGrid" style="border:0px;">
@@ -68,3 +70,4 @@ _pledgeManageTabId = "<%=tabId%>";
 <%@include file="/WEB-INF/views/dialog/dialogPledgeBizRegi.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogPledgeBizModify.jsp"%>
 <%@include file="/WEB-INF/views/dialog/dialogPledgeSort.jsp"%>
+<%@include file="/WEB-INF/views/dialog/dialogPledgeExcelUpload.jsp"%>

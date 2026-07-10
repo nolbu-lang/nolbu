@@ -127,5 +127,39 @@ public class ManageUserController {
         return ajaxModel;
     }
     
+    @RequestMapping("/manage/ajaxManageUserStopYnUpdate.do")
+    public ModelAndView ajaxManageUserStopYnUpdate(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxManageUserStopYnUpdate(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            
+            BcjisUserVO bcjisUserVO = (BcjisUserVO) BcjisUserDetailsHelper.getAuthenticatedUser();
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+            jsonParam.put("userId", bcjisUserVO.getUserId());
+            
+            manageUserService.updateManageUserStopYn(jsonParam);
+                        
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("success.common.apply"));
+        } catch (Exception e) {
+            logger.error("ajaxManageUserStopYnUpdate(ModelMap, HttpServletRequest)", e);
+                        
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.apply"));
+        }
+        
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxManageUserStopYnUpdate(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+    
     
 }

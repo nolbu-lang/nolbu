@@ -14,15 +14,16 @@ _budgetSelectTabId = "<%=tabId%>";
   <div id="mainBody" class="nondiv" style="height:95%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: auto;">
     <div id="mainNorth" class="pane ui-layout-north" style="border:0px;overflow-x: hidden;">
       <!--condition s-->
-      <div class="condition">
+      <div class="condition" style="max-width:1000px;">
         <table>
           <colgroup>
             <col width="100px"/>
             <col width="200px"/>
             <col width="100px"/>
             <col width="100px"/>
-            <col width="200px"/>
-            <col width="100px"/>
+            <col width="170px"/>
+            <col width="80px"/>
+            <col width="150px"/>
             <col width="200px"/>
           </colgroup>
           <tbody>
@@ -54,7 +55,7 @@ _budgetSelectTabId = "<%=tabId%>";
                 </select>
               </td>
               <th>예산차수</th>
-              <td colspan="2">
+              <td colspan="3">
                 <select id="condBgtDgr" name="condBgtDgr" title="예산차수" style="width:90%;">
                 </select>
               </td>
@@ -67,7 +68,7 @@ _budgetSelectTabId = "<%=tabId%>";
                 <select id="condFisFgMstCd" name="condFisFgMstCd" title="회계마스터구분" style="width:90%;">
                 </select>
               </td>
-              <td colspan="3">
+              <td colspan="4">
                 <select id="condFisFgCd" name="condFisFgCd" title="회계구분" style="width:93%;">
                 </select>
               </td>
@@ -81,7 +82,7 @@ _budgetSelectTabId = "<%=tabId%>";
                 </select>
               </td>
               <th>부서</th>
-              <td colspan="4">
+              <td colspan="5">
                 <input type="hidden" id="condDeptCdFr"/>
                 <input type="hidden" id="condDeptRankFr"/>
                 <input type="hidden" id="condDeptCdTo"/>
@@ -94,18 +95,20 @@ _budgetSelectTabId = "<%=tabId%>";
             </tr>
             <tr>
               <th>통계목</th>
-              <td colspan="4">
+              <td colspan="5">
                 <select id="condTeMngMokCdFr" name="condTeMngMokCdFr" title="통계목" style="width:40%;">
                 </select>&nbsp;~&nbsp;
                 <select id="condTeMngMokCdTo" name="condTeMngMokCdTo" title="통계목" style="width:40%;">
                 </select>
               </td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
+              <th>조건검색어</th>
+              <td>
+                <input type="text" id="condSrchVal" style="width:95%;" maxlength="40"/>
+              </td>
             </tr>
             <tr>
               <th>재원구분</th>
-              <td colspan="4">
+              <td colspan="5">
                 <select id="condFrscFgCdFr" name="condFrscFgCdFr" title="재원구분" style="width:40%;">
                 </select>&nbsp;~&nbsp;
                 <select id="condFrscFgCdTo" name="condFrscFgCdTo" title="재원구분" style="width:40%;">
@@ -125,15 +128,22 @@ _budgetSelectTabId = "<%=tabId%>";
               		<!-- <br />※ (최소만 입력) => (최소값만 입력) / (최대만 입력) => (최대값만 입력) -->
               	</td>
               	<th>
-              		사전절차
+              		분류항목
               	</th>
               	<td>
-              		<select id="condAdvncProc" name="condAdvncProc" title="사전절차" style="width:90%;">
+              		<select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
 					</select>
               	</td>
-              	<td colspan="2" style="text-align:right;">
-              		<a id="indiAttrBtn" class="btnClass btn_system" style="background-color: #f26c4f;border:#f26c4f;" href="#">보고항목</a>
-              		<a id="advncProcBtn" class="btnClass btn_system" style="background-color: #f26c4f;border:#f26c4f;" href="#">사전절차</a>
+              	<th>
+              		보고항목
+              	</th>
+              	<td>
+              		<select id="condIndiAttr" name="condIndiAttr" title="보고항목" style="width:90%;">
+					</select>
+              	</td>
+              	<td colspan="1" style="text-align:right;">
+              		<a id="indiAttrBtn" class="btnClass btn_system btnDisabledClass" style="background-color: #f26c4f;border:#f26c4f;" href="#">보고항목</a>
+              		<a id="advncProcBtn" class="btnClass btn_system btnDisabledClass" style="background-color: #f26c4f;border:#f26c4f;" href="#">분류항목</a>
               	</td>
             </tr>
             <tr>
@@ -181,7 +191,7 @@ _budgetSelectTabId = "<%=tabId%>";
             	<td>&nbsp;</td>
             </tr>
             <tr>
-            	<th>사전절차</th>
+            	<th>분류항목</th>
             	<td>
             		<select id="condAdvncProc1" name="condAdvncProc1" title="보고항목1" style="width:90%;">
                 	</select>
@@ -212,10 +222,12 @@ _budgetSelectTabId = "<%=tabId%>";
       </div>
       <div class="unitDiv" width="500px;">
         (단위:천원)&nbsp;**<span style="color:#0000FF">1.경상사업심사조서</span>,&nbsp;
-        <span style="color:#FF0000">2.투자사업심사조서,&nbsp;
-        <span style="color:#00B8B8">3.기본경비,&nbsp;</span>
-        <span style="color:#FF9900">4.공통경비,&nbsp;</span>
-        <span style="color:#FF99FF">5.그외 조서</span>
+        <span style="color:#f26c4f">2.투자사업심사조서,&nbsp;</span>
+        <span style="color:#00B8B8">3.기준인건비,&nbsp;</span>
+        <span style="color:#FF9900">4.채무상환,&nbsp;</span>
+        <span style="color:#FF99FF">5.예비비</span>
+        <span style="color:#FF0000">6.일반국비</span>
+        <span style="color:#222222">7.그외 조서</span>
         <input type="hidden" id="condAmtUnit" value="1000"/>
       </div>
     </div>

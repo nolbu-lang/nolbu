@@ -35,5 +35,11 @@ public class ManageUserServiceImpl  implements ManageUserService {
         manageUserDAO.deleteManageUserPowgbr(map);
         
     }
+    
+    @SuppressWarnings("rawtypes")
+    public void updateManageUserStopYn(Map map) throws Exception {
+    	
+    	manageUserDAO.updateManageUserStopYn(map);
+    }
 
 }

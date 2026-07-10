@@ -20,5 +20,7 @@ public interface DialogDgrcompoModifyService {
 
     @SuppressWarnings("rawtypes")
     public Map selectModifyDgrcompo(Map map) throws Exception;
+    
+    public void saveDgrcompoGround(JSONObject jsonParam) throws Exception;
 
 }

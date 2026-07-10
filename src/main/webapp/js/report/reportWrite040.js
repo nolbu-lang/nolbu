@@ -93,7 +93,7 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>'
-                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:280px;">'
+                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:242px;">'
                  + reflectFgCreateCombo('RP003', rowObject.reflectFg)
                  + '</select>'+'<br>'
                  + '<textarea id="examCont_'+rowObject.dgrcompoId+'" style="width:240px;ime-mode:active;"  cols="22" rows="12">'+cellValue+'</textarea>'
@@ -690,6 +690,7 @@ $(document).ready(function() {
 
         data = null;
         srchReportDetlCd = $("#condReportDetlCd", tabObj).val();
+        chkDiv();
     };
     
     var getSearchParam = function(){
@@ -845,6 +846,8 @@ $(document).ready(function() {
                     saveData["expFg"] = expFg;
                     if(rowData.reflectFg != reflectFg && reflectFg === "020"){
                         saveData["reflegFgYn"] = "Y";
+                    }else if(rowData.reflectFg != reflectFg && reflectFg === "010"){
+                        saveData["reflegFgYn"] = "Y";
                     }else{
                         saveData["reflegFgYn"] = "N";
                     }
@@ -926,11 +929,40 @@ $(document).ready(function() {
             return;
     	}
         
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
+            url : "/report/ajaxReportWrite040SaveFile.do"
+          , data: param
+        });*/
+    });
+    
+    var doSaveFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "기본경비심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite040SaveFile.do"
           , data: param
         });
-    });
+    }
     
     $("#saveSheetBtn", tabObj).click(function() {
         var param = getSearchParam();
@@ -945,11 +977,40 @@ $(document).ready(function() {
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveSeetFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite040SaveSheet.do"
           , data: param
-        });
+        });*/
     });
+    
+    var doSaveSeetFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "기본경비심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite040SaveSheet.do"
+          , data: param
+        });
+    }
     
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
@@ -1159,4 +1220,26 @@ $(document).ready(function() {
     };
     
     doCondInit();
+    
+    var chkDiv = function(){
+    	checkEvent($('#REPORT_WRITE040_DIV').find('textarea'));
+    	checkEvent($('#REPORT_WRITE040_DIV').find('input'));
+    	checkEvent($('#REPORT_WRITE040_DIV').find('select'));
+    }
+    
+    var checkEvent = function(obj){
+    	$(obj).click(function(){
+    		checkDetlCd();
+    	});
+    	$(obj).keydown(function(){
+    		checkDetlCd();
+    	});
+    };
+    var checkDetlCd = function(){
+    	if(srchReportDetlCd == ''){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+    	}
+    };
 });

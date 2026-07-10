@@ -85,6 +85,9 @@ $(document).ready(function (){
     
     var getDialogDgrModiListSearchParam = function(){
         var searchParam = {
+        		fisYear : $("#dialogDgrModiListFisYear", dialogObj).val(),
+        		bgtDgr : $("#dialogDgrModiListBgtDgr", dialogObj).val(),
+        		teBgtCompoId : $("#dialogDgrModiListTeBgtCompoId", dialogObj).val(),
         		cngHistoryId: $("#dialogDgrModiListCngHistoryId", dialogObj).val(),
         		cngType: 'CH01',
                 grpLvl: '2'
@@ -101,6 +104,8 @@ $(document).ready(function (){
         }
         
         dialogDgrModiListGrid.addCsJsonData(data);
+        
+        $("#dialogDgrModiListCompGround", dialogObj).val(data.data.compGround);
     };
     
     var doDialogDgrModiListSearch = function(params) {
@@ -146,15 +151,82 @@ $(document).ready(function (){
             doDialogDgrModiListSearch();
         },
         buttons : {
+            "사업명수정" : function() {
+                doCompoGroundSave();
+            },
             "닫기" : function() {
                 dialogDgrModiListClose();
             }
         }
     });
     
+  //저장 실행
+    var doCompoGroundSave = function(){
+        
+    	$.csConfirm({
+            msg : "사업명을 수정하시겠습니까?",
+            callBack : doCompoGroundDoSave
+        });
+    	
+    };
+    var doCompoGroundDoSave = function(params){
+    	var fisYear = $("#dialogDgrModiListFisYear", dialogObj).val();
+        var bgtDgr = $("#dialogDgrModiListBgtDgr", dialogObj).val();
+        var bgtCompoId = $("#dialogDgrModiListDgrcompoId", dialogObj).val();
+        var teBgtCompoId = $("#dialogDgrModiListTeBgtCompoId", dialogObj).val();
+        var compGround = $("#dialogDgrModiListCompGround", dialogObj).val();
+
+        var param = {
+                fisYear: fisYear,
+                bgtDgr: bgtDgr,
+                bgtCompoId: bgtCompoId,
+                teBgtCompoId: teBgtCompoId,
+                compGround: compGround
+        };
+        
+        if(!fisYear){
+        	alert('회계년도 정보가 없습니다.');
+        	return;
+        }
+        if(!bgtDgr){
+        	alert('예산차수 정보가 없습니다.');
+        	return;
+        }
+        if(!bgtCompoId){
+        	alert('사업 정보가 없습니다.');
+        	return;
+        }
+        
+       var data = $.csAjaxCall({
+            url : "/dialog/ajaxDialogDgrcompoModifySaveDgrcompoGround.do",
+            data : param,
+        });
+       
+       	if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+           $.csAlert({
+               msg : data.bcjisMessage,
+               callBack : function() {
+            	   dialogDgrModiListClose();
+               }
+           });
+           
+           return;
+       }
+       
+       $.csAlert({
+           msg : "수정되었습니다.<BR>(상위 항목의 정보는 재 조회 후 확인하실 수 있습니다.)",
+           callBack : function() {
+               dialogDgrcompoModifyDoSaveCallBack(data);
+               
+               dialogDgrModiListClose();
+           }
+       });
+    	
+    };
+    
     var dialogDgrModiListDoSaveCallBack = function(param){
         var dialogDgrModiListCallBackFunction = $("#dialogDgrModiListCallBackFunction", $("#dialogDgrcompoModifyMergeDiv")).val();
-
+		
         dialogDgrModiListClose();
         if(isEmpty(param) == true){
             return;
@@ -164,6 +236,18 @@ $(document).ready(function (){
         
         if(isEmpty(dialogDgrModiListCallBackFunction) == false){
             eval(dialogDgrModiListCallBackFunction + '('+ jsonToString(param.dgrcompo) + ')');
+        }
+    };
+    
+    var dialogDgrcompoModifyDoSaveCallBack = function(param){
+        var dialogDgrModiCompoGroundCallBackFunction = $("#dialogDgrModiCompoGroundCallBackFunction", dialogObj).val();
+
+        if(isEmpty(param) == true){
+            return;
+        }
+        
+        if(isEmpty(dialogDgrModiCompoGroundCallBackFunction) == false){
+        	eval(dialogDgrModiCompoGroundCallBackFunction + '('+ jsonToString(param) + ')');
         }
     };
     
@@ -191,6 +275,7 @@ $(document).ready(function (){
 </script>
 <div id="dialogDgrModiListDiv" class="dialog" style="display:none;">
   <input type="hidden" id="dialogDgrModiListCallBackFunction"/>
+  <input type="hidden" id="dialogDgrModiCompoGroundCallBackFunction"/>
   <input type="hidden" id="dialogDgrModiListCngHistoryId"/>
   <input type="hidden" id="dialogDgrModiListFisYear"/>
   <input type="hidden" id="dialogDgrModiListBgtDgr"/>
@@ -215,4 +300,21 @@ $(document).ready(function (){
   <div id="DIALOG_DGR_CNG_MODI_LIST_PGR" class="paging">
   </div>
   <!--page e-->
+  
+  <div class="viewDiv" style="width:348px;">
+    <table>
+      <colgroup>
+        <col width="75px"/>
+        <col width="*"/>
+      </colgroup>
+      <tbody>
+        <tr>
+          <th colspan="2">사업명</th>
+          <td colspan="5">
+            <input type="text" id="dialogDgrModiListCompGround" style="width:100%;"/>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </div>

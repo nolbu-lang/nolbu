@@ -125,7 +125,7 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>'
-                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:260px;">'
+                 + '<select id="reflectFg_'+rowObject.dgrcompoId+'" title="반영구분" style="width:242px;">'
                  + reflectFgCreateCombo('RP003', rowObject.reflectFg)
                  + '</select>'+'<br>'
                  + '<textarea id="examCont_'+rowObject.dgrcompoId+'" style="width:240px;ime-mode:active;height:10px;" cols="22" rows="12">'+cellValue+'</textarea>'
@@ -321,7 +321,7 @@ $(document).ready(function() {
     	return rVal;
     };
     
-    //사전절차 그리드fomatter
+  //분류항목 그리드fomatter
     var advncProcFgFormatter = function(cellValue, options, rowObject){
     	if(isEmpty(cellValue) == true){
     		cellValue = "";
@@ -335,13 +335,17 @@ $(document).ready(function() {
         	cellValue = rowObject.advncProc;
         }
     	
+    	var fisYear = rowObject.fisYear;
+    	var bgtDgr = rowObject.bgtDgr;
+    	var groupId = fisYear + '|' + bgtDgr;
+    	
     	var itemList = comboData['advncProc'];
     	var rVal = '<div>';
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
         	var checked = '';
         	
-        	if(cellValue.includes(data.code)){
+        	if(cellValue.includes(data.code) && groupId == data.groupId){
         		//checked = 'checked';
         		rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><label for="checkYnAdvncProc_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
         	}
@@ -352,8 +356,8 @@ $(document).ready(function() {
     	return rVal;
     };
     
-    var colNames = ['', '구분(회계구분-실국-부서-세부사업)', '요구액', '인사담당관심사결과', '조정액', '예산액', '예산액', '증감액', '비고', '재원정보', '조건검색어',
-                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '사전절차',
+    var colNames = ['', '구분(회계구분-실국-부서-세부사업)', '요구액', '인사담당관심사결과', '조정액', '기정액', '전년도 예산액', '증감액', '비고', '재원정보', '조건검색어',
+                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '분류항목',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal',
                     'judgRsltAmt',
                     'indiAttr','advncProc'
@@ -417,7 +421,7 @@ $(document).ready(function() {
                         {name : 'advncProc', index : 'advncProc', width : 0, sortable : false, hidden : true}
                     ];
 /*    var colNames = ['', '구분(회계구분-실국-부서-세부사업)', '산출근거', '요구액', '인사담당관심사결과', '산출근거', '조정액', '산출근거', '예산액', '산출근거', '예산액', '증감액', '비고', '재원정보', '조건검색어',
-                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '사전절차',
+                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '분류항목',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal',
                     'judgRsltAmt',
                     'indiAttr','advncProc'
@@ -593,6 +597,7 @@ $(document).ready(function() {
 
         data = null;
         srchReportDetlCd = $("#condReportDetlCd", tabObj).val();
+        chkDiv();
     };
     
     var getSearchParam = function(){
@@ -741,6 +746,8 @@ $(document).ready(function() {
                     saveData["judgRsltAmt"] = judgRsltAmt;
                     if(rowData.reflectFg != reflectFg && reflectFg === "020"){
                         saveData["reflegFgYn"] = "Y";
+                    }else if(rowData.reflectFg != reflectFg && reflectFg === "010"){
+                        saveData["reflegFgYn"] = "Y";
                     }else{
                         saveData["reflegFgYn"] = "N";
                     }
@@ -781,7 +788,7 @@ $(document).ready(function() {
     	return rtnData;
     }
     
-    //사전절차 체크된 코드 가져오기
+    //분류항목 체크된 코드 가져오기
     var getAdvncProcCheckVal = function(dgrcompoId){
     	var itemList = comboData['advncProc'];
     	var rtnData = '';
@@ -872,11 +879,40 @@ $(document).ready(function() {
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite055SaveFile.do"
           , data: param
-        });
+        });*/
     });
+    
+    var doSaveFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "국외여비심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite055SaveFile.do"
+          , data: param
+        });
+    }
     
     $("#saveSheetBtn", tabObj).click(function() {
         var param = getSearchParam();
@@ -891,11 +927,40 @@ $(document).ready(function() {
             return;
     	}
         
-        $.bcjisExcelAjaxCall({
+        $.csConfirmAmtUnit({
+            msg : "금액단위를 선택해주세요.",
+            callBack : doSaveSeetFile
+        });
+        
+        /*$.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite055SaveSheet.do"
           , data: param
-        });
+        });*/
     });
+    
+    var doSaveSeetFile = function(params){
+    	if(params.confirmData == "N"){
+            return;
+        }
+    	
+    	var amtUnit = params.confirmData;
+    	var param = getSearchParam();
+    	param["fileNm"] = "국외여비심사조서";
+        param["amtUnit"] = amtUnit;
+        
+        if(srchReportDetlCd == ""){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+            
+            return;
+    	}
+        
+        $.bcjisExcelAjaxCall({
+        	url : "/report/ajaxReportWrite055SaveSheet.do"
+          , data: param
+        });
+    }
     
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
@@ -1098,4 +1163,26 @@ $(document).ready(function() {
     };
     
     doCondInit();
+    
+    var chkDiv = function(){
+    	checkEvent($('#REPORT_WRITE055_DIV').find('textarea'));
+    	checkEvent($('#REPORT_WRITE055_DIV').find('input'));
+    	checkEvent($('#REPORT_WRITE055_DIV').find('select'));
+    }
+    
+    var checkEvent = function(obj){
+    	$(obj).click(function(){
+    		checkDetlCd();
+    	});
+    	$(obj).keydown(function(){
+    		checkDetlCd();
+    	});
+    };
+    var checkDetlCd = function(){
+    	if(srchReportDetlCd == ''){
+    		$.csAlert({
+                msg : "조서상세구분을 선택해서 조회하여 주십시오."
+            });
+    	}
+    };
 });

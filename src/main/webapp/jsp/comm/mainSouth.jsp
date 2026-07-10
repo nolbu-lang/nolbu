@@ -9,7 +9,7 @@
       <tbody>
         <tr>
           <td>
-            <a id="mainSouthLogo" href="#"><img src="${pageContext.request.contextPath}/images/<spring:eval expression="@config['Globals.LocalCd']"/>/southLogo.png" width="232" height="39" /></a>
+            <a id="mainSouthLogo" href="#"><img src="${pageContext.request.contextPath}/images/<spring:eval expression="@config['Globals.LocalCd']"/>/southLogo_240325.png" width="232" height="39" /></a>
           </td>
           <td>
             <p style="color: #6d6d6d;">

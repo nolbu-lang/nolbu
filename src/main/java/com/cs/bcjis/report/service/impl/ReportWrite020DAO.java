@@ -26,6 +26,11 @@ public class ReportWrite020DAO extends BcjisCommAbstractDAO {
     }
     
     @SuppressWarnings("rawtypes")
+    public Map selectReport020DData(Map map) throws Exception {
+    	return (Map) selectByPk("ReportWrite020.selectReport020DData", map);
+    } 
+    
+    @SuppressWarnings("rawtypes")
     public List selectReport020TotList(Map map) throws Exception{
         return list("ReportWrite020.selectReport020TotList", map);
     }

@@ -11,6 +11,24 @@
              , B.DETL_CD 
              , B.DETL_CD_NM
              , B.LINE_UP_ORD
+         <isEmpty prepend="" property="order">
+         	, '' AS GROUP_COL
+         </isEmpty>
+         <isNotEmpty prepend="" property="order">
+         	<isEqual prepend="" property="order" compareValue="indi">
+         	 , CASE WHEN INSTR(B.GROUP_ID, '|') > 0 THEN
+		        	SUBSTR(B.GROUP_ID, 0, (INSTR(B.GROUP_ID, '|') - 1)) || '년 ' || 
+		        	(SELECT CASE WHEN C.BGT_COMPO_FG = '10' THEN '본예산' 
+		        							ELSE '추경' || C.ADD_TIMES || '차' 
+		        				END AS CODE_NM 
+		        				FROM TB_BGTDGR C
+		        				WHERE fis_year = SUBSTR(B.GROUP_ID, 0, (INSTR(B.GROUP_ID, '|') - 1)) 
+		        				  AND BGT_DGR = (SUBSTR(B.GROUP_ID, (INSTR(B.GROUP_ID, '|') + 1 )))
+		        	)
+		        ELSE ''
+		        END AS GROUP_COL
+         	</isEqual>
+         </isNotEmpty>
           FROM TB_COMMCD A
              , TB_COMMCDDETL B
          WHERE 1 = 1
@@ -24,7 +42,21 @@
          </isNotEmpty>
            AND A.CL_CD = #codeId#
            AND A.USE_YN = 'Y'
-         ORDER BY DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+         <isEmpty prepend="" property="order">
+         	ORDER BY DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+         </isEmpty>
+         <isNotEmpty prepend="" property="order">
+         	<isEqual prepend="" property="order" compareValue="indi">
+         		ORDER BY 
+         				 CASE WHEN INSTR(B.GROUP_ID, '|') <![CDATA[>]]> 0 THEN TO_NUMBER(SUBSTR(B.GROUP_ID, 0, 4))
+         				 	  ELSE 9999
+         				 END DESC
+         			   , CASE WHEN INSTR(B.GROUP_ID, '|') <![CDATA[>]]> 0 THEN TO_NUMBER(SUBSTR(B.GROUP_ID, (INSTR(B.GROUP_ID, '|') + 1)))
+         			   		  ELSE 0
+         				 END ASC
+         			   , DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+         	</isEqual> 
+         </isNotEmpty> 
     </select>
     
     <select id="BudgetCommCd.selectMaxCd" parameterClass="Map" resultClass="java.lang.String">
@@ -73,7 +105,8 @@
 			tb_commcddetl
 		SET detl_cd_nm = #detlCdNm#,
 			line_up_ord = #lineUpOrd#,
-			use_yn = #useYn#,
+			use_yn = #useYn#, 
+			group_id = #groupId#,
 			modi_id = #userId#,
 			modi_date = SYSTIMESTAMP
 		WHERE CL_CD = #clCd#

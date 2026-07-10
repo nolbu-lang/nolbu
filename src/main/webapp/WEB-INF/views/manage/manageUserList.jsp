@@ -48,6 +48,8 @@ _manageUserTabId = "<%=tabId%>";
           <a id="regiBtn" class="btnClass" href="#">등록</a>
           <a id="modifyBtn" class="btnClass" href="#">수정</a>
           <a id="deleteBtn" class="btnClass" href="#">삭제</a>
+          <a id="stopBtn" class="btnClass" href="#">사용중지</a>
+          <a id="stopRtnBtn" class="btnClass" href="#">사용중지해제</a>
         </div>
       </div>
       <div class="gridHeader" style="float:none;">

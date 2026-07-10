@@ -73,7 +73,7 @@ _reportWrite000TabId = "<%=tabId%>";
                 <a id="openDialogBgtDeptBtnTo" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>
               </td>
             </tr>
-            <tr>
+            <!-- <tr>
               <th>조서구분</th>
               <td>
                 <select id="condReportCd" name="condReportCd" title="조서구분" style="width:90%;">
@@ -85,7 +85,7 @@ _reportWrite000TabId = "<%=tabId%>";
               </td>
               <td>&nbsp;</td>
               <td>&nbsp;</td>
-            </tr>
+            </tr> -->
           </tbody>
         </table>
       </div>

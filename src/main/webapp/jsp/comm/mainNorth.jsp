@@ -49,7 +49,7 @@ var _mainNorthPowGrCd = "<%=mainNorthPowGrCd%>";
 
 
 <div class="always_top">
-	<p class="left"><img src="/images/design/img_header_logo.png" alt="예산담당관실 예산편성심사정보시스템"></p>
+	<p class="left"><img src="/images/design/img_header_logo_240325.png" alt="예산담당관실 예산편성심사정보시스템"></p>
 	<p class="right">
 		<span id="mainNorthInfoTd">&nbsp;</span>
 		<a id="mainNorthLogoutBtn" href="#">로그아웃</a>

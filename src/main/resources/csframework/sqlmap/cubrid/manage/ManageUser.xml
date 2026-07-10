@@ -30,7 +30,8 @@
                      , T1.*
                   FROM (SELECT A.USER_ID
                              , A.USER_NM
-                             , A.LOGIN_ID
+                             , A.LOGIN_ID 
+                             , A.STOP_YN
                              , C.POW_GR_NM
                              , C.POW_GR_CD
                              , A.PSWD
@@ -68,5 +69,15 @@
              , MODI_DATE = SYSTIMESTAMP
          WHERE 1 = 1
            AND USER_ID = #deleteUserId#
+    </update>
+    
+    <update id="ManageUser.updateManageUserStopYn" parameterClass="Map" >
+        /*ManageUser.updateManageUserStopYn*/
+        UPDATE TB_USER 
+           SET STOP_YN = #stopYn#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND USER_ID = #stopUserId#
     </update>
 </sqlMap>

@@ -26,6 +26,9 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
 
     @Resource(name = "budgetSelectDAO")
     private BudgetSelectDAO budgetSelectDAO;
+    
+    @Resource(name = "budgetCommDAO")
+    private BudgetCommDAO budgetCommDAO;
 
     @Resource(name = "budgetSheetSelectService")
     private BudgetSheetSelectService budgetSheetSelectService;
@@ -65,24 +68,29 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         
         for (int i = 0; i < saveReportDatas.size(); i++) {
         	tempParam = (JSONObject) saveReportDatas.get(i);
-        	
+        	//System.out.println("@@@@@@@@@@@@@@@@  tempParam : " + tempParam);
         	String reportCd = String.valueOf(tempParam.get("reportCd"));
         	String reportDetlCd = String.valueOf(tempParam.get("reportDetlCd"));
-
+        	
         	tempParam.put("fisFgMstCd", fisFgMstCd);
         	tempParam.put("fisFgCd", fisFgCd);
         	tempParam.put("officeCd", officeCd);
         	tempParam.put("deptRankFr", deptRankFr);
-        	tempParam.put("deptRankTo", deptRankTo);
+        	tempParam.put("deptRankTo", deptRankTo); 
         	tempParam.put("teMngMokCdFr", teMngMokCdFr);
         	tempParam.put("teMngMokCdTo", teMngMokCdTo);
         	tempParam.put("frscFgCdFr", frscFgCdFr);
         	tempParam.put("frscFgCdTo", frscFgCdTo);
         	tempParam.put("userId", jsonParam.get("userId"));
         	
+        	budgetCommDAO.updateDgrcompoSrchVal(tempParam);
+        	
         	Map existDataMap = getExistDataMap(tempParam);
         	Map tempKeyMap = null;
             String reportKeyString = getReportKeyString(tempParam);
+            
+            //System.out.println("@@@@ reportKeyString : " + reportKeyString);
+            //System.out.println("@@@@ existDataMap : " + existDataMap);
         	tempKeyMap = (Map) existDataMap.remove(reportKeyString);
             if (tempKeyMap == null) {
             	if(!"".equals(reportCd)){
@@ -91,13 +99,48 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             }else{
             	if(!"".equals(reportCd)){
             		reportCommDAO.updateReport(tempParam);
+            		
+            		if("Y".equals(tempParam.get("checkYn031")) == true){
+            			JSONObject tempParam030 = tempParam;
+            			tempParam030.put("reportCd", "030");
+            			tempParam030.put("reportDetlCd", "031");
+                    	reportCommDAO.updateReport(tempParam030);
+                    }
+                    
+                    if("Y".equals(tempParam.get("checkYn032")) == true){
+                    	JSONObject tempParam030 = tempParam;
+            			tempParam030.put("reportCd", "030");
+            			tempParam030.put("reportDetlCd", "032");
+                    	reportCommDAO.updateReport(tempParam030);
+                    }
+                    
+                    if("Y".equals(tempParam.get("checkYn033")) == true){
+                    	JSONObject tempParam030 = tempParam;
+            			tempParam030.put("reportCd", "030");
+            			tempParam030.put("reportDetlCd", "033");
+                    	reportCommDAO.updateReport(tempParam030);
+                    }
+                    
+                    if("Y".equals(tempParam.get("checkYn034")) == true){
+                    	JSONObject tempParam030 = tempParam;
+            			tempParam030.put("reportCd", "030");
+            			tempParam030.put("reportDetlCd", "034");
+                    	reportCommDAO.updateReport(tempParam030);
+                    }
+                    
+                    if("Y".equals(tempParam.get("checkYn035")) == true){
+                    	JSONObject tempParam030 = tempParam;
+            			tempParam030.put("reportCd", "030");
+            			tempParam030.put("reportDetlCd", "035");
+                    	reportCommDAO.updateReport(tempParam030);
+                    }
             	}
             }
             
             String indiAttr = String.valueOf(tempParam.get("indiAttr")); //변경된 보고항목
             String indiAttrOrg = String.valueOf(tempParam.get("indiAttrOrg")); //원본 보고항목
 
-            //System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   indiAttr : " + indiAttr + "      indiAttrOrg : " + indiAttrOrg);
+            
             if(!"".equals(indiAttr)){
             	String[] indiAttrArr = indiAttr.split(",");
             	String[] indiAttrOrgArr = indiAttrOrg.split(",");
@@ -109,7 +152,12 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             		if(!Arrays.asList(indiAttrOrgArr).contains(indiAttrArr[j])){
             			attrParam.put("indiAttr", indiAttrArr[j]);
                 		int cnt = reportWrite0F0DAO.selectReportAttrCnt(attrParam);
-                        
+                		int reportCdInt = Integer.parseInt(reportCd);
+                        if(reportCdInt > 100){
+                        	attrParam.put("reportTableNm", "TB_REPORT100");
+                        }else{
+                        	attrParam.put("reportTableNm", "TB_REPORT" + reportCd);
+                        }
                         if(cnt > 0){
                         	reportWrite0F0DAO.updateReportAttrSel(attrParam);
                         }else{
@@ -132,7 +180,6 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             	}*/
             	
             }else{
-            	System.out.println("delete   else");
             	JSONObject attrParam = (JSONObject) saveReportDatas.get(i);
             	attrParam.put("indiAttr", null);
             	int cnt = reportWrite0F0DAO.selectReportAttrCnt(attrParam);
@@ -178,6 +225,21 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             
         }
         
+        /**
+         * 국고보조 관련 처리
+         * 국고보조 데이터를 가져와서
+         * 031~035 체크하여 수정된게 있으면 삭제하거나 insert 한다.
+         * insert 할때는 tb_report 테이블과 tb_report030 둘다 insert한다
+         * 그외 정보 update 되는게 없다.
+         * tb_report에 030까지 들어가있어서 update가 필요
+         * checkYn031 : 현재 국고-일반이 체크가 되어있는지
+         * checkYn031Yn : 국고-일반 체크 여부가 변경된경우 (다시 체크하거나 수정되었을때)
+         * 따라서 checkYn031Yn이 Y인 경우만 구분하면 다른 국고보조로 변경하지 않으면 별다른 작업이 없다는 이야기
+         * 보고항목, 분류항목이 수정되는 경우가 반영되려면 
+         * 위에서 tb_Report update 실행시 checkYn031 ~ checkYn035까지 중에 하나라도 있으면 tb_report 업데이트만 반영
+         * 무조건 반영하기에는 reportDetlCd가 다르기 때문에 checkYn을 확인하고 Y가 있으면 update실행
+         * 
+         */
         List saveReportDatas030 = jsonParam.getJSONArray("saveReportDatas030");
 
         for (int i = 0; i < saveReportDatas030.size(); i++) {
@@ -256,7 +318,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             		reportCommDAO.deleteReport(reportCd, tempParam);
             	}
             }
-
+            
         }
         
         
@@ -393,7 +455,6 @@ System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  033  tempKeyMap : " + tempKeyMap);
             tempMap = (Map) existDatas.remove(0);
             existDataMap.put(getReportKeyString(tempMap), tempMap);
         }
-
         return existDataMap;
     }
 

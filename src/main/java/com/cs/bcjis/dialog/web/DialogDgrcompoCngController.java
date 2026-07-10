@@ -136,8 +136,11 @@ public class DialogDgrcompoCngController {
         try {
         	JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
 
-            JSONArray dgrcompo = JSONArray.fromObject(dialogDgrcompoCngService.selectDgrCompoDataList(jsonParam));
-            jsonObject.put("dataList", dgrcompo);
+        	JSONObject dgrcompo = JSONObject.fromObject(dialogDgrcompoModifyService.selectDgrcompo(jsonParam));
+        	jsonObject.put("data", dgrcompo);
+        	
+            JSONArray dgrcompoList = JSONArray.fromObject(dialogDgrcompoCngService.selectDgrCompoDataList(jsonParam));
+            jsonObject.put("dataList", dgrcompoList);
             
             jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
         } catch (Exception e) {

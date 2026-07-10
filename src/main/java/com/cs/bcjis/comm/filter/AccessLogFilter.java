@@ -59,6 +59,7 @@ public class AccessLogFilter implements Filter {
         if("/".equals(userWhere) == true 
                 || userWhere.startsWith("/comm") == true
                 || userWhere.startsWith("/login/ajaxLogin.do") == true
+                || userWhere.startsWith("/dialog/ajaxDialogPledgeExcelUpload.do") == true
                 || userWhere.startsWith("/login/logoutAction.do") == true){
             chain.doFilter(request, response);
 
@@ -90,21 +91,21 @@ public class AccessLogFilter implements Filter {
             JSONObject jsonParam = null;
             try{
                 StringBuffer sBuf = new StringBuffer();
-    
+
                 BufferedReader reader = request.getReader();
-    
+
                 char[] cBuf = new char[1024 * 8];
                 while (true) {
                     int length = reader.read(cBuf, 0, cBuf.length);
                     if (length < 0) {
                         break;
                     }
-    
+
                     sBuf.append(String.valueOf(cBuf, 0, length));
                 }
-    
+
                 jsonParam = JSONObject.fromObject(sBuf.toString().replaceAll("\n", "<BR>"));
-    
+
                 BcjisCommUtil.setJsonObjectReturnString(jsonParam);
             }catch(JSONException je){
                 jsonParam = new JSONObject();

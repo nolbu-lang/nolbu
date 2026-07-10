@@ -9,16 +9,21 @@ import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.cs.bcjis.comm.AjaxJsonView;
 import com.cs.bcjis.comm.BcjisMessageSource;
 import com.cs.bcjis.comm.BcjisUserDetailsHelper;
 import com.cs.bcjis.comm.util.BcjisCommUtil;
+import com.cs.bcjis.comm.util.BcjisStringUtil;
 import com.cs.bcjis.comm.web.BcjisUserVO;
 import com.cs.bcjis.dialog.service.DialogPledgeInfoService;
 
 import egovframework.rte.fdl.idgnr.EgovIdGnrService;
+import egovframework.rte.psl.dataaccess.util.EgovMap;
 
 @Controller
 public class DialogPledgeInfoController {
@@ -106,6 +111,48 @@ public class DialogPledgeInfoController {
             logger.debug("ajaxDialogPledgeInfoModifyUpdatePledgeInfo(ModelMap, HttpServletRequest) - end");
         }
         return ajaxModel;
+    }
+    
+    @RequestMapping("/dialog/ajaxDialogPledgeExcelUpload.do")
+    public ModelAndView ajaxDialogPledgeExcelUpload(ModelMap model, HttpServletRequest request, @RequestParam("file") MultipartFile multi) throws Exception {
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxDialogPledgeExcelUpload(ModelMap, HttpServletRequest) - start");
+    	}
+    	
+    	ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+    	JSONObject jsonObject = new JSONObject();
+    	
+    	try {
+    		
+    		BcjisUserVO bcjisUserVO = (BcjisUserVO) BcjisUserDetailsHelper.getAuthenticatedUser();
+    		//JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(multiRequest);
+    		
+    		//jsonParam.put("userId", bcjisUserVO.getUserId());
+    		
+    		//dialogPledgeInfoService.updatePledgeInfo(jsonParam);
+    		
+    		EgovMap result = dialogPledgeInfoService.excelUploadPledgeInfo(multi, bcjisUserVO);
+    		
+    		String flag = BcjisStringUtil.nullConvert(result.get("flag"));
+    		String message = BcjisStringUtil.nullConvert(result.get("message"));
+    		
+    		jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+    		//jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("success.common.save"));
+    		jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, message);
+    		jsonObject.put("flag", flag);
+    	} catch (Exception e) {
+    		logger.error("ajaxDialogPledgeExcelUpload(ModelMap, HttpServletRequest)", e);
+    		
+    		jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
+    		jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.save"));
+    	}
+    	
+    	ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+    	
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("ajaxDialogPledgeExcelUpload(ModelMap, HttpServletRequest) - end");
+    	}
+    	return ajaxModel;
     }
 
 }
