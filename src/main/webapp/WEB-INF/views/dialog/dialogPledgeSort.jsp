@@ -101,7 +101,16 @@ $(document).ready(function (){
         
         dialogPledgeSortGrid.jqGrid('setSelection',rowId);
     };
-    
+
+    dialogPledgeSortGrid.jqGrid('sortableRows', {
+        update : function() {
+            var sortedIds = dialogPledgeSortGrid.jqGrid('getDataIDs');
+            for(var i = 0; i < sortedIds.length; i++) {
+                dialogPledgeSortGrid.jqGrid('setCell', sortedIds[i], 'pledgeBizSeq', i + 1);
+            }
+        }
+    });
+
     $("#dialogPledgeSortUpBtn").click(function() {
         var selectedRowId = dialogPledgeSortGrid.jqGrid ('getGridParam', 'selrow');        
         dialogPledgeSortResort(selectedRowId, "up");
@@ -208,6 +217,7 @@ $(document).ready(function (){
   <input type="hidden" id="dialogPledgeSortUpPledgeBizId"/>
   <div class="btn">
     <div class="btnR">
+      <span style="font-size:11px;color:#888;margin-right:6px;">행을 드래그하여 순서 변경 가능</span>
       <a id="dialogPledgeSortUpBtn" class="btnClass" href="#" enabledYn="Y">위</a>
       <a id="dialogPledgeSortDownBtn" class="btnClass" href="#" enabledYn="Y">아래</a>
     </div>

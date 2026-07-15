@@ -103,7 +103,16 @@ $(document).ready(function (){
         
         dialogDgroffice010SortGrid.jqGrid('setSelection',rowId);
     };
-    
+
+    dialogDgroffice010SortGrid.jqGrid('sortableRows', {
+        update : function() {
+            var sortedIds = dialogDgroffice010SortGrid.jqGrid('getDataIDs');
+            for(var i = 0; i < sortedIds.length; i++) {
+                dialogDgroffice010SortGrid.jqGrid('setCell', sortedIds[i], 'officeRank010', i + 1);
+            }
+        }
+    });
+
     $("#dialogDgroffice010SortUpBtn").click(function() {
         var selectedRowId = dialogDgroffice010SortGrid.jqGrid ('getGridParam', 'selrow');        
         dialogDgroffice010SortResort(selectedRowId, "up");
@@ -245,6 +254,7 @@ $(document).ready(function (){
   <input type="hidden" id="dialogDgroffice010SortBgtDgr"/>
   <div class="btn">
     <div class="btnR">
+      <span style="font-size:11px;color:#888;margin-right:6px;">행을 드래그하여 순서 변경 가능</span>
       <a id="dialogDgroffice010SortUpBtn" class="btnClass" href="#" enabledYn="Y">위</a>
       <a id="dialogDgroffice010SortDownBtn" class="btnClass" href="#" enabledYn="Y">아래</a>
     </div>
