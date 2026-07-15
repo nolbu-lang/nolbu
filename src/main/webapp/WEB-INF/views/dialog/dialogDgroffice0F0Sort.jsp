@@ -18,8 +18,8 @@ $(document).ready(function (){
             colNames : dialogDgroffice0F0SortColNames,
             colModel : dialogDgroffice0F0SortColModel,
             rowNum : 1000,
-            width : 290,
-            height : 250,
+            width : "auto",
+            height : "auto",
             defaultRows: 0
     };
     
@@ -201,7 +201,7 @@ $(document).ready(function (){
         width: 310,
         height: 430,
         modal: true,
-        resizable: false,
+        resizable: true,
         open: function(event, ui){
             doDialogDgroffice0F0SortSearch();
         },

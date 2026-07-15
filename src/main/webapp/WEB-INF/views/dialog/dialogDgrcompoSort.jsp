@@ -227,7 +227,7 @@ $(document).ready(function (){
         width: 'auto',
         height: 'auto',
         modal: true,
-        resizable: false,
+        resizable: true,
         open: function(event, ui){
             doDialogDgrcompoSortSearch();
         },

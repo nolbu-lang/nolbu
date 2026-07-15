@@ -17,8 +17,8 @@ $(document).ready(function (){
             colNames : dialogPledgeSortColNames,
             colModel : dialogPledgeSortColModel,
             rowNum : 1000,
-            width : 520,
-            height : 250,
+            width : "auto",
+            height : "auto",
             defaultRows: 0
     };
     
@@ -196,7 +196,7 @@ $(document).ready(function (){
         width: 550,
         height: 430,
         modal: true,
-        resizable: false,
+        resizable: true,
         open: function(event, ui){
             dodialogPledgeSortSearch();
         },
