@@ -3,7 +3,49 @@ $(document).ready(function() {
     var tabObj = $("#"+tabId);
     var gridScrollPosition = 0;
     var searchDetl = '';
-    
+    // class: 조서·집계 항목선택 / attr: 보고항목·사전절차
+    var viewMode = (typeof _budgetSelectViewMode !== 'undefined' && _budgetSelectViewMode) ? _budgetSelectViewMode : 'class';
+    var isAttrMode = (viewMode === 'attr');
+    // 직전 취소 스냅샷 (탭 닫으면 삭제)
+    var cancelUndoSnapshot = null;
+    var undoMemoryAction = null;
+
+    if (isAttrMode) {
+        $(".viewModeClassOnly", tabObj).hide();
+        $(".viewModeAttrOnly", tabObj).show();
+    } else {
+        $(".viewModeClassOnly", tabObj).show();
+        $(".viewModeAttrOnly", tabObj).hide();
+    }
+
+    // 선택코드 문자열(쉼표/파이프)에서 코드 정확히 포함 여부 — includes() 부분일치로 전부 체크되는 문제 방지
+    var hasSelectedCode = function(cellValue, code){
+        if(isEmpty(cellValue) == true || isEmpty(code) == true){
+            return false;
+        }
+        var parts = String(cellValue).split(/[,|]/);
+        for(var i = 0; i < parts.length; i++){
+            if($.trim(parts[i]) === String(code)){
+                return true;
+            }
+        }
+        return false;
+    };
+
+    var firstCode = function(cellValue){
+        if(isEmpty(cellValue) == true){
+            return "";
+        }
+        var parts = String(cellValue).split(/[,|]/);
+        for(var i = 0; i < parts.length; i++){
+            var p = $.trim(parts[i]);
+            if(p.length > 0){
+                return p;
+            }
+        }
+        return "";
+    };
+
     var myCellattr = function (rowId, tv, rowObject, cm, rdata) {
 
     	if(rowObject.reportDetlCd != ''){
@@ -86,7 +128,7 @@ $(document).ready(function() {
         var rVal = '<div>';
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
-        	if(cellValue == data.code){
+        	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
     		}
         }
@@ -115,7 +157,7 @@ $(document).ready(function() {
     	var rVal = '<div>';
     	for(var i=0 ; i<itemList.length ; i++){
     		var data = itemList[i];
-    		if(cellValue == data.code){
+    		if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
     		}
     	}
@@ -142,14 +184,14 @@ $(document).ready(function() {
         }
     	
     	var rVal = '<div>';
-    	if(cellValue == '024' || cellValue == '025' || cellValue == '026'){
+    	if(hasSelectedCode(cellValue, '024') || hasSelectedCode(cellValue, '025') || hasSelectedCode(cellValue, '026')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">자체투자</span><br />';
-    	}else if(cellValue == '021' || cellValue == '022' || cellValue == '023'){
+    	}else if(hasSelectedCode(cellValue, '021') || hasSelectedCode(cellValue, '022') || hasSelectedCode(cellValue, '023')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">국고투자</span><br />';
     	}else{
     		for(var i=0 ; i<itemList.length ; i++){
         		var data = itemList[i];
-        		if(cellValue == data.code){
+        		if(hasSelectedCode(cellValue, data.code)){
         			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
         		}
         	}
@@ -180,7 +222,7 @@ $(document).ready(function() {
         for(var i=0 ; i<govSubList.length ; i++){
         	var data = govSubList[i];
         	
-        	if(cellValue.includes(data.code)){
+        	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
     		}
         }
@@ -192,7 +234,7 @@ $(document).ready(function() {
     
     //보고항목 그리드fomatter
     var indiAttrFormatter = function(cellValue, options, rowObject){
-    	if(isEmpty() == true){
+    	if(isEmpty(cellValue) == true){
     		cellValue = "";
     	}
     	
@@ -211,7 +253,7 @@ $(document).ready(function() {
         	var data = itemList[i];
         	var checked = '';
         	
-        	if(cellValue.includes(data.code)){
+        	if(hasSelectedCode(cellValue, data.code)){
         		checked = 'checked';
         	}
         	
@@ -242,7 +284,7 @@ $(document).ready(function() {
         	var data = itemList[i];
         	var checked = '';
         	
-        	if(cellValue.includes(data.code)){
+        	if(hasSelectedCode(cellValue, data.code)){
         		checked = 'checked';
         	}
         	
@@ -291,7 +333,7 @@ $(document).ready(function() {
         }
     };
     
-    var colNames = ['', '구분(회계-실-부서-세부-통계목)',
+    var colNames = ['', '구분(회계-실국-부서-세부사업-사업)',
                     '통계목', '대분류', '중분류', '소분류', '국고보조', 
                     '기정액', '증감액', '예산액', '증감액', '예산액', '재원정보', '선택정보', '국고보조사업(재원)', '보고항목', '사전절차',
                     
@@ -302,11 +344,11 @@ $(document).ready(function() {
                    ];
     
     var colModel = [ 
-                        {name : 'selYn', index:'selYn', width: 30, align:'center', sortable : false, fixed : true, formatter:'checkbox', editoptions:{value:'Y:N'}, formatoptions:{disabled:false}},
-                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : 300, sortable : false, fixed : true, align : 'left',
+                        {name : 'selYn', index:'selYn', width: 30, align:'center', sortable : false, fixed : true, hidden: isAttrMode, formatter:'checkbox', editoptions:{value:'Y:N'}, formatoptions:{disabled:false}},
+                        {name : 'dgrcompoNm', index : 'dgrcompoNm', width : isAttrMode ? 280 : 300, sortable : false, fixed : true, align : 'left',
                             cellattr: myCellattr
                         },
-                        {name : 'teMngMokNm', index : 'teMngMokNm', width : 100, sortable : false, fixed : true, align : 'center', cellattr: myCellattr},
+                        {name : 'teMngMokNm', index : 'teMngMokNm', width : 80, sortable : false, fixed : true, align : 'center', cellattr: myCellattr, hidden: isAttrMode},
                         {name : 'reportMstrNm', index : 'reportMstr', width : 90, sortable : false, hidden : false, fixed : true, align : 'center', cellattr: myCellattr,
                         	formatter:reportMstrFormatter
                         },
@@ -316,24 +358,24 @@ $(document).ready(function() {
                         {name : 'reportDetlCdNm', index : 'reportDetlCd', width : 90, sortable : false, hidden : false, fixed : true, align : 'center', cellattr: myCellattr,
                         	formatter:reportDetlCdFormatter
                         },
-                        {name : 'govSubNm', index : 'govSub', width : 90, sortable : false, hidden : false, fixed : true, align : 'center', cellattr: myCellattr,
+                        {name : 'govSubNm', index : 'govSub', width : 90, sortable : false, hidden : isAttrMode, fixed : true, align : 'center', cellattr: myCellattr,
                         	formatter:govSubFormatter
                         },
                         
-                        {name : 'preAmt', index : 'preAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'demandDiffAmt', index : 'demandDiffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'demandBgtAmt', index : 'demandBgtAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'diffAmt', index : 'diffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'bgtAmt', index : 'bgtAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}},
-                        {name : 'frsces', index : 'frsces', width : 200, sortable : false, fixed : true, align : 'left' },
+                        {name : 'preAmt', index : 'preAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, hidden: isAttrMode},
+                        {name : 'demandDiffAmt', index : 'demandDiffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, hidden: isAttrMode},
+                        {name : 'demandBgtAmt', index : 'demandBgtAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, hidden: isAttrMode},
+                        {name : 'diffAmt', index : 'diffAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, hidden: isAttrMode},
+                        {name : 'bgtAmt', index : 'bgtAmt', width : 80, sortable : false, fixed : true, align : 'right', formatter : 'integer', formatoptions : {thousandsSeparator : ","}, hidden: isAttrMode},
+                        {name : 'frsces', index : 'frsces', width : 200, sortable : false, fixed : true, align : 'left', hidden: true },
                         {name : 'selNames', index : 'selNames', width : 200, sortable : false, hidden : true, fixed : true, align : 'left'},
                         {name : 'report030FgView', index : 'report030FgView', width : 200, sortable : false, hidden : true, fixed : true, align : 'left', cellattr: myCellattr,
                             formatter:report030FgFormatter
                         },
-                        {name : 'indiAttr', index : 'indiAttr', width : 80, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        {name : 'indiAttr', index : 'indiAttr', width : 120, sortable : false, hidden : !isAttrMode, fixed : true, align : 'left', cellattr: myCellattr,
                         	formatter:indiAttrFormatter
                         },
-                        {name : 'advncProc', index : 'advncProc', width : 300, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
+                        {name : 'advncProc', index : 'advncProc', width : 360, sortable : false, hidden : !isAttrMode, fixed : true, align : 'left', cellattr: myCellattr,
                         	formatter:advncProcFgFormatter
                         },
                         
@@ -347,11 +389,11 @@ $(document).ready(function() {
                         {name : 'existYn', index : 'existYn', width : 0, sortable : false, hidden : true},
                         {name : 'sel010Yn', index : 'sel010Yn', width : 0, sortable : false, hidden : true},
                         {name : 'sel020Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
-                        {name : 'sel040Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
-                        {name : 'sel050Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
-                        {name : 'sel055Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
-                        {name : 'sel060Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
-                        {name : 'sel090Yn', index : 'sel020Yn', width : 0, sortable : false, hidden : true},
+                        {name : 'sel040Yn', index : 'sel040Yn', width : 0, sortable : false, hidden : true},
+                        {name : 'sel050Yn', index : 'sel050Yn', width : 0, sortable : false, hidden : true},
+                        {name : 'sel055Yn', index : 'sel055Yn', width : 0, sortable : false, hidden : true},
+                        {name : 'sel060Yn', index : 'sel060Yn', width : 0, sortable : false, hidden : true},
+                        {name : 'sel090Yn', index : 'sel090Yn', width : 0, sortable : false, hidden : true},
                         {name : 'checkYn031', index : 'checkYn031', width : 0, sortable : false, hidden : true},
                         {name : 'checkYn032', index : 'checkYn032', width : 0, sortable : false, hidden : true},
                         {name : 'checkYn033', index : 'checkYn033', width : 0, sortable : false, hidden : true},
@@ -361,7 +403,7 @@ $(document).ready(function() {
                         {name : 'reportDetlCd', index : 'reportDetlCd', width : 0, sortable : false, hidden : true},
                         {name : 'govSub', index : 'govSub', width : 0, sortable : false, hidden : true},
                         {name : 'changeFlag', index : 'changeFlag', width : 0, sortable : false, hidden : true},
-                        {name : 'indiAttr', index : 'indiAttrOrg', width : 0, sortable : false, hidden : true},
+                        {name : 'indiAttrOrg', index : 'indiAttrOrg', width : 0, sortable : false, hidden : true},
                     ];
     
     //그리드 높이 가져오기
@@ -466,7 +508,11 @@ $(document).ready(function() {
 
         budgetSelectGrid.jqGrid('setGroupHeaders', {	//상단명 설정
             useColSpanStyle : true,
-            groupHeaders : [
+            groupHeaders : isAttrMode ? [
+               {startColumnName : 'dgrcompoNm', numberOfColumns : 1, titleText : '사업'}, 
+               {startColumnName : 'reportMstrNm', numberOfColumns : 3, titleText : '분류(참고)'}, 
+               {startColumnName : 'indiAttr', numberOfColumns : 2, titleText : '보고항목·사전절차'} 
+            ] : [
                {startColumnName : 'selYn', numberOfColumns : 2, titleText : '구분'}, 
                {startColumnName : 'reportMstrNm', numberOfColumns : 3, titleText : '분류'}, 
                {startColumnName : 'demandDiffAmt',numberOfColumns : 2, titleText : '요구'},
@@ -477,9 +523,15 @@ $(document).ready(function() {
         $("#BUDGET_SELECT_NEW_GRD", tabObj).closest(".ui-jqgrid-bdiv").scrollTop(gridScrollPosition);
         
         $("#saveBtn", $("#"+tabId)).btnChangeState(true);			//저장버튼 활성화
-        $("#selectAllBtn", $("#"+tabId)).btnChangeState(true);		//전체선택 버튼 활성화
-        $("#unSelectAllBtn", $("#"+tabId)).btnChangeState(true);	//전체해제 버튼 활성화
-        $("#saveAllBtn", $("#"+tabId)).btnChangeState(true);		//일괄적용 버튼 활성화
+        if (!isAttrMode) {
+            $("#selectAllBtn", $("#"+tabId)).btnChangeState(true);		//전체선택 버튼 활성화
+            $("#unSelectAllBtn", $("#"+tabId)).btnChangeState(true);	//전체해제 버튼 활성화
+            $("#saveAllBtn", $("#"+tabId)).btnChangeState(true);		//일괄적용 버튼 활성화
+            $("#cancelClassBtn", $("#"+tabId)).btnChangeState(true);	//분류취소 버튼 활성화
+            if(cancelUndoSnapshot && cancelUndoSnapshot.items && cancelUndoSnapshot.items.length > 0){
+                showUndoCancelBtn();
+            }
+        }
 
         //$('#jqgh_BUDGET_SELECT_NEW_GRD_indiAttr').css('color', '#f26c4f'); //보고항목
         //$('#jqgh_BUDGET_SELECT_NEW_GRD_advncProc').css('color', '#f26c4f'); //사전절차
@@ -616,7 +668,8 @@ $(document).ready(function() {
                    condAmtFr : condAmtFr,
                    condAmtTo : condAmtTo,
                    amtUnit : amtUnit,
-                   orderYmdSeq : orderYmdSeq
+                   orderYmdSeq : orderYmdSeq,
+                   viewMode : viewMode
             },
             async : true,
             callBack : doSearchCallBack
@@ -773,6 +826,7 @@ $(document).ready(function() {
 		           condAmtFr : condAmtFr,
 		           condAmtTo : condAmtTo,
 		           amtUnit : amtUnit,
+		           viewMode : viewMode,
 		           orderYmdSeq : orderYmdSeq,
 		           fileNm : "예산심사조서_집계표항목"
 		    }
@@ -964,13 +1018,18 @@ $(document).ready(function() {
                 selectedData["checkYn033"] = $('#checkYn033_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
                 selectedData["checkYn034"] = $('#checkYn034_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
                 selectedData["checkYn035"] = $('#checkYn035_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
-                selectedData["reportMstr"] = rowData.reportMstr;
-                selectedData["reportCd"] = rowData.reportCd;
-                selectedData["reportDetlCd"] = rowData.reportDetlCd;
-                selectedData["govSub"] = rowData.govSub;
-                selectedData["indiAttrOrg"] = rowData.indiAttr;
-                selectedData["indiAttr"] = getIndiAttrCheckVal(rowData.dgrcompoId);
-                selectedData["advncProc"] = getAdvncProcCheckVal(rowData.dgrcompoId);
+                selectedData["reportMstr"] = firstCode(rowData.reportMstr);
+                selectedData["reportCd"] = firstCode(rowData.reportCd);
+                selectedData["reportDetlCd"] = firstCode(rowData.reportDetlCd);
+                selectedData["govSub"] = firstCode(rowData.govSub);
+                if (isAttrMode) {
+                    selectedData["indiAttrOrg"] = rowData.indiAttrOrg;
+                    selectedData["indiAttr"] = getIndiAttrCheckVal(rowData.dgrcompoId);
+                    selectedData["advncProc"] = getAdvncProcCheckVal(rowData.dgrcompoId);
+                } else {
+                    // 분류 저장 시 보고항목·사전절차 삭제/변경 방지
+                    selectedData["indiAttrSkip"] = "Y";
+                }
                 
                 
                 selectedDatas.push(selectedData);
@@ -1081,37 +1140,81 @@ $(document).ready(function() {
     	return rtnData;
     }
     
+    // 취소 직전 분류 스냅샷 (탭 닫으면 삭제) — 상단 cancelUndoSnapshot / undoMemoryAction 사용
+
+    var clearCancelUndoMemory = function(){
+        cancelUndoSnapshot = null;
+        $("#undoCancelClassBtn", tabObj).hide();
+        try{ $("#undoCancelClassBtn", tabObj).btnChangeState(false); }catch(e){}
+    };
+
+    var showUndoCancelBtn = function(){
+        $("#undoCancelClassBtn", tabObj).show();
+        $("#undoCancelClassBtn", tabObj).btnChangeState(true);
+    };
+
+    bcjisCommMainObj["tabClose_"+tabId] = function(){
+        clearCancelUndoMemory();
+    };
+
+    // 분류 모드: 저장 후 전체 재조회 없이 로컬 상태만 정리 (적용/취소/되돌리기 체감 속도)
+    var clearChangeFlagsAfterClassSave = function(){
+        var gridRows = $("#BUDGET_SELECT_NEW_GRD", tabObj)[0].rows;
+        for(var i = 0; i < gridRows.length; i++){
+            var rowId = gridRows[i].id;
+            var rowData = budgetSelectGrid.getRowData(rowId);
+            if(rowData.teBgtCompoId == "00000000000" || rowData.changeFlag != "Y"){
+                continue;
+            }
+            var check031 = $('#checkYn031_'+rowId, tabObj).is(':checked') ? "Y" : "N";
+            var check032 = $('#checkYn032_'+rowId, tabObj).is(':checked') ? "Y" : "N";
+            var check033 = $('#checkYn033_'+rowId, tabObj).is(':checked') ? "Y" : "N";
+            var check034 = $('#checkYn034_'+rowId, tabObj).is(':checked') ? "Y" : "N";
+            var check035 = $('#checkYn035_'+rowId, tabObj).is(':checked') ? "Y" : "N";
+            budgetSelectGrid.jqGrid("setCell", rowId, "checkYn031", check031);
+            budgetSelectGrid.jqGrid("setCell", rowId, "checkYn032", check032);
+            budgetSelectGrid.jqGrid("setCell", rowId, "checkYn033", check033);
+            budgetSelectGrid.jqGrid("setCell", rowId, "checkYn034", check034);
+            budgetSelectGrid.jqGrid("setCell", rowId, "checkYn035", check035);
+            budgetSelectGrid.jqGrid("setCell", rowId, "changeFlag", "N");
+        }
+    };
+
     //저장 callback
     var doSaveCallBack = function(data){
         if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
             $.csAlert({
                 msg : data.bcjisMessage
             });
-            
+            undoMemoryAction = null;
             return;
         }
         
         $.csAlert({
             msg : data.bcjisMessage,
             callBack : function() {
-                doSearch();
+                if(undoMemoryAction === "clear"){
+                    clearCancelUndoMemory();
+                }else if(undoMemoryAction === "keep"){
+                    showUndoCancelBtn();
+                }
+                undoMemoryAction = null;
+                // 보고항목 모드는 체크박스 HTML이 서버 데이터에 의존 → 재조회 유지
+                // 분류 모드는 그리드에 이미 반영됨 → 전체 트리 재조회 생략
+                if(isAttrMode){
+                    doSearch();
+                }else{
+                    clearChangeFlagsAfterClassSave();
+                }
             }
         });
     };
     
     //저장 실행
     var doSave = function(params){
-        if(params.confirmData != "Y"){
+        if(params && params.confirmData != "Y"){
             return;
         }
-        
-        /*if(isEmpty(saveReportParam) == true || isEmpty(saveReportParam.reportCd) == true || isEmpty(saveReportParam.reportDetlCd) == true){
-            $.csAlert({
-                msg : "조서구분 정보가 존재하지 않습니다."
-            });
-            
-            return;
-        }*/
         
         var selectedDatas = getSelectedData(budgetSelectGrid, $("#BUDGET_SELECT_NEW_GRD", tabObj)[0].rows);
         
@@ -1122,7 +1225,6 @@ $(document).ready(function() {
         	
         	return;
         }
-        var temp = [];
         
         saveReportParam["saveReportDatas"] = selectedDatas;
         saveReportParam["saveReportDatas030"] = getSelectedData030(budgetSelectGrid, $("#BUDGET_SELECT_NEW_GRD", tabObj)[0].rows);
@@ -1134,24 +1236,27 @@ $(document).ready(function() {
             callBack : doSaveCallBack
         });
     };
+
+    var runSaveWithConfirm = function(confirmMsg, memoryAction){
+        if(checkCloseYn(saveReportParam) == false){
+            return;
+        }
+        undoMemoryAction = memoryAction || "clear";
+        $.csConfirm({
+            msg : confirmMsg,
+            callBack : doSave
+        });
+    };
     
-    //저장버튼 클릭
+    //저장버튼 클릭 (보고항목·사전절차 모드 전용)
     $("#saveBtn", tabObj).click(function() {
         if($(this).attr("enabledYn") != "Y"){
             return;
         }
-
-        if(checkCloseYn(saveReportParam) == false){
-            return;
-        }
-        
-        $.csConfirm({
-            msg : "변경된 자료만 저장됩니다.<br>저장하시겠습니까?",
-            callBack : doSave
-        });
+        runSaveWithConfirm("변경된 자료만 저장됩니다.<br>저장하시겠습니까?", "clear");
     });
     
-    //일괄적용 버튼 클릭
+    //일괄적용 버튼 클릭 → 적용 후 바로 저장
     $("#saveAllBtn", tabObj).click(function() {
         if($(this).attr("enabledYn") != "Y"){
             return;
@@ -1254,13 +1359,147 @@ $(document).ready(function() {
             	
             }
         }
-        
-        
-        $.csAlert({
-        	msg : "적용되었습니다."
+
+        // 적용과 동시에 저장 (취소 되돌리기 메모리는 해제)
+        runSaveWithConfirm("선택한 사업에 조서·집계 항목을 적용하고 저장하시겠습니까?", "clear");
+    });
+
+    // 선택 사업의 조서·집계 항목 선택 취소 → 저장 + 되돌리기 가능
+    $("#cancelClassBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+        if(isAttrMode){
+            return;
+        }
+
+        var gridRows = $("#BUDGET_SELECT_NEW_GRD", tabObj)[0].rows;
+        var targets = [];
+        for(var i = 0; i < gridRows.length; i++) {
+            var rowId = gridRows[i].id;
+            var rowData = budgetSelectGrid.getRowData(rowId);
+            if(rowData.selYn == "Y" && rowData.teBgtCompoId != "00000000000"){
+                targets.push({ rowId: rowId, rowData: rowData });
+            }
+        }
+        if(targets.length < 1){
+            $.csAlert({
+                msg : "취소할 개별사업을 선택(체크)하여 주십시오."
+            });
+            return;
+        }
+
+        $.csConfirm({
+            msg : "선택한 " + targets.length + "건 사업의 조서·집계 항목 선택을 취소하고 저장하시겠습니까?",
+            callBack : function(params){
+                if(params && params.confirmData != "Y"){
+                    return;
+                }
+                var snapItems = [];
+                for(var i = 0; i < targets.length; i++) {
+                    var rowId = targets[i].rowId;
+                    var rowData = targets[i].rowData;
+                    var dgrId = rowData.dgrcompoId;
+                    snapItems.push({
+                        teBgtCompoId : rowData.teBgtCompoId,
+                        dgrcompoId : dgrId,
+                        reportMstr : firstCode(rowData.reportMstr),
+                        reportCd : firstCode(rowData.reportCd),
+                        reportDetlCd : firstCode(rowData.reportDetlCd),
+                        govSub : firstCode(rowData.govSub),
+                        checkYn031 : $('#checkYn031_'+dgrId, tabObj).is(':checked') ? "Y" : "N",
+                        checkYn032 : $('#checkYn032_'+dgrId, tabObj).is(':checked') ? "Y" : "N",
+                        checkYn033 : $('#checkYn033_'+dgrId, tabObj).is(':checked') ? "Y" : "N",
+                        checkYn034 : $('#checkYn034_'+dgrId, tabObj).is(':checked') ? "Y" : "N",
+                        checkYn035 : $('#checkYn035_'+dgrId, tabObj).is(':checked') ? "Y" : "N"
+                    });
+                    budgetSelectGrid.jqGrid("setCell", rowId, "changeFlag", "Y");
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportMstrNm", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportMstr", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportCdNm", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportCd", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportDetlCdNm", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportDetlCd", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "govSubNm", null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "govSub", null);
+                    budgetGovSubchangeYn("", dgrId);
+                }
+                cancelUndoSnapshot = { items: snapItems };
+                if(checkCloseYn(saveReportParam) == false){
+                    return;
+                }
+                undoMemoryAction = "keep";
+                doSave({ confirmData: "Y" });
+            }
         });
-        
-        //적용 후 초기화?
+    });
+
+    // 직전 취소 되돌리기 → 저장
+    $("#undoCancelClassBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+        if(isAttrMode || !cancelUndoSnapshot || !cancelUndoSnapshot.items || cancelUndoSnapshot.items.length < 1){
+            $.csAlert({ msg : "되돌릴 취소 내역이 없습니다." });
+            return;
+        }
+
+        $.csConfirm({
+            msg : "직전 취소 " + cancelUndoSnapshot.items.length + "건을 취소 전 상태로 되돌리고 저장하시겠습니까?",
+            callBack : function(params){
+                if(params && params.confirmData != "Y"){
+                    return;
+                }
+                var gridRows = $("#BUDGET_SELECT_NEW_GRD", tabObj)[0].rows;
+                var byTeId = {};
+                for(var i = 0; i < cancelUndoSnapshot.items.length; i++){
+                    byTeId[cancelUndoSnapshot.items[i].teBgtCompoId] = cancelUndoSnapshot.items[i];
+                }
+                var restored = 0;
+                for(var i = 0; i < gridRows.length; i++){
+                    var rowId = gridRows[i].id;
+                    var rowData = budgetSelectGrid.getRowData(rowId);
+                    if(rowData.teBgtCompoId == "00000000000"){
+                        continue;
+                    }
+                    var snap = byTeId[rowData.teBgtCompoId];
+                    if(!snap){
+                        continue;
+                    }
+                    budgetSelectGrid.jqGrid("setCell", rowId, "changeFlag", "Y");
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportMstrNm", snap.reportMstr || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportMstr", snap.reportMstr || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportCdNm", snap.reportCd || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportCd", snap.reportCd || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportDetlCdNm", snap.reportDetlCd || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "reportDetlCd", snap.reportDetlCd || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "govSubNm", snap.govSub || null);
+                    budgetSelectGrid.jqGrid("setCell", rowId, "govSub", snap.govSub || null);
+                    if(isEmpty(snap.govSub) != true){
+                        budgetGovSubchangeYn(snap.govSub, rowData.dgrcompoId);
+                    }else{
+                        // 스냅샷의 국고 체크 상태 복원
+                        budgetGovSubchangeYn("", rowData.dgrcompoId);
+                        var dgrId = rowData.dgrcompoId;
+                        if(snap.checkYn031 == "Y"){ $('#checkYn031_'+dgrId, tabObj).prop('checked', true); }
+                        if(snap.checkYn032 == "Y"){ $('#checkYn032_'+dgrId, tabObj).prop('checked', true); }
+                        if(snap.checkYn033 == "Y"){ $('#checkYn033_'+dgrId, tabObj).prop('checked', true); }
+                        if(snap.checkYn034 == "Y"){ $('#checkYn034_'+dgrId, tabObj).prop('checked', true); }
+                        if(snap.checkYn035 == "Y"){ $('#checkYn035_'+dgrId, tabObj).prop('checked', true); }
+                    }
+                    restored++;
+                }
+                if(restored < 1){
+                    $.csAlert({ msg : "되돌릴 대상 사업이 현재 목록에 없습니다. 동일 조건으로 조회 후 다시 시도해 주십시오." });
+                    return;
+                }
+                if(checkCloseYn(saveReportParam) == false){
+                    return;
+                }
+                undoMemoryAction = "clear";
+                doSave({ confirmData: "Y" });
+            }
+        });
     });
     
     //국고 데이터 수정시 체크박스 수정

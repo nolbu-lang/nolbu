@@ -11,6 +11,7 @@
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetModify.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetPreCopy.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetSelect.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetSelectNew.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetSheetSelect.xml"/>
 </sqlMapConfig>
  

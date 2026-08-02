@@ -36,13 +36,378 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
     @Resource(name="reportWrite0F0DAO")
     private ReportWrite0F0DAO reportWrite0F0DAO;
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public List selectDgrCompoList(Map map) throws Exception {
         String reportCd = String.valueOf(map.get("reportCd"));
+        // 070은 기존 전용 쿼리 유지.
+        if ("070".equals(reportCd)) {
+            return budgetSelectDAO.selectDgrCompoList(reportCd, map);
+        }
 
-        return budgetSelectDAO.selectDgrCompoList(reportCd, map);
+        String viewMode = str(map.get("viewMode"));
+        List leaves;
+        if ("attr".equals(viewMode)) {
+            leaves = budgetSelectDAO.selectDgrCompoLeafListAttr(map);
+            // 보고항목·사전절차: 평면 목록
+            return buildFlatSelectRows(leaves);
+        }
+        // class — 조서·집계: lazy 트리(기본 접힘)
+        leaves = budgetSelectDAO.selectDgrCompoLeafListClass(map);
+        return buildSelectTreeFromLeaves(leaves);
     }
-    
+
+    /**
+     * 세세목 평면 행 (csTreeGrid 호환: level0 leaf).
+     * dgrcompoNm = 부서 &gt; 세부사업 &gt; 통계목 &gt; 산출근거
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private List buildFlatSelectRows(List leaves) {
+        List result = new ArrayList();
+        if (leaves == null || leaves.isEmpty()) {
+            return result;
+        }
+        for (int i = 0; i < leaves.size(); i++) {
+            Map leaf = (Map) leaves.get(i);
+            String fisYear = str(leaf.get("fisYear"));
+            String bgtDgr = pad3(leaf.get("bgtDgr"));
+            String teId = str(leaf.get("teBgtCompoId"));
+            String id = fisYear + "_" + bgtDgr + "_" + teId;
+
+            Map row = new HashMap();
+            row.put("dgrcompoId", id);
+            row.put("upDgrcompoId", null);
+            row.put("parent", null);
+            row.put("fisYear", leaf.get("fisYear"));
+            row.put("bgtDgr", leaf.get("bgtDgr"));
+            row.put("teBgtCompoId", teId);
+            row.put("dgrLevel", Integer.valueOf(0));
+            row.put("level", Integer.valueOf(0));
+            row.put("teBgtCompoSeq", leaf.get("teBgtCompoSeq"));
+            String pathNm = str(leaf.get("pathNm"));
+            if (pathNm.length() < 1) {
+                pathNm = str(leaf.get("compGround"));
+            }
+            row.put("dgrcompoNm", pathNm);
+            row.put("teMngMokNm", leaf.get("teMngMokNm"));
+            row.put("demandBgtAmt", leaf.get("demandBgtAmt"));
+            row.put("demandDiffAmt", leaf.get("demandDiffAmt"));
+            row.put("bgtAmt", leaf.get("bgtAmt"));
+            row.put("preAmt", leaf.get("preAmt"));
+            row.put("diffAmt", leaf.get("diffAmt"));
+            row.put("frsces", leaf.get("frsces"));
+            String reportMstr = str(leaf.get("reportMstr"));
+            String reportCdVal = str(leaf.get("reportCd"));
+            String reportDetlCd = str(leaf.get("reportDetlCd"));
+            String govSub = str(leaf.get("govSub"));
+            String indiAttr = normalizeMultiCode(str(leaf.get("indiAttr")));
+            String advncProc = normalizeMultiCode(str(leaf.get("advncProc")));
+            row.put("reportMstr", reportMstr);
+            row.put("reportMstrNm", reportMstr);
+            row.put("reportCd", reportCdVal);
+            row.put("reportCdNm", reportCdVal);
+            row.put("reportDetlCd", reportDetlCd);
+            row.put("reportDetlCdNm", reportDetlCd);
+            row.put("govSub", govSub);
+            row.put("govSubNm", govSub);
+            row.put("indiAttr", indiAttr);
+            row.put("indiAttrOrg", indiAttr);
+            row.put("advncProc", advncProc);
+            row.put("selYn", nvlYn(leaf.get("selYn")));
+            row.put("selSheetYn", nvlYn(leaf.get("selSheetYn")));
+            row.put("sel010Yn", nvlYn(leaf.get("sel010Yn")));
+            row.put("sel020Yn", nvlYn(leaf.get("sel020Yn")));
+            row.put("sel030Yn", nvlYn(leaf.get("sel030Yn")));
+            row.put("sel040Yn", nvlYn(leaf.get("sel040Yn")));
+            row.put("sel050Yn", nvlYn(leaf.get("sel050Yn")));
+            row.put("sel055Yn", nvlYn(leaf.get("sel055Yn")));
+            row.put("sel060Yn", nvlYn(leaf.get("sel060Yn")));
+            row.put("sel090Yn", nvlYn(leaf.get("sel090Yn")));
+            row.put("seletcYn", nvlYn(leaf.get("seletcYn")));
+            row.put("checkYn031", nvlYn(leaf.get("checkYn031")));
+            row.put("checkYn032", nvlYn(leaf.get("checkYn032")));
+            row.put("checkYn033", nvlYn(leaf.get("checkYn033")));
+            row.put("checkYn034", nvlYn(leaf.get("checkYn034")));
+            row.put("checkYn035", nvlYn(leaf.get("checkYn035")));
+            row.put("checkYnTf1", nvlYn(leaf.get("checkYnTf1")));
+            row.put("report030FgView", "");
+            row.put("selNames", "");
+            row.put("existYn", "");
+            row.put("changeFlag", "");
+            row.put("isLeaf", "true");
+            row.put("expanded", "true");
+            row.put("loaded", "true");
+            result.add(row);
+        }
+        return result;
+    }
+
+    /**
+     * 세세목 평면 목록 → csTreeGrid 호환 트리(회계-실국-부서-세부사업-세세목).
+     * 부모는 기본 펼침(expanded=true) — 전체 하위까지 펼침.
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private List buildSelectTreeFromLeaves(List leaves) {
+        List result = new ArrayList();
+        if (leaves == null || leaves.isEmpty()) {
+            return result;
+        }
+
+        java.util.LinkedHashMap parentMap = new java.util.LinkedHashMap();
+
+        for (int i = 0; i < leaves.size(); i++) {
+            Map leaf = (Map) leaves.get(i);
+            String fisYear = str(leaf.get("fisYear"));
+            String bgtDgr = pad3(leaf.get("bgtDgr"));
+            String fisFgCd = str(leaf.get("fisFgCd"));
+            String officeCd = str(leaf.get("officeCd"));
+            String deptCd = str(leaf.get("deptCd"));
+            String dbizCd = str(leaf.get("dbizCd"));
+            String teId = str(leaf.get("teBgtCompoId"));
+
+            String id0 = fisYear + "_" + bgtDgr + "_" + fisFgCd + "_0000_0000000_0000000000000000_00000000000";
+            String id1 = fisYear + "_" + bgtDgr + "_" + fisFgCd + "_" + officeCd + "_0000000_0000000000000000_00000000000";
+            String id2 = fisYear + "_" + bgtDgr + "_" + fisFgCd + "_" + officeCd + "_" + deptCd + "_0000000000000000_00000000000";
+            String id3 = fisYear + "_" + bgtDgr + "_" + fisFgCd + "_" + officeCd + "_" + deptCd + "_" + dbizCd + "_00000000000";
+            String id4 = fisYear + "_" + bgtDgr + "_" + fisFgCd + "_" + officeCd + "_" + deptCd + "_" + dbizCd + "_" + teId;
+
+            ensureParent(parentMap, result, id0, null, 0, fisYear, leaf.get("bgtDgr"),
+                    str(leaf.get("fisFgNm")), leaf);
+            ensureParent(parentMap, result, id1, id0, 1, fisYear, leaf.get("bgtDgr"),
+                    str(leaf.get("officeNm")), leaf);
+            ensureParent(parentMap, result, id2, id1, 2, fisYear, leaf.get("bgtDgr"),
+                    str(leaf.get("deptNm")), leaf);
+            ensureParent(parentMap, result, id3, id2, 3, fisYear, leaf.get("bgtDgr"),
+                    str(leaf.get("dbizNm")), leaf);
+
+            addAmt(parentMap, id0, leaf);
+            addAmt(parentMap, id1, leaf);
+            addAmt(parentMap, id2, leaf);
+            addAmt(parentMap, id3, leaf);
+
+            Map row = new HashMap();
+            row.put("dgrcompoId", id4);
+            row.put("upDgrcompoId", id3);
+            row.put("parent", id3);
+            row.put("fisYear", leaf.get("fisYear"));
+            row.put("bgtDgr", leaf.get("bgtDgr"));
+            row.put("teBgtCompoId", teId);
+            row.put("dgrLevel", Integer.valueOf(4));
+            row.put("level", Integer.valueOf(4));
+            row.put("teBgtCompoSeq", leaf.get("teBgtCompoSeq"));
+            row.put("dgrcompoNm", str(leaf.get("compGround")));
+            // 통계목 코드만 표시(통계목명 제외)
+            row.put("teMngMokNm", formatTeMngMokCd(leaf.get("teMngMokCd"), leaf.get("teMngMokNm")));
+            row.put("demandBgtAmt", leaf.get("demandBgtAmt"));
+            row.put("demandDiffAmt", leaf.get("demandDiffAmt"));
+            row.put("bgtAmt", leaf.get("bgtAmt"));
+            row.put("preAmt", leaf.get("preAmt"));
+            row.put("diffAmt", leaf.get("diffAmt"));
+            row.put("frsces", leaf.get("frsces"));
+            String reportMstr = str(leaf.get("reportMstr"));
+            String reportCdVal = str(leaf.get("reportCd"));
+            String reportDetlCd = str(leaf.get("reportDetlCd"));
+            String govSub = str(leaf.get("govSub"));
+            String indiAttr = normalizeMultiCode(str(leaf.get("indiAttr")));
+            String advncProc = normalizeMultiCode(str(leaf.get("advncProc")));
+            row.put("reportMstr", reportMstr);
+            row.put("reportMstrNm", reportMstr);
+            row.put("reportCd", reportCdVal);
+            row.put("reportCdNm", reportCdVal);
+            row.put("reportDetlCd", reportDetlCd);
+            row.put("reportDetlCdNm", reportDetlCd);
+            row.put("govSub", govSub);
+            row.put("govSubNm", govSub);
+            row.put("indiAttr", indiAttr);
+            row.put("indiAttrOrg", indiAttr);
+            row.put("advncProc", advncProc);
+            row.put("selYn", nvlYn(leaf.get("selYn")));
+            row.put("selSheetYn", nvlYn(leaf.get("selSheetYn")));
+            row.put("sel010Yn", nvlYn(leaf.get("sel010Yn")));
+            row.put("sel020Yn", nvlYn(leaf.get("sel020Yn")));
+            row.put("sel030Yn", nvlYn(leaf.get("sel030Yn")));
+            row.put("sel040Yn", nvlYn(leaf.get("sel040Yn")));
+            row.put("sel050Yn", nvlYn(leaf.get("sel050Yn")));
+            row.put("sel055Yn", nvlYn(leaf.get("sel055Yn")));
+            row.put("sel060Yn", nvlYn(leaf.get("sel060Yn")));
+            row.put("sel090Yn", nvlYn(leaf.get("sel090Yn")));
+            row.put("seletcYn", nvlYn(leaf.get("seletcYn")));
+            row.put("checkYn031", nvlYn(leaf.get("checkYn031")));
+            row.put("checkYn032", nvlYn(leaf.get("checkYn032")));
+            row.put("checkYn033", nvlYn(leaf.get("checkYn033")));
+            row.put("checkYn034", nvlYn(leaf.get("checkYn034")));
+            row.put("checkYn035", nvlYn(leaf.get("checkYn035")));
+            row.put("checkYnTf1", nvlYn(leaf.get("checkYnTf1")));
+            row.put("report030FgView", "");
+            row.put("selNames", buildSelNames(leaf));
+            row.put("existYn", "");
+            row.put("changeFlag", "");
+            row.put("isLeaf", "true");
+            row.put("expanded", "true");
+            row.put("loaded", "true");
+            result.add(row);
+        }
+
+        return result;
+    }
+
+    /** 통계목 코드(XXX-XX)만 반환. 통계목명 제거. */
+    private String formatTeMngMokCd(Object teMngMokCd, Object teMngMokNm) {
+        String cd = str(teMngMokCd);
+        if (cd.length() >= 5 && !"00000".equals(cd)) {
+            return cd.substring(0, 3) + "-" + cd.substring(3);
+        }
+        // SQL에서 이미 '100-01 명칭' 형태면 코드만 추출
+        String nm = str(teMngMokNm);
+        if (nm.length() >= 6 && nm.charAt(3) == '-') {
+            int sp = nm.indexOf(' ');
+            return sp > 0 ? nm.substring(0, sp) : nm.substring(0, 6);
+        }
+        return nm;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void ensureParent(java.util.LinkedHashMap parentMap, List result,
+            String id, String upId, int level, String fisYear, Object bgtDgr,
+            String nm, Map leafSample) {
+        if (parentMap.containsKey(id)) {
+            return;
+        }
+        Map row = new HashMap();
+        row.put("dgrcompoId", id);
+        row.put("upDgrcompoId", upId);
+        row.put("parent", upId);
+        row.put("fisYear", fisYear);
+        row.put("bgtDgr", bgtDgr);
+        row.put("teBgtCompoId", "00000000000");
+        row.put("dgrLevel", Integer.valueOf(level));
+        row.put("level", Integer.valueOf(level));
+        row.put("teBgtCompoSeq", Integer.valueOf(0));
+        row.put("dgrcompoNm", nm);
+        row.put("teMngMokNm", "");
+        row.put("demandBgtAmt", Long.valueOf(0));
+        row.put("demandDiffAmt", Long.valueOf(0));
+        row.put("bgtAmt", Long.valueOf(0));
+        row.put("preAmt", Long.valueOf(0));
+        row.put("diffAmt", Long.valueOf(0));
+        row.put("frsces", "");
+        row.put("reportMstr", "");
+        row.put("reportCd", "");
+        row.put("reportDetlCd", "");
+        row.put("govSub", "");
+        row.put("indiAttr", "");
+        row.put("advncProc", "");
+        row.put("selYn", "N");
+        row.put("selSheetYn", "N");
+        row.put("sel010Yn", "N");
+        row.put("sel020Yn", "N");
+        row.put("sel030Yn", "N");
+        row.put("sel040Yn", "N");
+        row.put("sel050Yn", "N");
+        row.put("sel055Yn", "N");
+        row.put("sel060Yn", "N");
+        row.put("sel090Yn", "N");
+        row.put("seletcYn", "N");
+        row.put("checkYn031", "N");
+        row.put("checkYn032", "N");
+        row.put("checkYn033", "N");
+        row.put("checkYn034", "N");
+        row.put("checkYn035", "N");
+        row.put("checkYnTf1", "N");
+        row.put("report030FgView", "");
+        row.put("selNames", "");
+        row.put("existYn", "");
+        row.put("changeFlag", "");
+        row.put("isLeaf", "false");
+        row.put("expanded", "true");
+        row.put("loaded", "true");
+        // 부서코드(체크박스 트리용)
+        if (level >= 2) {
+            row.put("deptCd", leafSample.get("deptCd"));
+        }
+        parentMap.put(id, row);
+        result.add(row);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void addAmt(java.util.LinkedHashMap parentMap, String id, Map leaf) {
+        Map parent = (Map) parentMap.get(id);
+        if (parent == null) {
+            return;
+        }
+        parent.put("demandBgtAmt", Long.valueOf(toLong(parent.get("demandBgtAmt")) + toLong(leaf.get("demandBgtAmt"))));
+        parent.put("demandDiffAmt", Long.valueOf(toLong(parent.get("demandDiffAmt")) + toLong(leaf.get("demandDiffAmt"))));
+        parent.put("bgtAmt", Long.valueOf(toLong(parent.get("bgtAmt")) + toLong(leaf.get("bgtAmt"))));
+        parent.put("preAmt", Long.valueOf(toLong(parent.get("preAmt")) + toLong(leaf.get("preAmt"))));
+        parent.put("diffAmt", Long.valueOf(toLong(parent.get("diffAmt")) + toLong(leaf.get("diffAmt"))));
+    }
+
+    private String buildSelNames(Map leaf) {
+        String reportNames = str(leaf.get("reportNames"));
+        String sheetNames = str(leaf.get("sheetNames"));
+        if (reportNames.length() < 1) {
+            return sheetNames;
+        }
+        if (sheetNames.length() < 1) {
+            return reportNames;
+        }
+        return reportNames + ", " + sheetNames;
+    }
+
+    private String str(Object o) {
+        return o == null ? "" : String.valueOf(o).trim();
+    }
+
+    /** 빈 토큰 제거 후 | 로 재결합 (''|A||B → A|B) */
+    private String normalizeMultiCode(String raw) {
+        if (raw == null || raw.length() < 1) {
+            return "";
+        }
+        String[] parts = raw.split("[,|]");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            String p = parts[i] == null ? "" : parts[i].trim();
+            if (p.length() < 1) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append("|");
+            }
+            sb.append(p);
+        }
+        return sb.toString();
+    }
+
+    private String nvlYn(Object o) {
+        String s = str(o);
+        return s.length() < 1 ? "N" : s;
+    }
+
+    private String pad3(Object o) {
+        try {
+            int v = Integer.parseInt(str(o));
+            if (v < 0) {
+                v = 0;
+            }
+            return String.format("%03d", Integer.valueOf(v));
+        } catch (Exception e) {
+            return "000";
+        }
+    }
+
+    private long toLong(Object o) {
+        if (o == null) {
+            return 0L;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(o).replace(",", ""));
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
     private Map<String, String> reportCdToSheetCd = new HashMap<String, String>();
     private Map<String, String> reportDetlCdToSheetDetlCd = new HashMap<String, String>();
 
@@ -83,6 +448,13 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         	Map existDataMap = getExistDataMap(tempParam);
         	Map tempKeyMap = null;
             String reportKeyString = getReportKeyString(tempParam);
+
+            // 분류 취소(reportCd 비움): 기존 조서·집계 항목 삭제
+            if (reportCd == null || "".equals(reportCd) || "null".equals(reportCd)) {
+                deleteReport(existDataMap);
+                continue;
+            }
+
         	tempKeyMap = (Map) existDataMap.remove(reportKeyString);
             if (tempKeyMap == null) {
             	if(!"".equals(reportCd)){
@@ -96,9 +468,11 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             
             String indiAttr = String.valueOf(tempParam.get("indiAttr")); //변경된 보고항목
             String indiAttrOrg = String.valueOf(tempParam.get("indiAttrOrg")); //원본 보고항목
+            String indiAttrSkip = String.valueOf(tempParam.get("indiAttrSkip"));
 
             //System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   indiAttr : " + indiAttr + "      indiAttrOrg : " + indiAttrOrg);
-            if(!"".equals(indiAttr)){
+            if (!"Y".equals(indiAttrSkip)) {
+            if(!"".equals(indiAttr) && !"null".equals(indiAttr)){
             	String[] indiAttrArr = indiAttr.split(",");
             	String[] indiAttrOrgArr = indiAttrOrg.split(",");
             	JSONObject attrParam = (JSONObject) saveReportDatas.get(i);
@@ -141,6 +515,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
                 	reportWrite0F0DAO.deleteReportAttr(attrParam);
                 }
             }
+            } // end indiAttrSkip
             
             deleteReport(existDataMap);
             
@@ -382,8 +757,8 @@ System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  033  tempKeyMap : " + tempKeyMap);
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Map getExistDataMap(Map map) throws Exception {
         Map existDataMap = new HashMap();
-        String reportCd = String.valueOf(map.get("reportCd"));
-        List existDatas = budgetSelectDAO.selectReportKeyListNew(reportCd, map);
+        // 기존 selectReportKeyListNew(다테이블 조인) 대신 TB_REPORT 단건 조회로 저장 지연 해소
+        List existDatas = budgetSelectDAO.selectReportKeyListFast(map);
         if (existDatas == null || existDatas.size() < 1) {
             return existDataMap;
         }

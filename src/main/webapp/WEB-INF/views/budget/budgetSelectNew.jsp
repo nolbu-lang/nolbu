@@ -3,11 +3,16 @@
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%
     String tabId = BcjisCommUtil.getStringParameter(request, "tabId", "");
+    String viewMode = (String) request.getAttribute("viewMode");
+    if (viewMode == null || "".equals(viewMode)) {
+        viewMode = BcjisCommUtil.getStringParameter(request, "viewMode", "class");
+    }
 %>
 <script>
 _budgetSelectTabId = "<%=tabId%>";
+_budgetSelectViewMode = "<%=viewMode%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/budget/budgetSelectNew.js"></script>
+<script src="${pageContext.request.contextPath}/js/budget/budgetSelectNew.js?v=20260802f"></script>
 
 <div class="contents" style="height:100%;">
   <!--list s-->
@@ -124,14 +129,14 @@ _budgetSelectTabId = "<%=tabId%>";
               		<!-- ※ 00원이상 (최소만 입력) | 00원 이하 (최대만 입력) -->
               		<!-- <br />※ (최소만 입력) => (최소값만 입력) / (최대만 입력) => (최대값만 입력) -->
               	</td>
-              	<th>
+              	<th class="viewModeAttrOnly">
               		사전절차
               	</th>
-              	<td>
+              	<td class="viewModeAttrOnly">
               		<select id="condAdvncProc" name="condAdvncProc" title="사전절차" style="width:90%;">
 					</select>
               	</td>
-              	<td colspan="2" style="text-align:right;">
+              	<td colspan="2" style="text-align:right;" class="viewModeAttrOnly">
               		<a id="indiAttrBtn" class="btnClass btn_system" style="background-color: #f26c4f;border:#f26c4f;" href="#">보고항목</a>
               		<a id="advncProcBtn" class="btnClass btn_system" style="background-color: #f26c4f;border:#f26c4f;" href="#">사전절차</a>
               	</td>
@@ -221,7 +226,7 @@ _budgetSelectTabId = "<%=tabId%>";
     </div>
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;">
       <div class="btn">
-        <div class="btnL" style="width:95%;">
+        <div class="btnL viewModeClassOnly" style="width:95%;">
           	<a id="selectAllBtn" class="btnDisabledClass" href="#" enabledYn="N" style="background:#a6a6a5;border:#a6a6a5;">전체선택</a>
           	<a id="unSelectAllBtn" class="btnDisabledClass" href="#" enabledYn="N" style="display:none;background:#a6a6a5;border:#a6a6a5;">선택해제</a>
       	  	<select id="reportMstrSel" name="reportMstrSel" title="대분류" style="width:14%;">
@@ -234,9 +239,13 @@ _budgetSelectTabId = "<%=tabId%>";
           	</select>
           	<a id="searchDetlBtn" class="btnClass" href="#">조회</a>
           	<a id="saveAllBtn" class="btnDisabledClass" href="#" enabledYn="N">적용</a>
-			<button class="btn_classify" onclick="window.open('/popup_classify.jsp','분류표 상세보기','scrollbars=yes,resizable=yes,width=880,height=600,left=0,top=0');">도움말</button>
+          	<a id="cancelClassBtn" class="btnDisabledClass" href="#" enabledYn="N">취소</a>
+          	<a id="undoCancelClassBtn" class="btnDisabledClass" href="#" enabledYn="N" style="display:none;">취소 되돌리기</a>
         </div>
-        <div class="btnR">
+        <div class="btnL viewModeAttrOnly" style="width:70%;display:none;">
+          	<span style="line-height:28px;color:#555;">※ 분류가 지정된 사업만 표시됩니다. 보고항목·사전절차를 선택 후 저장하세요.</span>
+        </div>
+        <div class="btnR viewModeAttrOnly" style="display:none;">
           <a id="saveBtn" class="btnDisabledClass" href="#" enabledYn="N">저장</a>
         </div>
       </div>
