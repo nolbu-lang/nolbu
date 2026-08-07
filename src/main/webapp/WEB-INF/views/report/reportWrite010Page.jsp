@@ -7,7 +7,7 @@
 <script>
 _reportWrite010PageTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite010Page.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite010Page.js?v=20260804k"></script>
 <style>
 .ui-jqgrid .ui-jqgrid-htable th div {
     height:auto;
@@ -135,6 +135,9 @@ _reportWrite010PageTabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <input type="hidden" id="bizDescOfficeCd" value=""/>
+          <input type="hidden" id="bizDescOfficeNm" value=""/>
+          <a id="bizDescFileBtn" class="btnDisabledClass" href="#" enabledYn="N">사업설명서불러오기</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
           <a id="saveFileTotalBtn" class="btnClass" href="#">통합파일저장</a>
           <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a>

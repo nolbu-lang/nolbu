@@ -7,7 +7,7 @@
 <script>
 _reportWrite020PageTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite020Page.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite020Page.js?v=20260804k"></script>
 <style>
 .ui-jqgrid .ui-jqgrid-htable th div {
     height:auto;
@@ -105,9 +105,9 @@ _reportWrite020PageTabId = "<%=tabId%>";
             		<select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
 					</select>
             	</td>
-            	<th>보고항목</th>
+            	<th>투자사업유형</th>
             	<td>
-            		<select id="condIndiAttr" name="condIndiAttr" title="보고항목" style="width:90%;">
+            		<select id="condIndiAttr" name="condIndiAttr" title="투자사업유형" style="width:90%;">
 					</select>
             	</td>
             	<td>&nbsp;</td>
@@ -120,8 +120,10 @@ _reportWrite020PageTabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <input type="hidden" id="bizDescOfficeCd" value=""/>
+          <input type="hidden" id="bizDescOfficeNm" value=""/>
+          <a id="bizDescFileBtn" class="btnDisabledClass" href="#" enabledYn="N">사업설명서불러오기</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
-          <a id="saveFileTotalBtn" class="btnClass" href="#">통합파일저장</a>
           <!-- <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a> -->
           <a id="saveSheetBtn2" class="btnClass" href="#">시장님보고조서저장</a>
           <a id="saveGuGunBtn" class="btnClass" href="#">구군별조서저장</a>
@@ -137,8 +139,8 @@ _reportWrite020PageTabId = "<%=tabId%>";
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;">
       <div class="btn">
         <div class="gridHeader">
-          <span id="REPORT_WRITE020PAGE_TOT">총건수 : 0건</span>,&nbsp;건수
-          <select id="condRowNum" name="condRowNum" title="건수">
+          <span id="REPORT_WRITE020PAGE_TOT">통계목 총건수 : 0건</span>,&nbsp;통계목건수
+          <select id="condRowNum" name="condRowNum" title="통계목건수">
           </select>
         </div>
         <div class="btnR">

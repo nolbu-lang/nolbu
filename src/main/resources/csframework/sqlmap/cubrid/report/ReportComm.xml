@@ -233,6 +233,121 @@
            AND BGT_DGR = #bgtDgr#
            AND UP_TE_BGT_COMPO_ID = #teBgtCompoId#
     </select>
+
+    <!-- 자기자신+하위 세세목 일괄 조회 (저장 시 자식 재귀 N+1 제거용) -->
+    <select id="ReportComm.selectDgrcompoDescendantIdList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectDgrcompoDescendantIdList*/
+        SELECT #reportCd# AS REPORT_CD
+             , #reportDetlCd# AS REPORT_DETL_CD
+             , FIS_YEAR AS FIS_YEAR
+             , BGT_DGR AS BGT_DGR
+             , TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , #srchVal# AS SRCH_VAL
+          FROM TB_DGRCOMPO
+         WHERE 1 = 1
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+         START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+         CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+    </select>
+
+    <!-- 조건검색어: 자기자신+하위 1회 UPDATE (010/020) -->
+    <update id="ReportComm.updateSrchValChildTree010" parameterClass="Map" >
+        /*ReportComm.updateSrchValChildTree010*/
+        UPDATE TB_REPORT010
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID IN (
+                SELECT TE_BGT_COMPO_ID
+                  FROM TB_DGRCOMPO
+                 WHERE FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                 START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+                 CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+           )
+    </update>
+
+    <update id="ReportComm.updateSrchValChildTree020" parameterClass="Map" >
+        /*ReportComm.updateSrchValChildTree020*/
+        UPDATE TB_REPORT020
+           SET SRCH_VAL = #srchVal#
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID IN (
+                SELECT TE_BGT_COMPO_ID
+                  FROM TB_DGRCOMPO
+                 WHERE FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                 START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+                 CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+           )
+    </update>
+
+    <!-- 시군 체크: 자기자신+하위 1회 UPDATE -->
+    <update id="ReportComm.updateCheckYnChildTree" parameterClass="Map" >
+        /*ReportComm.updateCheckYnChildTree*/
+        UPDATE TB_REPORT020_D
+           SET CHECK_YN = NVL(#checkYn#, 'N')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND LOCAL_GOV_CD = #localGovCd#
+           AND TE_BGT_COMPO_ID IN (
+                SELECT TE_BGT_COMPO_ID
+                  FROM TB_DGRCOMPO
+                 WHERE FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                 START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+                 CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+           )
+    </update>
+
+    <update id="ReportComm.updateReportSortSeqChildTree020" parameterClass="Map" >
+        /*ReportComm.updateReportSortSeqChildTree020*/
+        UPDATE TB_REPORT020
+           SET REPORT_SORT_SEQ = NVL(#reportSortSeq#, 'N')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID IN (
+                SELECT TE_BGT_COMPO_ID
+                  FROM TB_DGRCOMPO
+                 WHERE FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                 START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+                 CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+           )
+    </update>
+
+    <update id="ReportComm.updateMayorReportYnChildTree020" parameterClass="Map" >
+        /*ReportComm.updateMayorReportYnChildTree020*/
+        UPDATE TB_REPORT020
+           SET MAYOR_REPORT_YN = NVL(#mayorReportYn#, 'Y')
+         WHERE 1 = 1
+           AND REPORT_CD = #reportCd#
+           AND REPORT_DETL_CD = #reportDetlCd#
+           AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID IN (
+                SELECT TE_BGT_COMPO_ID
+                  FROM TB_DGRCOMPO
+                 WHERE FIS_YEAR = #fisYear#
+                   AND BGT_DGR = #bgtDgr#
+                 START WITH TE_BGT_COMPO_ID = #teBgtCompoId#
+                 CONNECT BY PRIOR TE_BGT_COMPO_ID = UP_TE_BGT_COMPO_ID
+           )
+    </update>
     
     <!-- TB_REPORT010 -->
     <insert id="ReportComm.insertReport010" parameterClass="Map" >
@@ -561,32 +676,23 @@
     </delete>
     
     <update id="ReportComm.copyReport020D" parameterClass="Map" >
-        /*ReportComm.copyReport020D*/
-        UPDATE TB_REPORT020_D
-           SET (CHECK_YN)
-             = (SELECT CHECK_YN
-                  FROM TB_REPORT020_D
-                 WHERE 1 = 1
-                   AND REPORT_CD = #srcReportCd#
-                   AND REPORT_DETL_CD = #srcReportDetlCd#
-                   AND FIS_YEAR = #srcFisYear#
-                   AND BGT_DGR = #srcBgtDgr#
-                   AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
-                 <isNotEmpty prepend="" property="srcLocalGovCd">
-                   AND LOCAL_GOV_CD = #srcLocalGovCd# 
-                 </isNotEmpty>
-                 )
+        /*ReportComm.copyReport020D — LOCAL_GOV_CD 매칭으로 시군 CHECK_YN 상속*/
+        UPDATE TB_REPORT020_D T
+           SET CHECK_YN = NVL((SELECT S.CHECK_YN
+                                 FROM TB_REPORT020_D S
+                                WHERE S.REPORT_CD = #srcReportCd#
+                                  AND S.REPORT_DETL_CD = #srcReportDetlCd#
+                                  AND S.FIS_YEAR = #srcFisYear#
+                                  AND S.BGT_DGR = #srcBgtDgr#
+                                  AND S.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                                  AND S.LOCAL_GOV_CD = T.LOCAL_GOV_CD), T.CHECK_YN)
              , MODI_ID = #userId#
              , MODI_DATE = SYSTIMESTAMP
-         WHERE 1 = 1
-           AND REPORT_CD = #reportCd#
-           AND REPORT_DETL_CD = #reportDetlCd#
-           AND FIS_YEAR = #fisYear#
-           AND BGT_DGR = #bgtDgr#
-           AND TE_BGT_COMPO_ID = #teBgtCompoId#
-         <isNotEmpty prepend="" property="localGovCd">
-           AND LOCAL_GOV_CD = #localGovCd# 
-         </isNotEmpty>
+         WHERE T.REPORT_CD = #reportCd#
+           AND T.REPORT_DETL_CD = #reportDetlCd#
+           AND T.FIS_YEAR = #fisYear#
+           AND T.BGT_DGR = #bgtDgr#
+           AND T.TE_BGT_COMPO_ID = #teBgtCompoId#
     </update>
     
     <update id="ReportComm.updateReport020D" parameterClass="Map" >

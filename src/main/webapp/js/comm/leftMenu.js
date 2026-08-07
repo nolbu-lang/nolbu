@@ -84,14 +84,28 @@ $(document).ready(function() {
     
 
     maintab.delegate("span.ui-icon-close", "click", function() {
-        var panelId = $(this).closest("li").remove().attr("aria-controls");
+        var $li = $(this).closest("li");
+        var panelId = $li.attr("aria-controls");
+        try {
+            if (typeof bcjisCommMainObj !== "undefined" && bcjisCommMainObj["tabClose_"+panelId]) {
+                bcjisCommMainObj["tabClose_"+panelId]();
+            }
+        } catch (e) {}
+        $li.remove();
         $("#" + panelId).remove();
         maintab.tabs("refresh");
     });
 
     maintab.bind("keyup", function(event) {
         if (event.altKey && event.keyCode === $.ui.keyCode.BACKSPACE) {
-            var panelId = maintab.find(".ui-tabs-active").remove().attr("aria-controls");
+            var $li = maintab.find(".ui-tabs-active");
+            var panelId = $li.attr("aria-controls");
+            try {
+                if (typeof bcjisCommMainObj !== "undefined" && bcjisCommMainObj["tabClose_"+panelId]) {
+                    bcjisCommMainObj["tabClose_"+panelId]();
+                }
+            } catch (e) {}
+            $li.remove();
             $("#" + panelId).remove();
             maintab.tabs("refresh");
         }

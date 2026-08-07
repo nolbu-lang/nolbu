@@ -21,18 +21,58 @@ Globals.AiNearbyYearCount = 0
 Globals.AiSearchAllYearsFallback = false
 # CLOB 넓은 검색 OFF — 사업명으로 못 찾을 때만 true
 Globals.AiEnableBroadSearch = false
-Globals.AiFrscBatchSize = 40
+Globals.AiFrscBatchSize = 100
 # 단일 질의 타임아웃(초) — 비정상 장시간 CLOB 스캔 방지
 Globals.AiQueryTimeoutSec = 45
 Globals.AiPerfLog = true
+# 장기 회계연도 검색: 2년 단위 분할 병렬 조회 / 최대 12구간
+Globals.AiYearChunkSize = 2
+Globals.AiYearMaxChunks = 12
+# 내부자료 JSON 내보내기(모바일 뷰어용) 상한 — 1년 단위
+Globals.AiInternalExportMaxRows = 8000
+Globals.AiInternalExportMaxBiz = 2500
 
 # (하위호환) 일반 SQL 조회 최대 행
 Globals.GeminiMaxRows = 200
 Globals.GeminiMaxReportBlocks = 50
 
+# --- 외부자료 (내부검색 체크 미선택 시 LLM이 읽어 추론) ---
+# 관리자 사전등록. 쉼표/줄바꿈 복수 URL. 수정 후 Tomcat 재기동
+# Globals.AiExternalSourceUrls = http://intranet.example/budget-guide.html
+Globals.AiExternalSourceUrls =
+Globals.AiExternalMaxCharsPerSource = 20000
+Globals.AiExternalFetchTimeoutMs = 15000
+
+# --- 일반자료검색 ---
+Globals.AiLawGoKrOc = nolbu0326
+Globals.AiLawGoKrBaseUrl = https://www.law.go.kr/DRF/lawSearch.do
+Globals.AiLawOrdinOrgCd = 6260000
+Globals.AiLawGoKrDisplay = 20
+Globals.AiLawGoKrTimeoutMs = 15000
+Globals.AiLawGoKrBodyTimeoutMs = 25000
+Globals.AiBugiEndpoint = https://busanai.busan.go.kr/bugi/external-research/government-data
+Globals.AiBugiApiKey =
+Globals.AiBugiHttpMethod = GET
+Globals.AiBugiTimeoutMs = 20000
+Globals.AiManualStorePath = C:/bcjis/upload/ai-manual/
+# 운영 서버: true (관리권한 BC001만 업로드/삭제). 로컬 테스트: false
+Globals.AiManualUploadAdminOnly = true
+# 문장형 키워드 유사도 검색·요약 근거 범위 (속도 최적화 기본값)
+Globals.AiManualMaxPages = 2
+Globals.AiManualExcerptChars = 1400
+Globals.AiManualSummaryChars = 5500
+Globals.AiManualPromptChars = 4800
+# 예산운용지침: LLM 요약 사용(true 권장). false면 원문 발췌만
+Globals.AiManualUseLlm = true
+Globals.AiManualFuzzyMaxPages = 60
+
+# LLM Studio: stream=false 권장(동기 응답 속도)
+Globals.ClovaStream = false
+
 #-----------------------------------------------------------------------
 # 운영 전 확인
 # 1) WAS 서버 → 99.1.82.207:8080 네트워크 접근 가능
-# 2) globals.properties 수정 후 Tomcat 재기동
-# 3) 로그인 → 화면 하단 AI 예산편성 도우미 → 질문 테스트
+# 2) WAS → www.law.go.kr / busanai.busan.go.kr 접근 가능
+# 3) globals.properties 수정 후 Tomcat 재기동
+# 4) 로그인 → AI 예산편성 도우미 → 내부검색 / 일반자료검색 테스트
 #-----------------------------------------------------------------------

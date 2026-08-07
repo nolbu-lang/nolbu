@@ -7,7 +7,7 @@
 <script>
 _reportWrite010TabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite010.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite010.js?v=20260804k"></script>
 
 <div class="contents" style="height:100%;">
   <!--list s-->
@@ -105,6 +105,17 @@ _reportWrite010TabId = "<%=tabId%>";
               <td>&nbsp;</td>
               <td>&nbsp;</td>
             </tr>
+            <tr>
+              <th>분류항목</th>
+              <td>
+                <select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -112,6 +123,9 @@ _reportWrite010TabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <input type="hidden" id="bizDescOfficeCd" value=""/>
+          <input type="hidden" id="bizDescOfficeNm" value=""/>
+          <a id="bizDescFileBtn" class="btnDisabledClass" href="#" enabledYn="N">사업설명서불러오기</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
           <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a>
           <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>

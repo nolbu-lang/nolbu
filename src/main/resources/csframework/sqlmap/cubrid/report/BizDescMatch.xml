@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="BizDescMatch">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+
+    <select id="BizDescMatch.selectReportCandidates" parameterClass="Map" resultClass="egovMap">
+        /*BizDescMatch.selectReportCandidates*/
+        SELECT R.FIS_YEAR AS FIS_YEAR
+             , R.BGT_DGR AS BGT_DGR
+             , R.REPORT_CD AS REPORT_CD
+             , R.REPORT_DETL_CD AS REPORT_DETL_CD
+             , R.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , R.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , NVL(R.DEMAND_CONT, '') AS DEMAND_CONT
+             , NVL(R.EXAM_CONT, '') AS EXAM_CONT
+             , NVL(R.REFLECT_FG, '') AS REFLECT_FG
+             , NVL(R.SRCH_VAL, '') AS SRCH_VAL
+             , NVL(R.INVEST_PLAN, '') AS INVEST_PLAN
+             , C.DEPT_CD AS DEPT_CD
+             , D.DEPT_NM AS DEPT_NM
+             , C.DBIZ_CD AS DBIZ_CD
+             , B.DBIZ_NM AS DBIZ_NM
+             , C.TE_MNG_MOK_CD AS TE_MNG_MOK_CD
+             , NVL(M.TE_MNG_MOK_NM, '') AS TE_MNG_MOK_NM
+             , C.TE_BGT_COMPO_ID AS DGRCOMPO_ID
+          FROM
+        <isEqual property="reportCd" compareValue="010">
+               TB_REPORT010 R
+        </isEqual>
+        <isEqual property="reportCd" compareValue="020">
+               TB_REPORT020 R
+        </isEqual>
+         INNER JOIN TB_DGRCOMPO C
+            ON C.FIS_YEAR = R.FIS_YEAR
+           AND C.BGT_DGR = R.BGT_DGR
+           AND C.TE_BGT_COMPO_ID = R.TE_BGT_COMPO_ID
+           AND C.COMPO_LEVEL = '1'
+         INNER JOIN TB_DGRDEPT D
+            ON D.FIS_YEAR = C.FIS_YEAR
+           AND D.BGT_DGR = C.BGT_DGR
+           AND D.DEPT_CD = C.DEPT_CD
+         INNER JOIN TB_DGRBIZ B
+            ON B.FIS_YEAR = C.FIS_YEAR
+           AND B.BGT_DGR = C.BGT_DGR
+           AND B.DBIZ_CD = C.DBIZ_CD
+          LEFT OUTER JOIN TB_DGRTEMNGMOK M
+            ON M.FIS_YEAR = C.FIS_YEAR
+           AND M.BGT_DGR = C.BGT_DGR
+           AND M.TE_MNG_MOK_CD = C.TE_MNG_MOK_CD
+         WHERE R.FIS_YEAR = #fisYear#
+           AND R.BGT_DGR = #bgtDgr#
+           AND R.REPORT_CD = #reportCd#
+         <isEqual prepend="" property="userDeptYn" compareValue="Y">
+           AND EXISTS (
+                 SELECT 1
+                   FROM TB_USERDEPT Z
+                  WHERE Z.USER_ID = #userId#
+                    AND Z.DEPT_CD = C.DEPT_CD
+               )
+         </isEqual>
+         <isNotEmpty prepend="" property="deptNmLike">
+           AND D.DEPT_NM LIKE '%' || #deptNmLike# || '%'
+         </isNotEmpty>
+         <isNotEmpty prepend="" property="dbizNmLike">
+           AND B.DBIZ_NM LIKE '%' || #dbizNmLike# || '%'
+         </isNotEmpty>
+         ORDER BY D.DEPT_NM, B.DBIZ_NM, C.TE_MNG_MOK_CD
+    </select>
+
+    <select id="BizDescMatch.selectFileList" parameterClass="Map" resultClass="egovMap">
+        /*BizDescMatch.selectFileList - 회계년도+예산차수+실국 (조서구분 무시: 경상·투자 파일 모두)*/
+        SELECT BIZDESC_FILE_ID
+             , FIS_YEAR
+             , BGT_DGR
+             , REPORT_CD
+             , OFFICE_CD
+             , OFFICE_NM
+             , ATCH_FILE_ID
+             , ORG_FILE_NM
+             , STRE_FILE_NM
+             , FILE_STRE_COURS
+             , PARSE_JSON_PATH
+             , BIZ_COUNT
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE
+          FROM TB_BIZDESC_FILE
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND OFFICE_CD = #officeCd#
+         ORDER BY REGI_DATE DESC
+    </select>
+
+    <select id="BizDescMatch.selectFile" parameterClass="Map" resultClass="egovMap">
+        /*BizDescMatch.selectFile*/
+        SELECT BIZDESC_FILE_ID
+             , FIS_YEAR
+             , BGT_DGR
+             , REPORT_CD
+             , OFFICE_CD
+             , OFFICE_NM
+             , ATCH_FILE_ID
+             , ORG_FILE_NM
+             , STRE_FILE_NM
+             , FILE_STRE_COURS
+             , PARSE_JSON_PATH
+             , BIZ_COUNT
+             , REGI_ID
+             , REGI_DATE
+          FROM TB_BIZDESC_FILE
+         WHERE BIZDESC_FILE_ID = #bizdescFileId#
+    </select>
+
+    <insert id="BizDescMatch.insertFile" parameterClass="Map">
+        /*BizDescMatch.insertFile*/
+        INSERT INTO TB_BIZDESC_FILE (
+            BIZDESC_FILE_ID, FIS_YEAR, BGT_DGR, REPORT_CD, OFFICE_CD, OFFICE_NM, ATCH_FILE_ID,
+            ORG_FILE_NM, STRE_FILE_NM, FILE_STRE_COURS, PARSE_JSON_PATH,
+            BIZ_COUNT, REGI_ID, REGI_DATE, MODI_ID, MODI_DATE
+        ) VALUES (
+            #bizdescFileId#, #fisYear#, #bgtDgr#, #reportCd#, #officeCd#, #officeNm#, #atchFileId#,
+            #orgFileNm#, #streFileNm#, #fileStreCours#, #parseJsonPath#,
+            #bizCount#, #regiId#, SYSDATE, #regiId#, SYSDATE
+        )
+    </insert>
+
+    <delete id="BizDescMatch.deleteFile" parameterClass="Map">
+        /*BizDescMatch.deleteFile*/
+        DELETE FROM TB_BIZDESC_FILE
+         WHERE BIZDESC_FILE_ID = #bizdescFileId#
+    </delete>
+
+    <delete id="BizDescMatch.deleteMatchByFile" parameterClass="Map">
+        /*BizDescMatch.deleteMatchByFile*/
+        DELETE FROM TB_BIZDESC_MATCH
+         WHERE BIZDESC_FILE_ID = #bizdescFileId#
+    </delete>
+
+    <select id="BizDescMatch.selectMatch" parameterClass="Map" resultClass="egovMap">
+        /*BizDescMatch.selectMatch*/
+        SELECT FIS_YEAR
+             , BGT_DGR
+             , REPORT_CD
+             , TE_BGT_COMPO_ID
+             , BIZDESC_FILE_ID
+             , BIZ_SEQ
+             , BIZ_NM
+             , DEPT_NM
+             , MATCH_SCORE
+             , REGI_ID
+             , REGI_DATE
+          FROM TB_BIZDESC_MATCH
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND REPORT_CD = #reportCd#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+
+    <insert id="BizDescMatch.insertMatch" parameterClass="Map">
+        /*BizDescMatch.insertMatch*/
+        INSERT INTO TB_BIZDESC_MATCH (
+            FIS_YEAR, BGT_DGR, REPORT_CD, TE_BGT_COMPO_ID,
+            BIZDESC_FILE_ID, BIZ_SEQ, BIZ_NM, DEPT_NM, MATCH_SCORE,
+            REGI_ID, REGI_DATE
+        ) VALUES (
+            #fisYear#, #bgtDgr#, #reportCd#, #teBgtCompoId#,
+            #bizdescFileId#, #bizSeq#, #bizNm#, #deptNm#, #matchScore#,
+            #regiId#, SYSDATE
+        )
+    </insert>
+
+    <update id="BizDescMatch.updateMatch" parameterClass="Map">
+        /*BizDescMatch.updateMatch*/
+        UPDATE TB_BIZDESC_MATCH
+           SET BIZDESC_FILE_ID = #bizdescFileId#
+             , BIZ_SEQ = #bizSeq#
+             , BIZ_NM = #bizNm#
+             , DEPT_NM = #deptNm#
+             , MATCH_SCORE = #matchScore#
+             , REGI_ID = #regiId#
+             , REGI_DATE = SYSDATE
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND REPORT_CD = #reportCd#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+
+    <delete id="BizDescMatch.deleteMatch" parameterClass="Map">
+        /*BizDescMatch.deleteMatch*/
+        DELETE FROM TB_BIZDESC_MATCH
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND REPORT_CD = #reportCd#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+
+</sqlMap>

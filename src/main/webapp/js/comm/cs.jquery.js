@@ -1,10 +1,91 @@
 (function($) {
+    // 진행 중 AJAX 추적 — 상단 '실행중단'으로 abort
+    var _bcjisActiveXhrs = [];
+    var _bcjisLoadingBound = false;
+    var _bcjisComboCache = {};
+
+    var _bcjisTrackXhr = function(jqXHR) {
+        if (!jqXHR) {
+            return;
+        }
+        if ($.inArray(jqXHR, _bcjisActiveXhrs) >= 0) {
+            return;
+        }
+        _bcjisActiveXhrs.push(jqXHR);
+        jqXHR.always(function() {
+            var idx = $.inArray(jqXHR, _bcjisActiveXhrs);
+            if (idx >= 0) {
+                _bcjisActiveXhrs.splice(idx, 1);
+            }
+        });
+    };
+
+    // csAjaxCall / 탭 HTML / jqGrid 등 모든 jQuery AJAX 추적
+    $(document).ajaxSend(function(event, jqXHR, settings) {
+        _bcjisTrackXhr(jqXHR);
+    });
+
+    var _bcjisBindLoadingOnce = function() {
+        if (_bcjisLoadingBound) {
+            return;
+        }
+        var bcjisLoading = $("#bcjisLoading");
+        if (bcjisLoading != null && bcjisLoading != undefined && bcjisLoading.length > 0) {
+            _bcjisLoadingBound = true;
+            $(document).ajaxStart(function() {
+                $("#bcjisLoading").fadeIn(200);
+            }).ajaxStop(function() {
+                $("#bcjisLoading").fadeOut(300);
+            });
+        }
+    };
+
+    /** 진행 중 모든 AJAX 요청 중단 (조회/저장/탭로딩 등) */
+    jQuery.csAbortAllAjax = function(opts) {
+        var list = _bcjisActiveXhrs.slice(0);
+        _bcjisActiveXhrs = [];
+        for (var i = 0; i < list.length; i++) {
+            try {
+                list[i].abort();
+            } catch (e) {
+            }
+        }
+        try {
+            $("#bcjisLoading").stop(true, true).hide();
+        } catch (e2) {
+        }
+        if (!opts || opts.silent !== true) {
+            try {
+                if (typeof $.csAlert === "function") {
+                    $.csAlert({ msg : "실행을 중단하였습니다." });
+                }
+            } catch (e3) {
+            }
+        }
+        return list.length;
+    };
+
+    jQuery.csClearComboCache = function() {
+        _bcjisComboCache = {};
+    };
+
     jQuery.csAjaxCall = function(params) {
         var rtnData = null;
+        var userComplete = params && params.complete;
+        var userError = params && params.error;
+        var userBeforeSend = params && params.beforeSend;
+
         ajaxDefaultParams = {
             type : "POST",
             async : false,
             error : function(xhr, st, err) {
+                if (st === "abort" || (xhr && xhr.statusText === "abort")) {
+                    return;
+                }
+                if (typeof userError === "function") {
+                    userError(xhr, st, err);
+                    return;
+                }
                 $.csAlert({
                     msg : "st:" + st + "<BR>xhr" + xhr + "<BR>err:" + err,
                     logLabel : CS_LOG_DEBUG
@@ -12,9 +93,18 @@
             },
             dataType : "JSON",
             paramType : "JSON",
-            beforeSend : function() {
+            beforeSend : function(jqXHR, settings) {
+                if (typeof userBeforeSend === "function") {
+                    return userBeforeSend(jqXHR, settings);
+                }
             },
-            complete : function() {
+            complete : function(xhr, status) {
+                if (status === "abort") {
+                    return;
+                }
+                if (typeof userComplete === "function") {
+                    userComplete(xhr, status);
+                }
                 if (params.async == true && typeof params.callBack == "function") {
                     params.callBack(rtnData);
                 }
@@ -25,19 +115,42 @@
         };
 
         $.extend(ajaxDefaultParams, params);
+        // extend 후 재지정: 중단/콜백 래핑 유지
+        ajaxDefaultParams.error = function(xhr, st, err) {
+            if (st === "abort" || (xhr && xhr.statusText === "abort")) {
+                return;
+            }
+            if (typeof userError === "function") {
+                userError(xhr, st, err);
+                return;
+            }
+            $.csAlert({
+                msg : "st:" + st + "<BR>xhr" + xhr + "<BR>err:" + err,
+                logLabel : CS_LOG_DEBUG
+            });
+        };
+        ajaxDefaultParams.complete = function(xhr, status) {
+            if (status === "abort") {
+                return;
+            }
+            if (typeof userComplete === "function") {
+                userComplete(xhr, status);
+            }
+            if (params.async == true && typeof params.callBack == "function") {
+                params.callBack(rtnData);
+            }
+        };
+        ajaxDefaultParams.beforeSend = function(jqXHR, settings) {
+            if (typeof userBeforeSend === "function") {
+                return userBeforeSend(jqXHR, settings);
+            }
+        };
 
         if (ajaxDefaultParams.paramType == "JSON") {
             ajaxDefaultParams.data = jsonToStringEncodeUrl(params.data);
         }
 
-        var bcjisLoading = $("#bcjisLoading");
-        if (bcjisLoading != null && bcjisLoading != undefined && bcjisLoading != "") {
-            $(document).ajaxStart(function() {
-                $("#bcjisLoading").fadeIn(200);
-            }).ajaxStop(function() {
-                $("#bcjisLoading").fadeOut(300);
-            });
-        }
+        _bcjisBindLoadingOnce();
 
         ajaxDefaultParams.url = ctx + ajaxDefaultParams.url;
         
@@ -47,11 +160,22 @@
     };
     
     jQuery.csComboAjaxCall = function(params){
+        var cacheKey = "";
+        try {
+            cacheKey = JSON.stringify(params);
+        } catch (e) {
+            cacheKey = "";
+        }
+        if (cacheKey && _bcjisComboCache[cacheKey]) {
+            return _bcjisComboCache[cacheKey];
+        }
         var comboData = $.csAjaxCall({
             url : "/comm/ajaxCommComboList.do"
           , data: {comboParam: params}
         });
-        
+        if (cacheKey && comboData) {
+            _bcjisComboCache[cacheKey] = comboData;
+        }
         return comboData;
     };
     
@@ -198,7 +322,7 @@
             datatype: "local",
             rowNum: 10,
             defaultRows: 10,
-            shrinkToFix: false,
+            shrinkToFit: false,
             viewsortcols: true,
             minHeight: "250",
             emptyDataText: "조회된 자료가 존재하지 않습니다.",
@@ -355,6 +479,7 @@
                 treeGrid : true,
                 treeGridModel : "adjacency",
                 autowidth : true,
+                shrinkToFit : false,
                 rowNum : 10000,
                 ExpandColClick : true,
                 treeIcons : {

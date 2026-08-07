@@ -20,7 +20,7 @@ var _mainNorthUserId = "<%=mainNorthUserId%>";
 var _mainNorthUserNm = "<%=mainNorthUserNm%>";
 var _mainNorthPowGrCd = "<%=mainNorthPowGrCd%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/comm/mainNorth.js"></script>
+<script src="${pageContext.request.contextPath}/js/comm/mainNorth.js?v=20260804g"></script>
 <div id="mainNorth">
 <!--
   <div class="nondiv" style="height:100%;">
@@ -52,9 +52,12 @@ var _mainNorthPowGrCd = "<%=mainNorthPowGrCd%>";
 	<p class="left"><img src="/images/design/img_header_logo_240325.png" alt="예산담당관실 예산편성심사정보시스템"></p>
 	<p class="right">
 		<span id="mainNorthInfoTd">&nbsp;</span>
+		<a href="javascript:void(0);" id="globalAbortBtn" class="btnClass" title="진행 중인 조회/저장 작업을 중단합니다">실행중단</a>
+		<a href="javascript:void(0);" id="aiChatOpenBtn" title="AI 예산편성 도우미">AI 예산도우미</a>
 		<a id="mainNorthLogoutBtn" href="#">로그아웃</a>
 	</p>
 </div><!-- .always_top -->
 
 
 </div>
+<%@include file="/WEB-INF/views/ai/aiChatLauncher.jsp"%>

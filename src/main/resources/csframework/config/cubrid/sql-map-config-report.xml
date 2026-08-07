@@ -23,4 +23,5 @@
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0C0.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0D0.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/report/ReportWrite0F0.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/report/BizDescMatch.xml"/>
 </sqlMapConfig>

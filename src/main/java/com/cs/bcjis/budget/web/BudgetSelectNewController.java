@@ -49,10 +49,17 @@ public class BudgetSelectNewController {
         if (logger.isDebugEnabled()) {
             logger.debug("budgetSelect(Map, ModelMap, HttpServletRequest) - start");
         }
-
+        model.addAttribute("viewMode", "class");
         if (logger.isDebugEnabled()) {
             logger.debug("budgetSelect(Map, ModelMap, HttpServletRequest) - end");
         }
+        return "budget/budgetSelectNew";
+    }
+
+    /** 보고항목·사전절차 선택 (단기 메뉴 분리) */
+    @RequestMapping("/budget/budgetSelectAttr.do")
+    public String budgetSelectAttr(Map<String, String> commandMap, ModelMap model, HttpServletRequest request) throws Exception {
+        model.addAttribute("viewMode", "attr");
         return "budget/budgetSelectNew";
     }
     

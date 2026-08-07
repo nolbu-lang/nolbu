@@ -85,6 +85,10 @@ CREATE INDEX ix_report0d0_te ON tb_report0d0(fis_year, bgt_dgr, te_bgt_compo_id,
 CREATE INDEX ix_report_key ON tb_report(report_cd, report_detl_cd, fis_year, bgt_dgr, te_bgt_compo_id);
 CREATE INDEX ix_report_te ON tb_report(fis_year, bgt_dgr, te_bgt_compo_id, report_cd);
 
+/* 집계표 TB_SHEET — 항목선택/상속 조회 */
+CREATE INDEX ix_sheet_te ON tb_sheet(fis_year, bgt_dgr, te_bgt_compo_id, sheet_cd);
+CREATE INDEX ix_sheet_key ON tb_sheet(sheet_cd, sheet_detl_cd, fis_year, bgt_dgr, te_bgt_compo_id);
+
 /* ===================================================================
    5. 권한/메뉴/사용자 — 로그인·메뉴·부서권한 (매 화면 로드)
    =================================================================== */
