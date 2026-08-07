@@ -50,8 +50,55 @@ Globals.AiSearchAllYearsFallback = false
 # 사업명 넓은 검색(요구·검토 CLOB) — 운영 대용량 DB에서는 false (수십 초 지연 원인)
 Globals.AiEnableBroadSearch = false
 # 재원 조회 배치 크기 (운영 CUBRID)
-Globals.AiFrscBatchSize = 40
+Globals.AiFrscBatchSize = 100
 # 단일 질의 타임아웃(초)
 Globals.AiQueryTimeoutSec = 45
 # AI 검색 구간별 소요시간 로그 (Tomcat catalina.out)
 Globals.AiPerfLog = true
+# 내부자료 검색 연도 분할 크기 — 회계년도를 N년 단위로 쪼개 병렬 조회
+#  (2013~2026 처럼 구간이 넓을 때 대기시간 단축. 1=연도별, 2~3 권장)
+Globals.AiYearChunkSize = 2
+# 분할 구간 최대 개수 (DB 부하 상한. 연도 수가 많으면 구간 크기가 자동으로 커진다)
+Globals.AiYearMaxChunks = 12
+# 내부자료 JSON 내보내기(모바일 뷰어용, 1년 단위)
+Globals.AiInternalExportMaxRows = 8000
+Globals.AiInternalExportMaxBiz = 2500
+
+# --- 외부자료 (내부검색 체크 미선택 시 LLM 추론) ---
+# 관리자 사전등록 URL. 쉼표 또는 줄바꿈으로 복수 지정. 수정 후 WAS 재기동
+# Globals.AiExternalSourceUrls = http://intranet.example/budget-guide.html,http://intranet.example/manual.pdf
+Globals.AiExternalSourceUrls =
+Globals.AiExternalMaxCharsPerSource = 20000
+Globals.AiExternalFetchTimeoutMs = 15000
+
+# --- 일반자료검색 ---
+# 법제처 Open API OC (신청 승인값)
+Globals.AiLawGoKrOc = nolbu0326
+Globals.AiLawGoKrBaseUrl = https://www.law.go.kr/DRF/lawSearch.do
+Globals.AiLawOrdinOrgCd = 6260000
+Globals.AiLawGoKrDisplay = 20
+Globals.AiLawGoKrTimeoutMs = 15000
+# 부기주무관(시홈페이지) — API 키 발급 후 등록
+Globals.AiBugiEndpoint = https://busanai.busan.go.kr/bugi/external-research/government-data
+Globals.AiBugiApiKey =
+Globals.AiBugiHttpMethod = GET
+Globals.AiBugiTimeoutMs = 20000
+# 시홈페이지 직접검색(보도자료·고시공고·새소식). 부기 API 키 없이도 동작
+Globals.AiBusanHomepageMaxPerBoard = 10
+Globals.AiBusanHomepageTimeoutMs = 15000
+# 매뉴얼 PDF 저장 경로 / 운영에서는 AdminOnly=true (POW_GR_CD=BC001만 업로드·삭제)
+Globals.AiManualStorePath = C:/bcjis/upload/ai-manual/
+Globals.AiManualUploadAdminOnly = false
+# 예산운용지침 검색·요약 속도/범위
+#  MaxPages     : 파일당 상위 페이지 수
+#  ExcerptChars : 페이지당 발췌 길이
+#  SummaryChars : 전체 발췌 컨텍스트 상한
+#  PromptChars  : LLM 프롬프트 발췌 상한 (작을수록 빠름)
+#  ExactUseLlm  : 정확일치 시 LLM 호출 여부 (false=발췌 요약만, 빠름)
+Globals.AiManualMaxPages = 2
+Globals.AiManualExcerptChars = 1400
+Globals.AiManualSummaryChars = 5500
+Globals.AiManualPromptChars = 4800
+Globals.AiManualUseLlm = true
+Globals.AiManualFuzzyMaxPages = 60
+Globals.ClovaStream = false

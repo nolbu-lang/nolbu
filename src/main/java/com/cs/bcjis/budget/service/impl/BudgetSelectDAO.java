@@ -60,4 +60,10 @@ public class BudgetSelectDAO extends BcjisCommAbstractDAO {
     public List selectReportKeyListFast(Map map) throws Exception {
         return list("BudgetSelectNew.selectReportKeyListFast", map);
     }
+
+    /** 저장용: 여러 세세목 TB_REPORT 키 일괄 조회 */
+    @SuppressWarnings("rawtypes")
+    public List selectReportKeyListFastBatch(Map map) throws Exception {
+        return list("BudgetSelectNew.selectReportKeyListFastBatch", map);
+    }
 }

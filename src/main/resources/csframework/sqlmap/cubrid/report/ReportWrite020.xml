@@ -499,6 +499,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -607,6 +610,9 @@
                  <isNotEmpty prepend="" property="advncProc">
 		          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 		         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                  <isNotEmpty prepend="" property="localGovCd" >
                    AND EXISTS (SELECT 1
                                  FROM TB_REPORT020_D Z
@@ -1076,6 +1082,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -1498,6 +1507,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -1934,6 +1946,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -2379,6 +2394,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -2831,6 +2849,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -3207,6 +3228,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -3460,6 +3484,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -3715,6 +3742,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -3942,6 +3972,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -4382,6 +4415,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -4674,6 +4710,9 @@
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
                                                          FROM TB_REPORT020_D Z
@@ -4921,6 +4960,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -5192,6 +5234,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1
@@ -5487,6 +5532,9 @@
                                          </isNotEmpty>
                                          <isNotEmpty prepend="" property="advncProc">
 								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+								         </isNotEmpty>
+                                         <isNotEmpty prepend="" property="indiAttr">
+								          	AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND INDI_ATTR LIKE '%' || #indiAttr# || '%') <![CDATA[>]]> 0
 								         </isNotEmpty>
                                          <isNotEmpty prepend="" property="localGovCd" >
                                            AND EXISTS (SELECT 1

@@ -131,7 +131,15 @@ $(document).ready(function() {
             demandCont = "";
         }
         
-        var rVal = '<span id="dgrcompoNmView_'+rowObject.dgrcompoId+'" >' + cellValue + '</span><br>'
+        var encNm = encodeURIComponent(cellValue);
+        var rVal = '<a href="#" class="bizdesc-nm-link" style="color:#06c;text-decoration:underline;"'
+                 + ' data-te-id="'+rowObject.teBgtCompoId+'"'
+                 + ' data-tebgtcompoid="'+rowObject.teBgtCompoId+'"'
+                 + ' data-dgrcompoid="'+rowObject.dgrcompoId+'"'
+                 + ' data-fisyear="'+(rowObject.fisYear||'')+'"'
+                 + ' data-bgtdgr="'+(rowObject.bgtDgr||'')+'"'
+                 + ' data-reportcd="'+(rowObject.reportCd||'020')+'"'
+                 + ' data-biznm="'+encNm+'">' + cellValue + '</a><br>'
                  + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" style="width:200px;ime-mode:active;"  rows="12" cols="22">'+demandCont+'</textarea>';
         
         return rVal;
@@ -1124,6 +1132,8 @@ $(document).ready(function() {
             return;
         }
 
+        if(typeof clearDirtyRows === "function"){ clearDirtyRows(); }
+
         var groupHeaders = [];
         if(data.data.bgtDgr == "1"){
             colModel[6].hidden = true;
@@ -1181,20 +1191,10 @@ $(document).ready(function() {
     reportWrite020PageDoPageSearch = function(page) {
         var saveDatas = getSaveDatas(reportWrite020PageGrid, $("#REPORT_WRITE020PAGE_GRD", tabObj)[0].rows);
         if(saveDatas != null && saveDatas != undefined && saveDatas.length > 0){
-            var data = $.csAjaxCall({
-                url : "/report/ajaxReportWrite020SaveReport020.do",
-                data : {saveDatas: saveDatas,
-                        amtUnit:$("#condAmtUnit", tabObj).val()
-                }
+            $.csAlert({
+                msg : "저장되지 않은 변경사항이 있습니다.<br>먼저 저장 후 페이지를 이동해 주세요."
             });
-
-            if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
-                $.csAlert({
-                    msg : data.bcjisMessage
-                });
-                
-                return;
-            }
+            return;
         }
         
         defaultSearchParam.page = page;
@@ -1221,6 +1221,7 @@ $(document).ready(function() {
         var localGovCd = $("#condLocalGovCd option:selected", tabObj).val();
         var fisFgCd = $("#condFisFgCd option:selected", tabObj).val();
         var advncProc = $("#condAdvncProc option:selected", tabObj).val();
+        var indiAttr = $("#condIndiAttr option:selected", tabObj).val();
         
         var param = {reportCd : reportCd,
                 reportDetlCd : reportDetlCd,
@@ -1235,6 +1236,7 @@ $(document).ready(function() {
                 amtUnit : amtUnit,
                 localGovCd : localGovCd,
                 advncProc : advncProc,
+                indiAttr : indiAttr,
                 mayorReportYn : "N",
                 fisFgCd : (reportDetlCd == "027" ? fisFgCd : "")
          };
@@ -1288,12 +1290,19 @@ $(document).ready(function() {
             comboTypeValue : ''
         });
         
-      //사전절차 selectBox 세팅
+      //분류항목(RP015)·투자사업유형(RP014) selectBox 세팅
         $("#condAdvncProc", tabObj).csCreatCombo(comboData, {
         	id : 'advncProc',
         	groupId : 'ALL',
         	selectedValue : '',
-        	comboType : 'TS',
+        	comboType : 'A',
+        	comboTypeValue : ''
+        });
+        $("#condIndiAttr", tabObj).csCreatCombo(comboData, {
+        	id : 'indiAttr',
+        	groupId : 'ALL',
+        	selectedValue : '',
+        	comboType : 'A',
         	comboTypeValue : ''
         });
        
@@ -1317,12 +1326,27 @@ $(document).ready(function() {
         $("#condSrchVal", tabObj).val("");
         
         $("#rankBtn", tabObj).btnChangeState(true);
+        updateBizDescFileBtnState();
     };
     
     $("#condInitBtn", tabObj).click(function() {
         doCondInit();
     });
     
+    // 수정된 행만 저장 대상으로 좁히기 위한 dirty 추적
+    var dirtyRowIds = {};
+    var markDirtyRow = function(rowId){
+        if(isEmpty(rowId) == false){
+            dirtyRowIds[rowId] = true;
+        }
+    };
+    var clearDirtyRows = function(){
+        dirtyRowIds = {};
+    };
+    $(tabObj).off("change.report020PageSave input.report020PageSave").on("change.report020PageSave input.report020PageSave", "#REPORT_WRITE020PAGE_GRD :input", function(){
+        markDirtyRow($(this).closest("tr.jqgrow").attr("id"));
+    });
+
     var getSaveDatas = function(gridObject, gridRows){
         var saveDatas = [];
         var saveData = {};
@@ -1371,10 +1395,19 @@ $(document).ready(function() {
         var checkYn3400000 ="";
         var indiAttr = "";
         var advncProc = "";
+        var rowIds = [];
+        var dirtyKeys = Object.keys(dirtyRowIds);
+        if(dirtyKeys.length > 0){
+            rowIds = dirtyKeys;
+        }else if(gridRows && gridRows.length){
+            for(var r = 0; r < gridRows.length; r++){
+                if(gridRows[r] && gridRows[r].id){ rowIds.push(gridRows[r].id); }
+            }
+        }
         
-        
-        for(var i = 0; i < gridRows.length; i++) {
-            rowId = gridRows[i].id;
+        for(var i = 0; i < rowIds.length; i++) {
+            rowId = rowIds[i];
+            if(isEmpty(rowId) == true || !$("#" + rowId, tabObj).length){ continue; }
             rowData = gridObject.getRowData(rowId);
             if(isEmpty(rowData.dgrcompoId) == false && rowData.teBgtCompoId != "00000000000"){
                 demandCont = $('#demandCont_'+rowId, tabObj).val().trim();
@@ -1600,25 +1633,100 @@ $(document).ready(function() {
     	return rtnData;
     }
 
-    var doSaveCallBack = function(data){
+    var doSaveCallBack = function(data, saveDatas){
         if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
             $.csAlert({
                 msg : data.bcjisMessage
             });
-            
             return;
         }
-        
+
         $.csAlert({
             msg : data.bcjisMessage,
             callBack : function() {
-                doSearch();
+                var needReload = false;
+                if(isEmpty(saveDatas) == false){
+                    for(var i = 0; i < saveDatas.length; i++){
+                        if(saveDatas[i].srchValYn === "Y"
+                                || saveDatas[i].reflegFgYn === "Y"
+                                || saveDatas[i].reportSortSeqYn === "Y"
+                                || saveDatas[i].mayorReportChangeYn === "Y"){
+                            needReload = true;
+                            break;
+                        }
+                        for(var k in saveDatas[i]){
+                            if(k && k.indexOf("checkYn") === 0 && k.lastIndexOf("Yn") === k.length - 2
+                                    && saveDatas[i][k] === "Y"){
+                                needReload = true;
+                                break;
+                            }
+                        }
+                        if(needReload){ break; }
+                    }
+                }
+                clearDirtyRows();
+                if(needReload){
+                    doSearch();
+                }else if(isEmpty(saveDatas) == false){
+                    for(var j = 0; j < saveDatas.length; j++){
+                        var sd = saveDatas[j];
+                        var rid = sd.teBgtCompoId;
+                        if(isEmpty(rid) == true){ continue; }
+                        try{
+                            reportWrite020PageGrid.setRowData(rid, {
+                                demandCont : sd.demandCont,
+                                examCont : sd.examCont,
+                                reflectFg : sd.reflectFg,
+                                srchVal : sd.srchVal,
+                                reportSortSeq : sd.reportSortSeq,
+                                mayorReportYn : sd.mayorReportYn,
+                                investPlan : sd.investPlan,
+                                indiAttr : sd.indiAttr,
+                                advncProc : sd.advncProc,
+                                totFrscAmt1 : sd.totFrscAmt1,
+                                totFrscAmt2 : sd.totFrscAmt2,
+                                totFrscAmt3 : sd.totFrscAmt3,
+                                totFrscAmt4 : sd.totFrscAmt4,
+                                totFrscAmt5 : sd.totFrscAmt5,
+                                totFrscAmt6 : sd.totFrscAmt6,
+                                totCharAmt1 : sd.totCharAmt1,
+                                totCharAmt2 : sd.totCharAmt2,
+                                totCharAmt3 : sd.totCharAmt3,
+                                preInvFrscAmt1 : sd.preInvFrscAmt1,
+                                preInvFrscAmt2 : sd.preInvFrscAmt2,
+                                preInvFrscAmt3 : sd.preInvFrscAmt3,
+                                preInvFrscAmt4 : sd.preInvFrscAmt4,
+                                preInvFrscAmt5 : sd.preInvFrscAmt5,
+                                preInvFrscAmt6 : sd.preInvFrscAmt6,
+                                preInvCharAmt1 : sd.preInvCharAmt1,
+                                preInvCharAmt2 : sd.preInvCharAmt2,
+                                preInvCharAmt3 : sd.preInvCharAmt3,
+                                checkYn3250000 : sd.checkYn3250000,
+                                checkYn3260000 : sd.checkYn3260000,
+                                checkYn3270000 : sd.checkYn3270000,
+                                checkYn3280000 : sd.checkYn3280000,
+                                checkYn3290000 : sd.checkYn3290000,
+                                checkYn3300000 : sd.checkYn3300000,
+                                checkYn3310000 : sd.checkYn3310000,
+                                checkYn3320000 : sd.checkYn3320000,
+                                checkYn3330000 : sd.checkYn3330000,
+                                checkYn3340000 : sd.checkYn3340000,
+                                checkYn3350000 : sd.checkYn3350000,
+                                checkYn3360000 : sd.checkYn3360000,
+                                checkYn3370000 : sd.checkYn3370000,
+                                checkYn3380000 : sd.checkYn3380000,
+                                checkYn3390000 : sd.checkYn3390000,
+                                checkYn3400000 : sd.checkYn3400000
+                            });
+                        }catch(e){}
+                    }
+                }
             }
         });
     };
     
     var doSave = function(params){
-        if(params.confirmData != "Y"){
+        if(!params || params.confirmData != "Y"){
             return;
         }
         
@@ -1627,17 +1735,18 @@ $(document).ready(function() {
             $.csAlert({
                 msg : "변경된 자료가 존재하지 않습니다."
             });
-            
             return;
         }
-        
+
         $.csAjaxCall({
             url : "/report/ajaxReportWrite020SaveReport020.do",
             data : {saveDatas: saveDatas,
                     amtUnit:$("#condAmtUnit", tabObj).val()
             },
             async : true,
-            callBack : doSaveCallBack
+            callBack : function(data){
+                doSaveCallBack(data, saveDatas);
+            }
         });
     };
     
@@ -1649,6 +1758,112 @@ $(document).ready(function() {
         $.csConfirm({
             msg : "저장하시겠습니까?",
             callBack : doSave
+        });
+    });
+
+    /**
+     * 조서 조회조건 실국(#condOfficeCd) 현재값.
+     * native select 기준으로 읽고 hidden(#bizDescOfficeCd/Nm)에 동기화한다.
+     */
+    var getSelectedOffice = function(){
+        var sel = tabObj.find("#condOfficeCd").get(0);
+        if (!sel) {
+            sel = $(".ui-tabs-panel:visible #condOfficeCd").get(0);
+        }
+        if (!sel) {
+            sel = document.getElementById("condOfficeCd");
+        }
+        var officeCd = "";
+        var officeNm = "";
+        if (sel && sel.options && sel.selectedIndex >= 0) {
+            officeCd = sel.options[sel.selectedIndex].value;
+            officeNm = sel.options[sel.selectedIndex].text;
+        } else if (sel) {
+            officeCd = sel.value || "";
+        }
+        officeCd = (officeCd == null ? "" : String(officeCd)).replace(/^\s+|\s+$/g, "");
+        officeNm = (officeNm == null ? "" : String(officeNm)).replace(/^\s+|\s+$/g, "");
+        if (officeCd === "" || officeCd === "null" || officeCd === "undefined" || officeNm === "전체") {
+            officeCd = "";
+            officeNm = "";
+        }
+        tabObj.find("#bizDescOfficeCd").val(officeCd);
+        tabObj.find("#bizDescOfficeNm").val(officeNm);
+        return { officeCd: officeCd, officeNm: officeNm };
+    };
+
+    var getBizDescFilter = function(){
+        var office = getSelectedOffice();
+        var fisYear = String(tabObj.find("#condFisYear").val() || "").replace(/^\s+|\s+$/g, "");
+        var bgtDgr = String(tabObj.find("#condBgtDgr").val() || "").replace(/^\s+|\s+$/g, "");
+        if (bgtDgr === "null" || bgtDgr === "undefined") { bgtDgr = ""; }
+        return {
+            fisYear: fisYear,
+            bgtDgr: bgtDgr,
+            officeCd: office.officeCd,
+            officeNm: office.officeNm,
+            ready: !!(fisYear && bgtDgr && office.officeCd)
+        };
+    };
+
+    var updateBizDescFileBtnState = function(){
+        var f = getBizDescFilter();
+        var $btn = $("#bizDescFileBtn", tabObj);
+        if (!$btn.length) { return; }
+        if (f.ready) {
+            $btn.attr("enabledYn", "Y").removeClass("btnDisabledClass").addClass("btnClass");
+        } else {
+            $btn.attr("enabledYn", "N").removeClass("btnClass").addClass("btnDisabledClass");
+        }
+    };
+
+    $("#bizDescFileBtn", tabObj).click(function(e){
+        e.preventDefault();
+        var f = getBizDescFilter();
+        updateBizDescFileBtnState();
+        if (typeof openDialogBizDescMatch !== "function") {
+            $.csAlert({ msg: "사업설명서 화면이 준비되지 않았습니다. 메인 화면을 새로고침(F5) 후 다시 시도해 주세요." });
+            return;
+        }
+        if (!f.ready) {
+            var missing = [];
+            if (!f.fisYear) { missing.push("회계년도"); }
+            if (!f.bgtDgr) { missing.push("예산차수"); }
+            if (!f.officeCd) { missing.push("실국"); }
+            $.csAlert({
+                msg: "조회조건 '" + missing.join("', '") + "'을(를) 선택한 뒤 사업설명서를 불러와 주세요.\n"
+                    + "(회계년도·예산차수·실국 단위 업로드로 매칭 속도와 정확도를 높입니다)"
+            });
+            return;
+        }
+        var sp = getSearchParam();
+        openDialogBizDescMatch({
+            fisYear: sp.fisYear || f.fisYear,
+            bgtDgr: sp.bgtDgr || f.bgtDgr,
+            reportCd: sp.reportCd || "020",
+            officeCd: f.officeCd,
+            officeNm: f.officeNm
+        });
+    });
+
+    $(tabObj).on("click", "a.bizdesc-nm-link", function(e){
+        e.preventDefault();
+        var $a = $(this);
+        var office = getSelectedOffice();
+        if (typeof openDialogBizDescView !== "function") {
+            $.csAlert({ msg: "사업설명서 화면이 준비되지 않았습니다. 메인 화면을 새로고침(F5) 후 다시 시도해 주세요." });
+            return;
+        }
+        openDialogBizDescView({
+            fisYear: $a.data("fisyear") || tabObj.find("#condFisYear").val(),
+            bgtDgr: $a.data("bgtdgr") || tabObj.find("#condBgtDgr").val(),
+            reportCd: $a.data("reportcd") || "020",
+            teBgtCompoId: $a.data("tebgtcompoid"),
+            dgrcompoId: $a.data("dgrcompoid"),
+            reportBizNm: decodeURIComponent($a.data("biznm") || ""),
+            officeCd: office.officeCd,
+            officeNm: office.officeNm,
+            tabId: tabId
         });
     });
     
@@ -1749,6 +1964,7 @@ $(document).ready(function() {
         $("#condDeptCdTo", tabObj).val("");
         $("#condDeptNmTo", tabObj).val("");
         $("#condDeptRankTo", tabObj).val("");
+        updateBizDescFileBtnState();
     };
     
     $("#condFisYear", tabObj).change(function(){
@@ -1940,4 +2156,5 @@ $(document).ready(function() {
     });
     
     doCondInit();
+    updateBizDescFileBtnState();
 });

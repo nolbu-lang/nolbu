@@ -7,7 +7,7 @@
 <script>
 _reportWrite020TabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite020.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite020.js?v=20260804k"></script>
 
 <div class="contents" style="height:100%;">
   <!--list s-->
@@ -86,6 +86,20 @@ _reportWrite020TabId = "<%=tabId%>";
                 <input type="text" id="condSrchVal" style="width:95%;" maxlength="40"/>
               </td>
             </tr>
+            <tr>
+              <th>분류항목</th>
+              <td>
+                <select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
+                </select>
+              </td>
+              <th>투자사업유형</th>
+              <td>
+                <select id="condIndiAttr" name="condIndiAttr" title="투자사업유형" style="width:90%;">
+                </select>
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -93,6 +107,9 @@ _reportWrite020TabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <input type="hidden" id="bizDescOfficeCd" value=""/>
+          <input type="hidden" id="bizDescOfficeNm" value=""/>
+          <a id="bizDescFileBtn" class="btnDisabledClass" href="#" enabledYn="N">사업설명서불러오기</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
           <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a>
           <a id="saveSheetBtn2" class="btnClass" href="#">시장님보고조서저장</a>

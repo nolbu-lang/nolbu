@@ -29,7 +29,7 @@
 <link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/jquery.layout.css" >
 <link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/<spring:eval expression="@config['Globals.LocalCd']"/>/bcjis.css" >
 <link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/<spring:eval expression="@config['Globals.LocalCd']"/>/comm.css" >
-<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/uxiscustom.css" >
+<link type="text/css" rel="stylesheet" href="${pageContext.request.contextPath}/css/uxiscustom.css?v=20260804j" >
 
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery-1.9.1.js" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery-impromptu.js" /></script>
@@ -45,7 +45,7 @@
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/autoNumeric.js" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.maxlength.js" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/sly.js" /></script>
-<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/cs.jquery.js" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/cs.jquery.js?v=20260804j" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/bcjisComm.js"></script>
 
 <script>

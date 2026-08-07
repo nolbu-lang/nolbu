@@ -4,13 +4,17 @@ $(document).ready(function() {
     mainLayout = $('#wrap').layout({
         north__size : 70,
         west__size : 270,
-        south__size : 72
+        south__size : 72,
+        north__initClosed : false,
+        south__initClosed : true
     });
    
-    //상단 자동 토글
-    mainLayout.toggle('north');
-    //하단 자동 토글
-    mainLayout.toggle('south');
+    // 상단 상태바는 AI 예산도우미 버튼 노출을 위해 항상 연 상태 유지
+    // (기존 mainLayout.toggle('north') 자동닫기 제거)
+    // 하단만 자동 닫기
+    if (mainLayout.state.south.isOpen) {
+        mainLayout.toggle('south');
+    }
 });
 
 //textArea 글자수 제한(객체, 최대가로, 최대줄)

@@ -217,6 +217,12 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
         update("ReportComm.copyReport" + map.get("reportCd"), map);
     }
 
+    /** 투자사업심사조서 시군 CHECK_YN 상속 (LOCAL_GOV_CD 매칭) */
+    @SuppressWarnings("rawtypes")
+    public void copyReport020D(Map map) throws Exception {
+        update("ReportComm.copyReport020D", map);
+    }
+
     @SuppressWarnings("rawtypes")
     public Map<String, CellStyle> getReportStyleMap(Map param, XSSFWorkbook wb) throws Exception {
         Map<String, CellStyle> styles = new HashMap<String, CellStyle>();
@@ -320,26 +326,34 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
     }
 
     @SuppressWarnings("rawtypes")
+    public List selectDgrcompoDescendantIdList(Map map) throws Exception {
+        return list("ReportComm.selectDgrcompoDescendantIdList", map);
+    }
+
+    @SuppressWarnings("rawtypes")
     public void updateSrchValReport(Map map) throws Exception {
         update("ReportComm.updateSrchValReport" + map.get("reportCd"), map);
     }
 
     @SuppressWarnings("rawtypes")
     public void updateSrchValChildReport(Map map) throws Exception {
-        updateSrchValReport(map);
-
-        List list = selectDgrcompoChildIdList(map);
-        if (list == null || list.size() < 1) {
+        String reportCd = String.valueOf(map.get("reportCd"));
+        // 010/020: 계층 1회 UPDATE (기존 재귀와 동일 결과, DB round-trip 대폭 감소)
+        if ("010".equals(reportCd) || "020".equals(reportCd)) {
+            update("ReportComm.updateSrchValChildTree" + reportCd, map);
             return;
         }
 
+        List list = selectDgrcompoDescendantIdList(map);
+        if (list == null || list.size() < 1) {
+            updateSrchValReport(map);
+            return;
+        }
         Map tempMap = null;
         for (int i = 0; i < list.size(); i++) {
             tempMap = (Map) list.get(i);
-
-            updateSrchValChildReport(tempMap);
+            updateSrchValReport(tempMap);
         }
-
     }
 
     @SuppressWarnings("rawtypes")
@@ -349,6 +363,11 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void updateReportSortSeqChildReport(Map map) throws Exception {
+        if ("020".equals(String.valueOf(map.get("reportCd")))) {
+            update("ReportComm.updateReportSortSeqChildTree020", map);
+            return;
+        }
+
         updateReportSortSeqReport(map);
 
         List list = selectDgrcompoChildIdList(map);
@@ -373,6 +392,11 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void updateMayorReportYnChildReport(Map map) throws Exception {
+        if ("020".equals(String.valueOf(map.get("reportCd")))) {
+            update("ReportComm.updateMayorReportYnChildTree020", map);
+            return;
+        }
+
         updateMayorReportYnReport(map);
 
         List list = selectDgrcompoChildIdList(map);
@@ -397,27 +421,16 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void updateCheckYnChildReport(Map map) throws Exception {
-        
-        updateCheckYnReport(map);
-
-        List list = selectDgrcompoChildIdList(map);
-        if (list == null || list.size() < 1) {
-            return;
-        }
-
-        Map tempMap = null;
-        for (int i = 0; i < list.size(); i++) {
-            tempMap = (Map) list.get(i);
-            tempMap.put("localGovCd", map.get("localGovCd"));
-            tempMap.put("checkYn", map.get("checkYn"));
-
-            updateCheckYnChildReport(tempMap);
-        }
-
+        // 시군 체크: 자기자신+하위 1회 UPDATE
+        update("ReportComm.updateCheckYnChildTree", map);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void updateReport020D(Map map) throws Exception {
+        if (!hasAnyCheckYnChange(map)) {
+            return;
+        }
+
         Map param = new HashMap();
 
         param.put("reportCd", map.get("reportCd"));
@@ -521,5 +534,24 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
             param.put("checkYn", map.get("checkYn3400000"));
             updateCheckYnChildReport(param);
         }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private boolean hasAnyCheckYnChange(Map map) {
+        if (map == null) {
+            return false;
+        }
+        String[] keys = new String[] {
+                "checkYn3250000Yn", "checkYn3260000Yn", "checkYn3270000Yn", "checkYn3280000Yn",
+                "checkYn3290000Yn", "checkYn3300000Yn", "checkYn3310000Yn", "checkYn3320000Yn",
+                "checkYn3330000Yn", "checkYn3340000Yn", "checkYn3350000Yn", "checkYn3360000Yn",
+                "checkYn3370000Yn", "checkYn3380000Yn", "checkYn3390000Yn", "checkYn3400000Yn"
+        };
+        for (int i = 0; i < keys.length; i++) {
+            if ("Y".equals(map.get(keys[i]))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -179,11 +179,16 @@ public class BudgetCommDAO extends BcjisCommAbstractDAO {
     
     @SuppressWarnings("rawtypes")
     public void copyPreInfo(Map param) throws Exception{
+        copyPreInfoLeaf(param);
+        saveUpDgrcompoInfoAll(param);
+    }
+
+    /** 세세목 기정액만 복사(상위 집계 제외). 일괄매핑 속도 개선용. */
+    @SuppressWarnings("rawtypes")
+    public void copyPreInfoLeaf(Map param) throws Exception{
         copyDgrcompocharPreCharAmt(param);
         copyDgrcompofrscPreFrscAmt(param);
         copyDgrcompoPreBgtAmt(param);
-        
-        saveUpDgrcompoInfoAll(param);
     }
     
     @SuppressWarnings("rawtypes")

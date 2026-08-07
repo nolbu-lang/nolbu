@@ -8,114 +8,30 @@
 <script>
   _budgetCopyTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/budget/budgetCopyNew.js"></script>
+<style>
+  a.budget-copy-act-unmap {
+    margin-left: 8px;
+    padding: 1px 6px;
+    font-size: 12px;
+    font-weight: normal;
+    color: #c62828;
+    border: 1px solid #c62828;
+    background: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+</style>
+<script src="${pageContext.request.contextPath}/js/budget/budgetCopyNew.js?v=20260804f"></script>
 <div class="contents" style="height:100%;">
   <!--list s-->
   <div id="mainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: hidden;">
     <div id="mainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
       <div id="subMainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;overflow: auto;">
-        <div id="subMainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
-          <div class="ui-widget-header">
-            적용대상
-          </div>
-          <!--condition s-->
-          <div id="subMainCenterCond" class="condition" style="width:100%;">
-          <input type="hidden" id="condAmtUnit" value="1000"/>
-            <table>
-              <colgroup>
-                <col width="100px"/>
-                <col width="180px"/>
-                <col width="100px"/>
-                <col width="170px"/>
-                <col width="100px"/>
-                <col width="110px"/>
-              </colgroup>
-              <tbody>
-              	<tr>
-	            	<th>분류</th>
-	            	<td>
-	            		<select id="condReportMstr" name="condReportMstr" title="대분류" style="width:90%;">
-	                	</select>
-	            	</td>
-	            	<td colspan="2">
-	            		<select id="condReportCd" name="condReportCd" title="중분류" style="width:90%;">
-	                	</select>
-	            	</td>
-	            	<td colspan="2">
-			            <select id="condReportDetlCd" name="condReportDetlCd" title="소분류" style="width:93%;">
-	                	</select>
-	            	</td>
-	            </tr>
-                <tr>
-                  <th>회계년도</th>
-                  <td>
-                    <select id="condFisYear" name="condFisYear" title="회계년도" style="width:90%;">
-                    </select>
-                  </td>
-                  <th>예산차수</th>
-                  <td>
-                    <select id="condBgtDgr" name="condBgtDgr" title="예산차수" style="width:90%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <th>회계구분</th>
-                  <td>
-                    <select id="condFisFgMstCd" name="condFisFgMstCd" title="회계마스터구분" style="width:90%;">
-                    </select>
-                  </td>
-                  <td colspan="2">
-                    <select id="condFisFgCd" name="condFisFgCd" title="회계구분" style="width:93%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <th>실국</th>
-                  <td>
-                    <select id="condOfficeCd" name="condOfficeCd" title="실국" style="width:90%;">
-                    </select>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                <tr>
-                  <th>부서</th>
-                  <td colspan="3">
-                    <input type="hidden" id="condDeptCdFr"/>
-                    <input type="hidden" id="condDeptRankFr"/>
-                    <input type="hidden" id="condDeptCdTo"/>
-                    <input type="hidden" id="condDeptRankTo"/>
-                    <input type="text" id="condDeptNmFr" class="readonly" style="width:35%;" readonly/>
-                    <a id="openDialogBgtDeptBtnFr" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>&nbsp;~&nbsp;
-                    <input type="text" id="condDeptNmTo" class="readonly" style="width:35%;" readonly/>
-                    <a id="openDialogBgtDeptBtnTo" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>
-                  </td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <!--condition e-->
-          <div class="btn">
-            <div class="btnR">
-              <a id="mapAddBtn" class="btnDisabledClass" href="#" enabledYn="N">매핑추가</a>
-              <a id="searchBtn" class="btnClass" href="#">조회</a>
-              <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
-            </div>
-          </div>
-          <div id="BUDGET_COPY_DIV" class="csGrid">
-            <table id="BUDGET_COPY_GRD"></table>
-          </div>
-        </div>
+        <!-- 왼쪽: 기정예산 -->
         <div id="subMainWest" class="pane ui-layout-west" style="border:0px;overflow:hidden;">
           <div class="ui-widget-header">
-            전년도 예산
+            기정예산
           </div>
           <!--condition s-->
           <div id="subMainWestCond" class="condition" style="width:97%;">
@@ -210,24 +126,125 @@
             <table id="BUDGET_COPY_SRC_GRD" ></table>
           </div>
         </div>
-      </div>
-    </div>
-    <div id="mainSouth" class="pane ui-layout-south" style="border:0px;overflow:hidden;">
-      <div class="ui-widget-header">
-        매핑 목록 (전년도 → 올해)
-      </div>
-      <div class="btn">
-        <div class="btnR">
-          <a id="batchApplyBtn" class="btnDisabledClass" href="#" enabledYn="N">일괄적용</a>
-          <a id="mapDelBtn" class="btnClass" href="#">매핑삭제</a>
-          <a id="mapClearBtn" class="btnClass" href="#">전체삭제</a>
+        <!-- 오른쪽: 적용대상 -->
+        <div id="subMainCenter" class="pane ui-layout-center" style="border:0px;overflow:hidden;">
+          <div class="ui-widget-header">
+            적용대상
+          </div>
+          <!--condition s-->
+          <div id="subMainCenterCond" class="condition" style="width:100%;">
+          <input type="hidden" id="condAmtUnit" value="1000"/>
+            <table>
+              <colgroup>
+                <col width="100px"/>
+                <col width="180px"/>
+                <col width="100px"/>
+                <col width="170px"/>
+                <col width="100px"/>
+                <col width="110px"/>
+              </colgroup>
+              <tbody>
+              	<tr>
+	            	<th>분류</th>
+	            	<td>
+	            		<select id="condReportMstr" name="condReportMstr" title="대분류" style="width:90%;">
+	                	</select>
+	            	</td>
+	            	<td colspan="2">
+	            		<select id="condReportCd" name="condReportCd" title="중분류" style="width:90%;">
+	                	</select>
+	            	</td>
+	            	<td colspan="2">
+			            <select id="condReportDetlCd" name="condReportDetlCd" title="소분류" style="width:93%;">
+	                	</select>
+	            	</td>
+	            </tr>
+                <tr>
+                  <th>회계년도</th>
+                  <td>
+                    <select id="condFisYear" name="condFisYear" title="회계년도" style="width:90%;">
+                    </select>
+                  </td>
+                  <th>예산차수</th>
+                  <td>
+                    <select id="condBgtDgr" name="condBgtDgr" title="예산차수" style="width:90%;">
+                    </select>
+                  </td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                </tr>
+                <tr>
+                  <th>회계구분</th>
+                  <td>
+                    <select id="condFisFgMstCd" name="condFisFgMstCd" title="회계마스터구분" style="width:90%;">
+                    </select>
+                  </td>
+                  <td colspan="2">
+                    <select id="condFisFgCd" name="condFisFgCd" title="회계구분" style="width:93%;">
+                    </select>
+                  </td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                </tr>
+                <tr>
+                  <th>실국</th>
+                  <td>
+                    <select id="condOfficeCd" name="condOfficeCd" title="실국" style="width:90%;">
+                    </select>
+                  </td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                <tr>
+                  <th>부서</th>
+                  <td colspan="3">
+                    <input type="hidden" id="condDeptCdFr"/>
+                    <input type="hidden" id="condDeptRankFr"/>
+                    <input type="hidden" id="condDeptCdTo"/>
+                    <input type="hidden" id="condDeptRankTo"/>
+                    <input type="text" id="condDeptNmFr" class="readonly" style="width:35%;" readonly/>
+                    <a id="openDialogBgtDeptBtnFr" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>&nbsp;~&nbsp;
+                    <input type="text" id="condDeptNmTo" class="readonly" style="width:35%;" readonly/>
+                    <a id="openDialogBgtDeptBtnTo" href="#"><img src="<c:url value='/images/btn/btn_search02.gif'/>" alt="조회"/></a>
+                  </td>
+                  <td>&nbsp;</td>
+                  <td>&nbsp;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!--condition e-->
+          <div class="btn">
+            <div class="btnR">
+              <a id="autoMapBtn" class="btnClass" href="#">자동매핑</a>
+              <a id="searchBtn" class="btnClass" href="#">조회</a>
+              <a id="condInitBtn" class="btnClass" href="#">조건초기화</a>
+            </div>
+          </div>
+          <div id="BUDGET_COPY_DIV" class="csGrid">
+            <table id="BUDGET_COPY_GRD"></table>
+          </div>
         </div>
-      </div>
-      <div id="BUDGET_MAP_DIV" class="csGrid">
-        <table id="BUDGET_MAP_GRD"></table>
       </div>
     </div>
   </div>
   <!--list e-->
+
+  <!-- 기정예산 유사매핑 후보 팝업 -->
+  <div id="budgetCopyMatchDialog" title="기정예산 매핑 후보" style="display:none;">
+    <div style="margin-bottom:6px;color:#333;">
+      적용대상: <span id="budgetCopyMatchTgtNm" style="font-weight:bold;"></span>
+    </div>
+    <div id="BUDGET_COPY_MATCH_DIV" class="csGrid">
+      <table id="BUDGET_COPY_MATCH_GRD"></table>
+    </div>
+    <div class="btn" style="margin-top:8px;">
+      <div class="btnR">
+        <a id="budgetCopyMatchApplyBtn" class="btnClass" href="#">매핑</a>
+        <a id="budgetCopyMatchCloseBtn" class="btnClass" href="#">닫기</a>
+      </div>
+    </div>
+  </div>
 </div>
 <!--ui-layout-center e-->

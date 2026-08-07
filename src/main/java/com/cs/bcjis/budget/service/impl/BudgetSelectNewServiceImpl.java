@@ -3,9 +3,11 @@ package com.cs.bcjis.budget.service.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -75,8 +77,8 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
 
             Map row = new HashMap();
             row.put("dgrcompoId", id);
-            row.put("upDgrcompoId", null);
-            row.put("parent", null);
+            row.put("upDgrcompoId", "");
+            row.put("parent", "");
             row.put("fisYear", leaf.get("fisYear"));
             row.put("bgtDgr", leaf.get("bgtDgr"));
             row.put("teBgtCompoId", teId);
@@ -133,9 +135,9 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             row.put("selNames", "");
             row.put("existYn", "");
             row.put("changeFlag", "");
-            row.put("isLeaf", "true");
-            row.put("expanded", "true");
-            row.put("loaded", "true");
+            row.put("isLeaf", Boolean.TRUE);
+            row.put("expanded", Boolean.TRUE);
+            row.put("loaded", Boolean.TRUE);
             result.add(row);
         }
         return result;
@@ -143,7 +145,8 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
 
     /**
      * 세세목 평면 목록 → csTreeGrid 호환 트리(회계-실국-부서-세부사업-세세목).
-     * 부모는 기본 펼침(expanded=true) — 전체 하위까지 펼침.
+     * 부모/자식 모두 expanded=true — 조회 직후 사업(세세목)이 보이도록 함.
+     * (접힘(lazy)은 사업이 안 보이는 것으로 오인되어 기본은 펼침 유지)
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private List buildSelectTreeFromLeaves(List leaves) {
@@ -241,9 +244,9 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             row.put("selNames", buildSelNames(leaf));
             row.put("existYn", "");
             row.put("changeFlag", "");
-            row.put("isLeaf", "true");
-            row.put("expanded", "true");
-            row.put("loaded", "true");
+            row.put("isLeaf", Boolean.TRUE);
+            row.put("expanded", Boolean.TRUE);
+            row.put("loaded", Boolean.TRUE);
             result.add(row);
         }
 
@@ -274,8 +277,8 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         }
         Map row = new HashMap();
         row.put("dgrcompoId", id);
-        row.put("upDgrcompoId", upId);
-        row.put("parent", upId);
+        row.put("upDgrcompoId", upId == null ? "" : upId);
+        row.put("parent", upId == null ? "" : upId);
         row.put("fisYear", fisYear);
         row.put("bgtDgr", bgtDgr);
         row.put("teBgtCompoId", "00000000000");
@@ -317,9 +320,9 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         row.put("selNames", "");
         row.put("existYn", "");
         row.put("changeFlag", "");
-        row.put("isLeaf", "false");
-        row.put("expanded", "true");
-        row.put("loaded", "true");
+        row.put("isLeaf", Boolean.FALSE);
+        row.put("expanded", Boolean.TRUE);
+        row.put("loaded", Boolean.TRUE);
         // 부서코드(체크박스 트리용)
         if (level >= 2) {
             row.put("deptCd", leafSample.get("deptCd"));
@@ -423,10 +426,16 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         String teMngMokCdTo = String.valueOf(jsonParam.get("teMngMokCdTo"));
         String frscFgCdFr = String.valueOf(jsonParam.get("frscFgCdFr"));
         String frscFgCdTo = String.valueOf(jsonParam.get("frscFgCdTo"));
+        String viewMode = String.valueOf(jsonParam.get("viewMode"));
+        boolean attrMode = "attr".equals(viewMode);
         
         initCdData(); //집계표 데이터 초기화
         List saveReportDatas = jsonParam.getJSONArray("saveReportDatas");
         JSONObject tempParam = null;
+
+        // 세세목별 기존 TB_REPORT 키를 1회(또는 청크) 조회로 미리 적재 — 행마다 SELECT 제거
+        Map existByCompoId = getExistDataMapByCompoIds(saveReportDatas, jsonParam);
+        Set report070DetlCds = new HashSet();
         
         for (int i = 0; i < saveReportDatas.size(); i++) {
         	tempParam = (JSONObject) saveReportDatas.get(i);
@@ -445,18 +454,28 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
         	tempParam.put("frscFgCdTo", frscFgCdTo);
         	tempParam.put("userId", jsonParam.get("userId"));
         	
-        	Map existDataMap = getExistDataMap(tempParam);
+        	String teBgtCompoId = String.valueOf(tempParam.get("teBgtCompoId"));
+        	Map existDataMapSrc = (Map) existByCompoId.get(teBgtCompoId);
+        	Map existDataMap = existDataMapSrc == null ? new HashMap() : new HashMap(existDataMapSrc);
         	Map tempKeyMap = null;
             String reportKeyString = getReportKeyString(tempParam);
 
             // 분류 취소(reportCd 비움): 기존 조서·집계 항목 삭제
+            // 보고항목모드(attr)에서는 분류 미지정 행은 건너뜀(삭제하지 않음)
             if (reportCd == null || "".equals(reportCd) || "null".equals(reportCd)) {
-                deleteReport(existDataMap);
+                if (!attrMode) {
+                    deleteReport(existDataMap);
+                    existByCompoId.put(teBgtCompoId, new HashMap());
+                }
                 continue;
             }
 
         	tempKeyMap = (Map) existDataMap.remove(reportKeyString);
             if (tempKeyMap == null) {
+            	if(attrMode){
+            		// 보고항목모드: 신규 조서성질 생성 없이, 기존 성질이 없으면 스킵
+            		continue;
+            	}
             	if(!"".equals(reportCd)){
             		reportCommDAO.insertReport(reportCd, tempParam);
             	}
@@ -470,11 +489,16 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             String indiAttrOrg = String.valueOf(tempParam.get("indiAttrOrg")); //원본 보고항목
             String indiAttrSkip = String.valueOf(tempParam.get("indiAttrSkip"));
 
+            // attr 모드: 투자사업유형/분류항목은 TB_REPORT 컬럼만 갱신 (TB_REPORT_ATTR 미사용)
+            if (attrMode) {
+                indiAttrSkip = "Y";
+            }
+
             //System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   indiAttr : " + indiAttr + "      indiAttrOrg : " + indiAttrOrg);
             if (!"Y".equals(indiAttrSkip)) {
             if(!"".equals(indiAttr) && !"null".equals(indiAttr)){
             	String[] indiAttrArr = indiAttr.split(",");
-            	String[] indiAttrOrgArr = indiAttrOrg.split(",");
+            	String[] indiAttrOrgArr = (indiAttrOrg == null || "null".equals(indiAttrOrg)) ? new String[0] : indiAttrOrg.split(",");
             	JSONObject attrParam = (JSONObject) saveReportDatas.get(i);
 
             	for(int j=0 ; j<indiAttrArr.length ; j++){
@@ -493,20 +517,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             		 
             	} 
             	
-            	//사용안하는 보고항목 삭제
-            	/*for(int j=0 ; j<indiAttrOrgArr.length ; j++){
-            		if(!Arrays.asList(indiAttrArr).contains(indiAttrOrgArr[j])){
-            			System.out.println("delete      :    " + indiAttrOrgArr[j] + "      " + indiAttrOrgArr.length);
-            			if(!spaceCheck(indiAttrOrgArr[j])){
-            				attrParam.put("indiAttr", indiAttrOrgArr[j]);
-                			reportWrite0F0DAO.deleteReportAttr(attrParam);
-            			}
-            			
-            		}
-            	}*/
-            	
             }else{
-            	System.out.println("delete   else");
             	JSONObject attrParam = (JSONObject) saveReportDatas.get(i);
             	attrParam.put("indiAttr", null);
             	int cnt = reportWrite0F0DAO.selectReportAttrCnt(attrParam);
@@ -517,43 +528,38 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             }
             } // end indiAttrSkip
             
-            deleteReport(existDataMap);
-            
-            if ("070".equals(reportCd) == true) {
-                insertReport070s(reportCd, reportDetlCd);
+            // 조서·집계 모드만: 다른 성질 키 삭제. attr 모드는 기존 성질 유지
+            if (!attrMode) {
+                deleteReport(existDataMap);
+                // 캐시 갱신: 남은 키는 삭제됨 → 적용한 키만 유지
+                Map kept = new HashMap();
+                kept.put(reportKeyString, tempParam);
+                existByCompoId.put(teBgtCompoId, kept);
             }
             
-            //집계표 입력
-            /*String sheetCd = "";
-            String sheetDetlCd = "";
-            String govSub = String.valueOf(tempParam.get("govSub"));
-            
-            if(("020".equals(reportDetlCd) && "0292".equals(reportDetlCd))	//투자사업비-국고투자
-            		|| ("300".equals(reportDetlCd) && "301".equals(reportDetlCd))	//일반국비
-            		){	
-            	sheetCd = reportCdToSheetCd.get(reportCd);
-                sheetDetlCd = reportDetlCdToSheetDetlCd.get(govSub);
-            }else{
-            	sheetCd = reportCdToSheetCd.get(reportCd);
-                sheetDetlCd = reportDetlCdToSheetDetlCd.get(reportDetlCd);
+            if (!attrMode && "070".equals(reportCd) == true) {
+                report070DetlCds.add(reportDetlCd);
             }
             
-            if(sheetCd != null && sheetDetlCd != null && !"".equals(sheetCd) && !"".equals(sheetDetlCd)){
-            	tempParam.put("userId", jsonParam.get("userId"));
-                tempParam.put("sheetCd", sheetCd);
-                tempParam.put("sheetDetlCd", sheetDetlCd);
-                int cnt = budgetSheetSelectDAO.selectSheetCnt(tempParam);
-                if(cnt == 0){
-                	budgetSheetSelectDAO.insertSheet(tempParam);
-                }else{
-                	budgetSheetSelectDAO.deleteSheet(tempParam);
-                	budgetSheetSelectDAO.insertSheet(tempParam);
-                }
-            }*/
-            
+        }
+
+        // 070 집계 재구성은 건별이 아니라 소분류별로 1회만
+        Iterator detlIt = report070DetlCds.iterator();
+        while (detlIt.hasNext()) {
+            insertReport070s("070", String.valueOf(detlIt.next()));
         }
         
         List saveReportDatas030 = jsonParam.getJSONArray("saveReportDatas030");
+        if (saveReportDatas030 == null || saveReportDatas030.size() < 1) {
+            return;
+        }
+
+        // attr 모드: 국고030 UI 없음 — 오인 삭제/저장 방지
+        if (attrMode) {
+            return;
+        }
+
+        Map existByCompoId030 = getExistDataMapByCompoIds(saveReportDatas030, jsonParam);
 
         for (int i = 0; i < saveReportDatas030.size(); i++) {
             tempParam = (JSONObject) saveReportDatas030.get(i);
@@ -561,13 +567,14 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             tempParam.put("userId", jsonParam.get("userId"));
             tempParam.put("reportCd", reportCd);
             
-            Map existDataMap = getExistDataMap(tempParam);
-            String reportKeyString = getReportKeyString(tempParam);
+            String teBgtCompoId = String.valueOf(tempParam.get("teBgtCompoId"));
+            Map existDataMapSrc = (Map) existByCompoId030.get(teBgtCompoId);
+            Map existDataMap = existDataMapSrc == null ? new HashMap() : new HashMap(existDataMapSrc);
             Map tempKeyMap = null;
-            tempKeyMap = (Map) existDataMap.remove(reportKeyString);
 
             if("Y".equals(tempParam.get("checkYn031Yn")) == true){
                 tempParam.put("reportDetlCd", "031");
+                String reportKeyString = getReportKeyString(tempParam);
                 
                 if("Y".equals(tempParam.get("checkYn031")) == true){
                     tempKeyMap = (Map) existDataMap.remove(reportKeyString);
@@ -582,6 +589,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
 
             if("Y".equals(tempParam.get("checkYn032Yn")) == true){
                 tempParam.put("reportDetlCd", "032");
+                String reportKeyString = getReportKeyString(tempParam);
                 if("Y".equals(tempParam.get("checkYn032")) == true){
                     tempKeyMap = (Map) existDataMap.remove(reportKeyString);
 
@@ -595,6 +603,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
 
             if("Y".equals(tempParam.get("checkYn033Yn")) == true){
                 tempParam.put("reportDetlCd", "033");
+                String reportKeyString = getReportKeyString(tempParam);
                 if("Y".equals(tempParam.get("checkYn033")) == true){
                     tempKeyMap = (Map) existDataMap.remove(reportKeyString);
 
@@ -608,6 +617,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             
             if("Y".equals(tempParam.get("checkYn034Yn")) == true){
             	tempParam.put("reportDetlCd", "034");
+            	String reportKeyString = getReportKeyString(tempParam);
             	if("Y".equals(tempParam.get("checkYn034")) == true){
             		tempKeyMap = (Map) existDataMap.remove(reportKeyString);
 
@@ -621,6 +631,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             
             if("Y".equals(tempParam.get("checkYn035Yn")) == true){
             	tempParam.put("reportDetlCd", "035");
+            	String reportKeyString = getReportKeyString(tempParam);
             	if("Y".equals(tempParam.get("checkYn035")) == true){
             		tempKeyMap = (Map) existDataMap.remove(reportKeyString);
 
@@ -631,11 +642,7 @@ public class BudgetSelectNewServiceImpl implements BudgetSelectNewService {
             		reportCommDAO.deleteReport(reportCd, tempParam);
             	}
             }
-
         }
-        
-        
-        
 
 /*
         Map tempKeyMap = null;
@@ -686,13 +693,13 @@ System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  " + i + "   :  reportKeyString :  
                 tempParam = (JSONObject) saveReportDatas030.get(i);
 
                 tempParam.put("userId", jsonParam.get("userId"));
-                tempParam.put("reportCd", "030");
-                tempParam.put("sheetCd", sheetCd);
-                
-System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  " + i + "   :  tempParam :  " + tempParam);
+                tempParam.put("reportCd", reportCd);
+
+                reportKeyString = getReportKeyString(tempParam);
+System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  030  reportKeyString : " + reportKeyString);
+
                 if("Y".equals(tempParam.get("checkYn031Yn")) == true){
                     tempParam.put("reportDetlCd", "031");
-                    
                     if("Y".equals(tempParam.get("checkYn031")) == true){
                         tempKeyMap = (Map) existDataMap031.remove(reportKeyString);
 System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  031  tempKeyMap : " + tempKeyMap);
@@ -752,6 +759,69 @@ System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@  033  tempKeyMap : " + tempKeyMap);
         
         reportCommDAO.deleteReport(map);
         reportCommDAO.insertReport070s(map);
+    }
+
+    /**
+     * 저장 대상 세세목들의 TB_REPORT 키를 일괄 조회하여
+     * Map&lt;teBgtCompoId, Map&lt;reportKey, row&gt;&gt; 형태로 반환.
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public Map getExistDataMapByCompoIds(List saveDatas, Map jsonParam) throws Exception {
+        Map result = new HashMap();
+        if (saveDatas == null || saveDatas.size() < 1) {
+            return result;
+        }
+
+        List teBgtCompoIds = new ArrayList();
+        Set idSet = new HashSet();
+        String fisYear = "";
+        String bgtDgr = "";
+        for (int i = 0; i < saveDatas.size(); i++) {
+            Map row = (Map) saveDatas.get(i);
+            String teId = String.valueOf(row.get("teBgtCompoId"));
+            if (teId == null || "".equals(teId) || "null".equals(teId) || idSet.contains(teId)) {
+                continue;
+            }
+            idSet.add(teId);
+            teBgtCompoIds.add(teId);
+            if ("".equals(fisYear)) {
+                fisYear = String.valueOf(row.get("fisYear"));
+                bgtDgr = String.valueOf(row.get("bgtDgr"));
+            }
+        }
+        if (teBgtCompoIds.isEmpty()) {
+            return result;
+        }
+        if (fisYear == null || "".equals(fisYear) || "null".equals(fisYear)) {
+            fisYear = String.valueOf(jsonParam.get("fisYear"));
+            bgtDgr = String.valueOf(jsonParam.get("bgtDgr"));
+        }
+
+        // IN 절 길이 제한 대비 청크 조회
+        int chunkSize = 200;
+        for (int from = 0; from < teBgtCompoIds.size(); from += chunkSize) {
+            int to = Math.min(from + chunkSize, teBgtCompoIds.size());
+            List chunk = teBgtCompoIds.subList(from, to);
+            Map param = new HashMap();
+            param.put("fisYear", fisYear);
+            param.put("bgtDgr", bgtDgr);
+            param.put("teBgtCompoIds", new ArrayList(chunk));
+            List existDatas = budgetSelectDAO.selectReportKeyListFastBatch(param);
+            if (existDatas == null || existDatas.isEmpty()) {
+                continue;
+            }
+            while (!existDatas.isEmpty()) {
+                Map tempMap = (Map) existDatas.remove(0);
+                String teId = String.valueOf(tempMap.get("teBgtCompoId"));
+                Map keyMap = (Map) result.get(teId);
+                if (keyMap == null) {
+                    keyMap = new HashMap();
+                    result.put(teId, keyMap);
+                }
+                keyMap.put(getReportKeyString(tempMap), tempMap);
+            }
+        }
+        return result;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

@@ -294,10 +294,6 @@ public class AiReportContextBuilder {
         } else if (bgtDgr.length() > 0) {
             sb.append(bgtDgr).append("차수");
         }
-
-        if (bgtDgr.length() > 0) {
-            sb.append("(예산차수 ").append(bgtDgr).append(")");
-        }
         return sb.toString();
     }
 
@@ -344,47 +340,191 @@ public class AiReportContextBuilder {
     private static final String FRSC_NM_SI = "자체재원";
 
     /**
-     * TB_DGRCOMPOFRSC 조회 결과(재원명·조정액 목록)를 행에 반영한다.
-     * DialogDgrcompoModify.selectDgrcompofrscList 와 동일 데이터 기준.
+     * TB_DGRCOMPOFRSC 조회 결과(재원명·조정/요구/기정액 목록)를 행에 반영한다.
+     */
+    /**
+     * TB_DGRCOMPOFRSC 재원라인 → 행에 반영.
+     * ReportWrite020과 동일 슬롯:
+     * 전년도투자=PRE_FRSC, 기정(당해)=PRE_DEF, 요구=DMN_DEF, 조정=ADJ_DEF.
      */
     public static void applyAdjFrscFromFrscLines(Map<String, Object> row, List<Map<String, Object>> frscLines) {
         if (row == null) {
             return;
         }
+        long[] adjSlots = new long[7];
+        long[] dmnSlots = new long[7];
+        long[] preDefSlots = new long[7];
+        long[] prevYearSlots = new long[7];
         long gov = 0L;
         long si = 0L;
         long etc = 0L;
         StringBuilder detail = new StringBuilder();
+        boolean hasLine = false;
+        boolean allBootstrap = true;
 
         if (frscLines != null) {
             for (int i = 0; i < frscLines.size(); i++) {
                 Map<String, Object> line = frscLines.get(i);
-                long adj = getLong(line, "adj_def_frsc_amt");
-                if (adj == 0L) {
-                    continue;
-                }
+                hasLine = true;
                 String nm = getStr(line, "frsc_fg_nm");
-                int bucket = frscBucketByFgNm(nm);
-                if (bucket == 0) {
-                    gov += adj;
-                } else if (bucket == 1) {
-                    si += adj;
-                } else {
-                    etc += adj;
+                String standCd = getStr(line, "stand_frsc_cd");
+                String regiId = getStr(line, "regi_id");
+                if (!"bootstrap".equals(regiId)) {
+                    allBootstrap = false;
                 }
-                if (detail.length() > 0) {
-                    detail.append("|");
+                long adj = getLong(line, "adj_def_frsc_amt");
+                long dmn = getLong(line, "dmn_def_frsc_amt");
+                long preDef = getLong(line, "pre_def_frsc_amt");
+                long prevYear = getLong(line, "pre_frsc_amt");
+                int slot = standFrscCdToSlot(standCd, nm);
+                if (slot < 1 || slot > 6) {
+                    slot = 5;
                 }
-                detail.append(nm).append(":").append(adj);
+                if (adj != 0L) {
+                    adjSlots[slot] += adj;
+                    int bucket = (slot == 1) ? 1 : (slot == 2 || slot == 3 ? 0 : 2);
+                    if (bucket == 0) {
+                        gov += adj;
+                    } else if (bucket == 1) {
+                        si += adj;
+                    } else {
+                        etc += adj;
+                    }
+                    if (detail.length() > 0) {
+                        detail.append("|");
+                    }
+                    detail.append(nm).append(":").append(adj);
+                }
+                if (dmn != 0L) {
+                    dmnSlots[slot] += dmn;
+                }
+                if (preDef != 0L) {
+                    preDefSlots[slot] += preDef;
+                }
+                if (prevYear != 0L) {
+                    prevYearSlots[slot] += prevYear;
+                }
             }
         }
 
-        Map<String, Object> fr = new java.util.HashMap<String, Object>();
-        fr.put("adj_frsc_gov", Long.valueOf(gov));
-        fr.put("adj_frsc_si", Long.valueOf(si));
-        fr.put("adj_frsc_etc", Long.valueOf(etc));
-        fr.put("frsc_detail", detail.toString());
-        applyAdjFrscFromDb(row, fr);
+        // 본예산 화면: 전년도투자(PRE_FRSC) / 추경 화면: 기정(PRE_DEF)
+        boolean mainBudget = isMainBudgetDgr(row);
+        long[] displayPre = mainBudget ? prevYearSlots : preDefSlots;
+        putFrscSlots(row, "prev_frsc_amt", prevYearSlots);
+        putFrscSlots(row, "pre_def_frsc_amt", preDefSlots);
+        putFrscSlots(row, "pre_frsc_amt", displayPre);
+        putFrscSlots(row, "demand_frsc_amt", dmnSlots);
+        putFrscSlots(row, "dmn_frsc_amt", dmnSlots);
+        putFrscSlots(row, "frsc_amt", adjSlots);
+
+        row.put("adj_frsc_gov", Long.valueOf(gov));
+        row.put("adj_frsc_si", Long.valueOf(si));
+        row.put("adj_frsc_etc", Long.valueOf(etc));
+        row.put("frsc_detail", detail.toString());
+        row.put("pre_frsc_detail", formatFrscSlotsAsLines(displayPre));
+        row.put("demand_frsc_detail", formatFrscSlotsAsLines(dmnSlots));
+        row.put("demand_frsc_combined", "");
+        row.put("frsc_bootstrap_only", (hasLine && allBootstrap) ? "Y" : "N");
+    }
+
+    /** 본예산 차수(bgt_dgr=1 또는 bgt_compo_fg=10) */
+    public static boolean isMainBudgetDgr(Map<String, Object> row) {
+        if (row == null) {
+            return false;
+        }
+        if ("10".equals(getStr(row, "bgt_compo_fg"))) {
+            return true;
+        }
+        long dgr = getLong(row, "bgt_dgr");
+        return dgr == 1L || "1".equals(getStr(row, "bgt_dgr"));
+    }
+
+    /** STAND_FRSC_CD → 심사조서 슬롯(1시비 2국비 3교부세 4지방채등 5~6기타). ReportWrite020 DECODE와 동일 */
+    public static int standFrscCdToSlot(String standCd, String frscFgNm) {
+        if (standCd != null) {
+            String cd = standCd.trim();
+            if ("160".equals(cd)) {
+                return 1;
+            }
+            if ("110".equals(cd) || "120".equals(cd) || "130".equals(cd)) {
+                return 2;
+            }
+            if ("140".equals(cd) || "150".equals(cd)) {
+                return 3;
+            }
+            if ("180".equals(cd)) {
+                return 4;
+            }
+            if ("190".equals(cd)) {
+                return 5;
+            }
+            if ("170".equals(cd) || "200".equals(cd) || "210".equals(cd)) {
+                return 6;
+            }
+        }
+        int bucket = frscBucketByFgNm(frscFgNm);
+        if (bucket == 1) {
+            return 1;
+        }
+        if (bucket == 0) {
+            return 2;
+        }
+        return 5;
+    }
+
+    private static void putFrscSlots(Map<String, Object> row, String prefix, long[] slots) {
+        for (int i = 1; i <= 6; i++) {
+            row.put(prefix + i, Long.valueOf(slots[i]));
+        }
+    }
+
+    private static long[] addSlots(long[] a, long[] b) {
+        long[] out = new long[7];
+        for (int i = 1; i <= 6; i++) {
+            out[i] = (a == null ? 0L : a[i]) + (b == null ? 0L : b[i]);
+        }
+        return out;
+    }
+
+    private static long sumSlots(long[] slots) {
+        if (slots == null) {
+            return 0L;
+        }
+        long s = 0L;
+        for (int i = 1; i <= 6; i++) {
+            s += slots[i];
+        }
+        return s;
+    }
+
+    private static long[] readFrscSlots(Map<String, Object> row, String prefix) {
+        long[] slots = new long[7];
+        if (row == null) {
+            return slots;
+        }
+        for (int i = 1; i <= 6; i++) {
+            slots[i] = getLong(row, prefix + i);
+        }
+        return slots;
+    }
+
+    /** 슬롯1~6 → 투자조서 라벨 줄바꿈 (시비/국비/교부세/지방채/채무/기타) */
+    public static String formatFrscSlotsAsLines(long[] slots) {
+        if (slots == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        appendTotLine(sb, "시비", slots[1]);
+        appendTotLine(sb, "국비", slots[2]);
+        appendTotLine(sb, "교부세", slots[3]);
+        appendTotLine(sb, "지방채", slots[4]);
+        appendTotLine(sb, "채무", slots[5]);
+        appendTotLine(sb, "기타", slots[6]);
+        return sb.toString();
+    }
+
+    public static String formatFrscSlotsAsLines(Map<String, Object> row, String prefix) {
+        return formatFrscSlotsAsLines(readFrscSlots(row, prefix));
     }
 
     /**
@@ -514,19 +654,12 @@ public class AiReportContextBuilder {
     }
 
     /**
-     * 조정액 재원 표기 — TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT(화면 재원별 '조정액' 컬럼) 합산.
-     * 국고보조금·균특보조금·기금보조금·특별교부세·소방안전교부세·지방소멸대응기금 → 국비,
-     * 자체재원 → 시비, 그 외 → 기타.
+     * 조정액 재원 표기 — 심사조서와 동일하게 TB_DGRCOMPOFRSC.ADJ_DEF_FRSC_AMT 슬롯을 그대로 사용.
+     * 슬롯 합이 조정액(DIFF_AMT)과 다르면 빈 문자열(재원 배분·추정 없음).
      */
     public static String formatFrscForRow(Map<String, Object> row) {
         long adjAmt = getLong(row, "bgt_amt");
-        if (adjAmt == 0L) {
-            return "";
-        }
-        long[] buckets = getAdjFrscBucketsForRow(row);
-        buckets = reconcileFrscBucketsToAdjAmt(buckets[0], buckets[1], buckets[2], adjAmt, getStr(row, "frsc_detail"));
-        buckets = clipFrscBucketsForDisplay(buckets[0], buckets[1], buckets[2], adjAmt);
-        return formatFrscAmounts(buckets[0], buckets[1], buckets[2]);
+        return frscLinesMatchingAmount(readFrscSlots(row, "frsc_amt"), adjAmt).replace("\n", ", ");
     }
 
     /** frsc_detail(재원명:조정액) 우선 → adj_frsc_gov/si/etc → 구형 슬롯 */
@@ -570,9 +703,7 @@ public class AiReportContextBuilder {
     }
 
     /**
-     * 차수별 예산 한 줄.
-     * 예산액 = 조정액(DIFF_AMT), 괄호 = 재원별 조정액(ADJ_DEF_FRSC_AMT) 합산.
-     * 예) 본예산:200백만원(국비 140, 시비 60)
+     * 차수별 예산 한 줄. 조정액 = DIFF_AMT, 괄호 = ADJ_DEF 슬롯(합 == 조정액일 때만).
      */
     public static String formatBudgetDgrDisplay(Map<String, Object> row, ContextOptions options) {
         String shortDgr = buildShortDgrLabel(getStr(row, "bgt_compo_fg"),
@@ -582,7 +713,8 @@ public class AiReportContextBuilder {
                     getLong(row, "add_times"), getStr(row, "bgt_dgr"));
         }
         long bgtAmt = getLong(row, "bgt_amt");
-        String frsc = formatFrscForRow(row);
+        String frsc = frscLinesMatchingAmount(readFrscSlots(row, "frsc_amt"), bgtAmt)
+                .replace("\n", ", ");
         StringBuilder sb = new StringBuilder();
         sb.append(shortDgr).append(":").append(toMillion(bgtAmt)).append("백만원");
         if (frsc.length() > 0) {
@@ -759,8 +891,17 @@ public class AiReportContextBuilder {
     }
 
     /**
-     * 상세 창용 행 데이터(JSON). HTML 대신 클라이언트에서 4열 표를 그린다.
-     * [구분] 열은 포함하지 않음 (demand_cont = 요구내역만).
+     * 상세 창용 행 데이터(JSON).
+     * 열: 연도/차수(+회계 fis_fg_nm·dept), 구분, 총사업비(+재원), 기정액(+재원), 요구액(+재원), 조정액(+재원), 검토내용
+     * <p>
+     * 금액은 TB_DGRCOMPO 편성액(조서 '계'), 하위재원은 TB_DGRCOMPOFRSC 슬롯:
+     * <ul>
+     *   <li>총사업비 = TB_REPORT020.TOT_FRSC 합 / 하위 tot1~6 (투자조서만)</li>
+     *   <li>기정 = 투자 본예산 PRE_BGT_AMT(전년도 최종예산)+PRE_FRSC, 투자 추경 PRE_AMT(당해 기정)+PRE_DEF,
+     *       경상 PRE_BGT_AMT+PRE_DEF</li>
+     *   <li>요구 = DEMAND_DIFF_AMT + DMN_DEF / 조정 = DIFF_AMT + ADJ_DEF</li>
+     *   <li>하위재원은 슬롯 합 == 금액일 때만 표시. 비었거나 어긋나면 빈 표시(추정·배분 없음)</li>
+     * </ul>
      */
     public static List<Map<String, String>> buildMultiYearBizDetailRows(List<Map<String, Object>> group,
             ContextOptions options) {
@@ -774,16 +915,194 @@ public class AiReportContextBuilder {
         for (int i = 0; i < group.size(); i++) {
             Map<String, Object> row = group.get(i);
             String fisYear = getStr(row, "fis_year");
-            String budgetCell = (fisYear.length() > 0 ? fisYear + "년, " : "")
-                    + formatBudgetDgrDisplay(row, options);
+            String yearDgr = buildDgrLabel(fisYear, getStr(row, "bgt_compo_fg"),
+                    getLong(row, "add_times"), getStr(row, "bgt_dgr"));
+            String gubunText = resolveGubunText(row);
+            if (gubunText.length() == 0) {
+                gubunText = truncateTo(getStr(row, "demand_cont"), MAX_DETAIL_CONT_LENGTH);
+            } else {
+                gubunText = truncateTo(gubunText, MAX_DETAIL_CONT_LENGTH);
+            }
+
+            long totAmt = getLong(row, "tot_biz_amt");
+            String totFrsc = formatTotFrscAsLines(row);
+
+            long[] prevSlots = readFrscSlots(row, "prev_frsc_amt");
+            long[] preDefSlots = readFrscSlots(row, "pre_def_frsc_amt");
+            long[] demandSlots = readFrscSlots(row, "demand_frsc_amt");
+            long[] adjSlots = readFrscSlots(row, "frsc_amt");
+
+            long preVal;
+            long demandAmt;
+            long adjAmt;
+            String preFrsc;
+            String demandFrsc;
+            String adjFrsc;
+
+            if (isInvestReport(row)) {
+                // 투자: 금액 = TB_DGRCOMPO 편성액(조서 '계'), 하위 = 조서 슬롯(합==금액일 때만)
+                boolean mainBudget = isMainBudgetDgr(row);
+                long[] preSlots = mainBudget ? prevSlots : preDefSlots;
+                preVal = mainBudget ? getLong(row, "pre_bgt_amt") : getLong(row, "pre_amt");
+                if (preVal == 0L) {
+                    preVal = sumSlots(preSlots);
+                }
+                preFrsc = frscLinesMatchingAmount(preSlots, preVal);
+                demandAmt = getLong(row, "demand_bgt_amt");
+                demandFrsc = frscLinesMatchingAmount(demandSlots, demandAmt);
+                adjAmt = getLong(row, "bgt_amt");
+                adjFrsc = frscLinesMatchingAmount(adjSlots, adjAmt);
+                if (totAmt == 0L) {
+                    totAmt = sumSlots(readFrscSlots(row, "tot_frsc_amt"));
+                }
+            } else {
+                // 경상: 금액 = 편성액, 하위 = 슬롯(합==금액일 때만)
+                long preBgt = getLong(row, "pre_bgt_amt");
+                long preAmtRaw = getLong(row, "pre_amt");
+                preVal = preBgt != 0L ? preBgt : preAmtRaw;
+                demandAmt = getLong(row, "demand_bgt_amt");
+                adjAmt = getLong(row, "bgt_amt");
+                // 본예산/추경 기정 하위: 화면 기정에 가까운 PRE_DEF(추경) 또는 PRE(본예산 표시용)
+                long[] preSlots = isMainBudgetDgr(row)
+                        ? readFrscSlots(row, "pre_frsc_amt") : preDefSlots;
+                if (sumSlots(preSlots) == 0L) {
+                    preSlots = preDefSlots;
+                }
+                preFrsc = frscLinesMatchingAmount(preSlots, preVal);
+                demandFrsc = frscLinesMatchingAmount(demandSlots, demandAmt);
+                adjFrsc = frscLinesMatchingAmount(adjSlots, adjAmt);
+            }
+
             Map<String, String> line = new LinkedHashMap<String, String>();
-            line.put("budget", budgetCell);
-            line.put("demand", truncateTo(getStr(row, "demand_cont"), MAX_DETAIL_CONT_LENGTH));
-            line.put("exam", truncateTo(getStr(row, "exam_cont"), MAX_DETAIL_CONT_LENGTH));
+            line.put("yearDgr", yearDgr);
+            line.put("fisFgNm", getStr(row, "fis_fg_nm"));
             line.put("dept", formatDeptLine(row));
+            line.put("gubun", gubunText);
+            if (totAmt != 0L) {
+                line.put("hasTot", "Y");
+                line.put("totAmt", toMillion(totAmt) + "백만원");
+                line.put("totFrsc", totFrsc);
+            } else {
+                line.put("hasTot", "N");
+                line.put("totAmt", "");
+                line.put("totFrsc", "");
+            }
+            line.put("preAmt", toMillion(preVal) + "백만원");
+            line.put("preFrsc", preFrsc);
+            line.put("demandAmt", toMillion(demandAmt) + "백만원");
+            line.put("demandFrsc", demandFrsc);
+            line.put("adjAmt", toMillion(adjAmt) + "백만원");
+            line.put("adjFrsc", adjFrsc);
+            line.put("exam", truncateTo(getStr(row, "exam_cont"), MAX_DETAIL_CONT_LENGTH));
             out.add(line);
         }
         return out;
+    }
+
+    /** 슬롯 합 == 금액일 때만 하위재원 표시(재원·하위 관계 일치). 비거나 불일치면 빈 문자열. */
+    private static String frscLinesMatchingAmount(long[] slots, long amountWon) {
+        if (amountWon == 0L || slots == null) {
+            return "";
+        }
+        if (sumSlots(slots) != amountWon) {
+            return "";
+        }
+        return formatFrscSlotsAsLines(slots);
+    }
+
+    /**
+     * frsc_detail("재원명:원금액|…") → 재원별 줄바꿈 표시.
+     * 예) 자체재원 120\n국고보조금 80
+     */
+    public static String formatFrscDetailAsLines(String detail) {
+        if (detail == null || detail.trim().length() == 0) {
+            return "";
+        }
+        String[] parts = detail.split("\\|");
+        java.util.LinkedHashMap<String, Long> byName = new java.util.LinkedHashMap<String, Long>();
+        for (int i = 0; i < parts.length; i++) {
+            String p = parts[i].trim();
+            if (p.length() == 0) {
+                continue;
+            }
+            int colon = p.lastIndexOf(':');
+            if (colon <= 0 || colon >= p.length() - 1) {
+                continue;
+            }
+            String nm = p.substring(0, colon).trim();
+            // "STAND:재원명:금액" 구형 3단 지원
+            int firstColon = p.indexOf(':');
+            if (firstColon > 0 && firstColon < colon) {
+                String maybeStand = p.substring(0, firstColon).trim();
+                if (maybeStand.matches("\\d{2,3}")) {
+                    nm = p.substring(firstColon + 1, colon).trim();
+                }
+            }
+            long amt = parseFrscAmount(p.substring(colon + 1));
+            if (nm.length() == 0 || amt == 0L) {
+                continue;
+            }
+            Long prev = byName.get(nm);
+            byName.put(nm, Long.valueOf((prev == null ? 0L : prev.longValue()) + amt));
+        }
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Iterator<java.util.Map.Entry<String, Long>> it = byName.entrySet().iterator(); it.hasNext();) {
+            java.util.Map.Entry<String, Long> e = it.next();
+            if (e.getValue().longValue() == 0L) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(e.getKey()).append(' ').append(toMillion(e.getValue().longValue()));
+        }
+        return sb.toString();
+    }
+
+    /** tot_frsc_amt1~6 → 투자조서 총사업비 라벨 (시비/국비/교부세/지방채/채무/기타) */
+    public static String formatTotFrscAsLines(Map<String, Object> row) {
+        if (row == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        appendTotLine(sb, "시비", getLong(row, "tot_frsc_amt1"));
+        appendTotLine(sb, "국비", getLong(row, "tot_frsc_amt2"));
+        appendTotLine(sb, "교부세", getLong(row, "tot_frsc_amt3"));
+        appendTotLine(sb, "지방채", getLong(row, "tot_frsc_amt4"));
+        appendTotLine(sb, "채무", getLong(row, "tot_frsc_amt5"));
+        appendTotLine(sb, "기타", getLong(row, "tot_frsc_amt6"));
+        return sb.toString();
+    }
+
+    private static void appendTotLine(StringBuilder sb, String label, long won) {
+        if (won == 0L) {
+            return;
+        }
+        if (sb.length() > 0) {
+            sb.append('\n');
+        }
+        sb.append(label).append(' ').append(toMillion(won));
+    }
+
+    /** "국비 140, 시비 60" → 줄바꿈 */
+    public static String formatFrscAmountsAsLines(String compact) {
+        if (compact == null || compact.trim().length() == 0) {
+            return "";
+        }
+        return compact.replace(", ", "\n").replace(",", "\n");
+    }
+
+    /** tot_frsc_amt1(시비)~6 → 국비/시비/기타 표기 (하위호환, 줄바꿈) */
+    public static String formatTotFrscForRow(Map<String, Object> row) {
+        return formatTotFrscAsLines(row);
+    }
+
+    /**
+     * frsc_detail → 재원명별 줄바꿈. totalAmt는 무시(총액 맞춤으로 재원을 지우지 않음).
+     * @deprecated formatFrscDetailAsLines 사용
+     */
+    public static String formatNamedFrscDetail(String detail, long totalAmt) {
+        return formatFrscDetailAsLines(detail);
     }
 
     private static String resolveGubunText(Map<String, Object> row) {

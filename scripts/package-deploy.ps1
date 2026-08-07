@@ -56,7 +56,14 @@ $scriptFiles = @(
     "scripts\check-ai-indexes.ps1",
     "scripts\create-indexes.sql",
     "scripts\patch-menu-budget-copy.sql",
-    "scripts\seed-comm-seq.sql"
+    "scripts\seed-comm-seq.sql",
+    "scripts\create-tb-bizdesc.sql",
+    "scripts\alter-tb-bizdesc-bgt-dgr.sql",
+    "scripts\alter-tb-bizdesc-office.sql",
+    "scripts\add-menu-budget-select-split.sql",
+    "scripts\rename-menu-attr-report-select.sql",
+    "scripts\rename-menu-attr-to-class-item.sql",
+    "scripts\rename-gov-sub-matching-to-direct.sql"
 )
 foreach ($f in $scriptFiles) {
     $src = Join-Path $ProjectRoot $f
@@ -68,6 +75,8 @@ foreach ($f in $scriptFiles) {
 $guideName = "docs\운영서버_배포_가이드_$DateTag.md"
 $docFiles = @(
     $guideName,
+    "docs\운영서버_배포_가이드_20260807.md",
+    "docs\AI작업자_인수인계_참고사항.md",
     "docs\운영배포_종합개선보고서.md",
     "docs\업무서버_적용_가이드.md",
     "docs\개선사항_보고서.md",
@@ -87,21 +96,22 @@ $readme = @"
 # bcjis 개선본 배포 패키지 ($DateTag)
 
 ## 전달 목적
-예산편성심사정보시스템 — bcjis-소스변경분-20260629 **다음** 차수 (조정재원·AI 검색속도)
+예산편성심사정보시스템 — AI 예산도우미 고도화 + 심사정보 기능개선 (2026-08-07)
 
 ## 이전 배포
-- bcjis-소스변경분-20260629 / bcjis-배포-20260629 까지 적용 후 **본 패키지** 적용
+- bcjis-배포-20260708 까지 적용 후 **본 패키지** 적용
 
 ## 관리자가 받을 파일 (이 폴더 전체)
 1. **bcjis-webapp.war** — 애플리케이션 (필수)
-2. **deploy/** — 배포 스크립트·README
-3. **scripts/** — DB 인덱스·메뉴 패치
-4. **docs/** — 적용 가이드·종합 보고서
+2. **deploy/** — 배포 스크립트·README·globals AI 스니펫
+3. **scripts/** — DB 인덱스·메뉴·(선택)사업설명서 SQL
+4. **docs/** — 적용 가이드
 
 ## 빠른 시작
-1. docs\운영배포_종합개선보고서.md 를 먼저 읽으세요.
-2. deploy\README-관리자용.md 절차대로 DB → WAR 순 적용.
-3. AI 기능: deploy\globals.properties.ai-snippet.example 참고하여 기존 globals.properties 에 추가.
+1. docs\운영서버_배포_가이드_20260807.md 를 먼저 읽으세요.
+2. docs\AI작업자_인수인계_참고사항.md 로 범위 확인.
+3. deploy\README-관리자용.md / 배포 가이드 절차대로 DB → globals → WAR.
+4. AI 설정: deploy\globals.properties.ai-snippet.example → 기존 globals.properties 에 추가.
 
 ## GitHub
 https://github.com/nolbu-lang/nolbu.git (main, commit $(git -C $ProjectRoot rev-parse --short HEAD 2>$null))

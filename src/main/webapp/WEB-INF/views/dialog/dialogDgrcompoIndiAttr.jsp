@@ -75,9 +75,6 @@ $(document).ready(function (){
         	dialogDgrcompoIndiAttrClose();
         },
         buttons : {
-            "저장" : function() {
-            	dialogDgrcompoIndiAttrDoSave();
-            },
             "닫기" : function() {
             	dialogDgrcompoIndiAttrClose();
             }
@@ -101,6 +98,7 @@ $(document).ready(function (){
         }
     	
     	dialogDgrcompoIndiAttrGrid.addCsJsonData(data);
+    	if(typeof window.applyAttrCodeAdminUi === 'function'){ window.applyAttrCodeAdminUi(); }
     }    
     
     var getSelectedRowId = function(){
@@ -139,7 +137,7 @@ $(document).ready(function (){
         return selectedDatas;
     };
     
-    $("#addRowBtn", dialogObj).click(function() {
+    $("#addRowBtn").click(function() {
     	var rowId = dialogDgrcompoIndiAttrGrid.getGridParam("reccount");
     	var trCnt = $('#DIALOG_DGR_COMPO_INDI_ATTR_GRD').find('input').length;
     	
@@ -160,8 +158,13 @@ $(document).ready(function (){
     	dialogDgrcompoIndiAttrGrid.jqGrid('addRowData', maxDetlCd, addData);
     });
     
-    $("#delRowBtn", dialogObj).click(function() {
-    	var selectedDatas = getSelectedData(dialogDgrcompoIndiAttrGrid, $("#DIALOG_DGR_COMPO_INDI_ATTR_GRD", dialogObj)[0].rows);
+    $("#delRowBtn").click(function() {
+    	var $grd = $("#DIALOG_DGR_COMPO_INDI_ATTR_GRD");
+    	if($grd.length < 1 || !$grd[0].rows){
+    		$.csAlert({ msg : '삭제할 속성을 선택해주세요.' });
+        	return false;
+    	}
+    	var selectedDatas = getSelectedData(dialogDgrcompoIndiAttrGrid, $grd[0].rows);
 
     	if(isEmpty(selectedDatas) == true || selectedDatas.length < 1){
     		$.csAlert({
@@ -179,7 +182,8 @@ $(document).ready(function (){
     var dialogDgrcompoIndiAttrDoDelete = function(){
     	
     	//삭제 실행
-    	var selectedDatas = getSelectedData(dialogDgrcompoIndiAttrGrid, $("#DIALOG_DGR_COMPO_INDI_ATTR_GRD", dialogObj)[0].rows);
+    	var $grd = $("#DIALOG_DGR_COMPO_INDI_ATTR_GRD");
+    	var selectedDatas = getSelectedData(dialogDgrcompoIndiAttrGrid, $grd[0].rows);
     	var data = $.csAjaxCall({
             url : "/budget/ajaxDialogDgrcompoDelCommCd.do",
             data : {codeId : "RP014", delData: selectedDatas}
@@ -342,6 +346,10 @@ $(document).ready(function (){
 	    			, comboTypeValue: ''
     	});
     }
+
+    window.doDialogDgrcompoIndiAttrSearch = doDialogDgrcompoIndiAttrSearch;
+    window.dialogDgrcompoIndiAttrDoSave = dialogDgrcompoIndiAttrDoSave;
+    window.dialogDgrcompoIndiAttrDoDelete = dialogDgrcompoIndiAttrDoDelete;
 });
 
 
@@ -349,9 +357,8 @@ $(document).ready(function (){
 <div id="dialogDgrcompoIndiAttrDiv" class="dialog" style="display:none;">
 	<input type="hidden" id="dialogDgrcompoIndiAttrCallBackFunction"/>
   <div id="indiAttrBody">
-  	<div class="btn">
+  	<div class="btn attrCodeInnerBtn" style="display:none;">
         <div class="btnR">
-          <!-- <a id="updateAllAmtBtn" class="btnDisabledClass" enabledYn="N" href="#">전체금액조정</a> -->
           <a id="addRowBtn" class="btnClass" href="#">추가</a>
           <a id="delRowBtn" class="btnClass" href="#">삭제</a>
         </div>

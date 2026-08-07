@@ -7,7 +7,7 @@
 <script>
 _reportWrite020PageTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite020Page.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite020Page.js?v=20260804k"></script>
 <style>
 .ui-jqgrid .ui-jqgrid-htable th div {
     height:auto;
@@ -100,13 +100,16 @@ _reportWrite020PageTabId = "<%=tabId%>";
               </td>
             </tr>
             <tr>
-            	<th>사전절차</th>
+            	<th>분류항목</th>
             	<td>
-            		<select id="condAdvncProc" name="condAdvncProc" title="사전절차" style="width:90%;">
+            		<select id="condAdvncProc" name="condAdvncProc" title="분류항목" style="width:90%;">
 					</select>
             	</td>
-            	<td>&nbsp;</td>
-            	<td>&nbsp;</td>
+            	<th>투자사업유형</th>
+            	<td>
+            		<select id="condIndiAttr" name="condIndiAttr" title="투자사업유형" style="width:90%;">
+					</select>
+            	</td>
             	<td>&nbsp;</td>
               	<td>&nbsp;</td>
             </tr>
@@ -117,6 +120,9 @@ _reportWrite020PageTabId = "<%=tabId%>";
       <div class="btn">
         <div class="btnR">
           <a id="searchBtn" class="btnClass" href="#">조회</a>
+          <input type="hidden" id="bizDescOfficeCd" value=""/>
+          <input type="hidden" id="bizDescOfficeNm" value=""/>
+          <a id="bizDescFileBtn" class="btnDisabledClass" href="#" enabledYn="N">사업설명서불러오기</a>
           <a id="saveFileBtn" class="btnClass" href="#">파일저장</a>
           <!-- <a id="saveSheetBtn" class="btnClass" href="#">조서저장</a> -->
           <a id="saveSheetBtn2" class="btnClass" href="#">시장님보고조서저장</a>

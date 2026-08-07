@@ -44,13 +44,13 @@ UPDATE tb_powgrpmenu
        modi_id = 'USER_ADMIN', modi_date = SYSTIMESTAMP
  WHERE pow_gr_cd = 'BC001' AND menu_cd = 'MUBG05000';
 
-/* 2) 보고항목·사전절차 */
+/* 2) 심사조서 보고항목선택 */
 INSERT INTO tb_menu (
        menu_cd, up_menu_cd, menu_nm, menu_descr, menu_level,
        lowest_menu_yn, url, line_up_no, use_yn,
        regi_id, regi_date, modi_id, modi_date
 )
-SELECT 'MUBG05100', 'MUBG00000', '보고항목·사전절차', NULL, 2,
+SELECT 'MUBG05100', 'MUBG00000', '심사조서 보고항목선택', NULL, 2,
        'Y', '/budget/budgetSelectAttr.do', 51, 'Y',
        'USER_ADMIN', SYSTIMESTAMP, NULL, NULL
   FROM db_root
@@ -64,7 +64,7 @@ SELECT 'MUBG05100', 'MUBG00000', '보고항목·사전절차', NULL, 2,
 UPDATE tb_menu
    SET url = '/budget/budgetSelectAttr.do',
        use_yn = 'Y',
-       menu_nm = '보고항목·사전절차',
+       menu_nm = '심사조서 보고항목선택',
        up_menu_cd = 'MUBG00000',
        line_up_no = 51,
        modi_id = 'USER_ADMIN',

@@ -5,6 +5,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +27,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.cs.bcjis.ai.AiBugiGovDataClient;
+import com.cs.bcjis.ai.AiBusanHomepageClient;
+import com.cs.bcjis.ai.AiExternalSourceFetcher;
+import com.cs.bcjis.ai.AiKeywordMatcher;
+import com.cs.bcjis.ai.AiLawGoKrClient;
+import com.cs.bcjis.ai.AiManualDocService;
 import com.cs.bcjis.ai.AiReportContextBuilder;
 import com.cs.bcjis.ai.AiSchemaProvider;
 import com.cs.bcjis.ai.LlmClient;
@@ -41,6 +54,40 @@ public class AiChatServiceImpl implements AiChatService {
 
     private static final Logger logger = Logger.getLogger(AiChatServiceImpl.class);
 
+    /**
+     * 내부검색 조서구분·연도구간·재원 조회 병렬용 (daemon).
+     * 동시 조회 수는 DB 커넥션 풀을 넘지 않도록 제한한다.
+     * 기동 옵션 -Dbcjis.ai.dbPoolSize=N 으로 조정 가능.
+     */
+    private static final ExecutorService AI_DB_POOL =
+            Executors.newFixedThreadPool(resolveDbPoolSize(), new ThreadFactory() {
+        private final AtomicInteger n = new AtomicInteger(1);
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, "ai-db-" + n.getAndIncrement());
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
+    private static int resolveDbPoolSize() {
+        int size = 6;
+        try {
+            String v = System.getProperty("bcjis.ai.dbPoolSize");
+            if (v != null && v.trim().length() > 0) {
+                size = Integer.parseInt(v.trim());
+            }
+        } catch (Exception e) {
+            size = 6;
+        }
+        if (size < 2) {
+            size = 2;
+        }
+        if (size > 16) {
+            size = 16;
+        }
+        return size;
+    }
+
     @Resource(name = "bcjis.dataSource")
     private DataSource dataSource;
 
@@ -54,11 +101,37 @@ public class AiChatServiceImpl implements AiChatService {
     @Resource(name = "aiSchemaProvider")
     private AiSchemaProvider aiSchemaProvider;
 
+    @Resource(name = "aiExternalSourceFetcher")
+    private AiExternalSourceFetcher aiExternalSourceFetcher;
+
+    @Resource(name = "aiLawGoKrClient")
+    private AiLawGoKrClient aiLawGoKrClient;
+
+    @Resource(name = "aiBugiGovDataClient")
+    private AiBugiGovDataClient aiBugiGovDataClient;
+
+    @Resource(name = "aiBusanHomepageClient")
+    private AiBusanHomepageClient aiBusanHomepageClient;
+
+    @Resource(name = "aiManualDocService")
+    private AiManualDocService aiManualDocService;
+
+    /** 내부자료 검색 최소 회계년도 */
+    private static final int MIN_FIS_YEAR = 2013;
+
     /** TB_BGTDGR 최대 회계연도 — 요청마다 반복 조회 방지 */
     private volatile String cachedMaxFisYear = "";
 
     /** TB_FISYEAR 전체 회계연도 — 요청마다 반복 조회 방지 */
     private volatile List<String> cachedAllFisYears = null;
+
+    private static final String REPORT_ANSWER_STYLE =
+            "[답변 문체 — 보고서 음슴체]\n"
+            + "- 자료 원문의 용어·표기·순서를 우선 사용\n"
+            + "- 개조식: '○', '-', '·', ':', '→', '※' 등으로 항목 나열\n"
+            + "- 종결은 음슴체(함/임/됨/음/없음)만 사용. '~습니다/~입니다/~합니다/~됩니다' 금지\n"
+            + "- '먼저', '또한', '마지막으로', '다음과 같은', '이러한 과정은' 등 서술형 연결문구 금지\n"
+            + "- 서두·맺음말·해설 문장 금지. 핵심 기준·금액·시기·제출기한만 노출\n";
 
     /**
      * 답변 생성용 시스템 지침(system_instruction).
@@ -92,7 +165,8 @@ public class AiChatServiceImpl implements AiChatService {
             + "- 2013년~최신 회계연도까지 동일 규칙: 3번 예산액=조정액(bgt_amt), 괄호=조정액 재원(ADJ_DEF_FRSC_AMT).\n"
             + "- 여러 연도 범위 질문이면 각 사업 블록 앞에 [회계연도] 표시 후 1~4번 항목 작성.\n"
             + "- 4번은 차수가 여러 개이면 차수별 줄바꿈으로 표시.\n"
-            + "- 제공 데이터에 없는 내용 지어내지 말 것.";
+            + "- 제공 데이터에 없는 내용 지어내지 말 것.\n"
+            + "- 서술형 존댓말(~입니다/~합니다/~습니다) 금지. 종결은 음슴체(함/임/됨/음)로 개조식 보고서 문체 사용.";
 
     /** 시행주관 관련 질문어 — [구분] 필드(요구내용) 검색에 사용 */
     private static final String[] IMPL_ORG_KEYWORDS = {
@@ -271,17 +345,1077 @@ public class AiChatServiceImpl implements AiChatService {
         return defaultValue;
     }
 
+    private String getStringProp(String key, String defaultValue) {
+        try {
+            if (config == null) {
+                return defaultValue;
+            }
+            String v = config.getProperty(key);
+            if (v != null && v.trim().length() > 0) {
+                return v.trim();
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return defaultValue;
+    }
+
     public JSONObject ask(String question) throws Exception {
+        JSONObject params = new JSONObject();
+        params.put("question", question == null ? "" : question);
+        return ask(params);
+    }
+
+    public JSONObject getMeta() throws Exception {
+        JSONObject meta = new JSONObject();
+        meta.put("minFisYear", String.valueOf(MIN_FIS_YEAR));
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        meta.put("latestFisYear", getMaxFisYear(jdbcTemplate));
+        try {
+            JSONObject manuals = aiManualDocService.listManuals();
+            meta.put("manualCanManage", manuals.optBoolean("canManage", false));
+            meta.put("manualAdminOnly", manuals.optBoolean("adminOnly", false));
+            meta.put("manualFiles", manuals.optJSONArray("files"));
+        } catch (Exception e) {
+            meta.put("manualCanManage", Boolean.FALSE);
+            meta.put("manualFiles", new JSONArray());
+        }
+        meta.put("lawApiReady", Boolean.valueOf(aiLawGoKrClient.isEnabled()));
+        meta.put("bugiApiReady", Boolean.valueOf(aiBugiGovDataClient.hasApiKey()));
+        return meta;
+    }
+
+    public JSONObject listManuals() throws Exception {
+        return aiManualDocService.listManuals();
+    }
+
+    public JSONObject uploadManual(javax.servlet.http.HttpServletRequest request) throws Exception {
+        return aiManualDocService.uploadManual(request);
+    }
+
+    public JSONObject deleteManual(String id) throws Exception {
+        return aiManualDocService.deleteManual(id);
+    }
+
+    /**
+     * 내부자료검색 DB(심사조서 010/020)를 지정 회계년도 1년분만 모바일 뷰어용 JSON으로 조립한다.
+     */
+    public JSONObject exportInternalData(String fisYear) throws Exception {
+        JSONObject out = new JSONObject();
+        if (fisYear == null) {
+            fisYear = "";
+        }
+        fisYear = fisYear.trim();
+        if (!fisYear.matches("^[0-9]{4}$")) {
+            throw new IllegalArgumentException("회계년도는 4자리 숫자여야 합니다.");
+        }
+
+        final JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        String yearErr = validateFisYearRange(fisYear, fisYear, jdbcTemplate);
+        if (yearErr.length() > 0) {
+            throw new IllegalArgumentException(yearErr);
+        }
+
+        int exportMaxRows = getIntProp("Globals.AiInternalExportMaxRows", 8000);
+        int exportMaxBiz = getIntProp("Globals.AiInternalExportMaxBiz", 2500);
+        int qTimeout = Math.max(60, getIntProp("Globals.AiQueryTimeoutSec", 45) + 30);
+        jdbcTemplate.setMaxRows(exportMaxRows);
+        if (qTimeout > 0) {
+            jdbcTemplate.setQueryTimeout(qTimeout);
+        }
+
+        List<String> years = new ArrayList<String>();
+        years.add(fisYear);
+
+        // checkbox != null 이면 CLOB 미조회(후속 fill). active()=false 이면 키워드 필터 없음 → 해당 연도 전체
+        final CheckboxSearch exportChk = new CheckboxSearch("", true, false, false, false);
+        long t0 = System.currentTimeMillis();
+        List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+        String[] reportCds = new String[] { "010", "020" };
+        for (int r = 0; r < reportCds.length; r++) {
+            List<Object> args = new ArrayList<Object>();
+            String sql = buildReportSql(reportCds[r], years, "", 0,
+                    "", "", "", "", "", "", false, exportChk, args, exportMaxRows);
+            List<Map<String, Object>> part = queryReport(jdbcTemplate, sql, args);
+            if (part != null) {
+                rows.addAll(part);
+            }
+        }
+        if (!rows.isEmpty()) {
+            sortReportRowsByYearAndBiz(rows);
+            if (rows.size() > exportMaxRows) {
+                rows = new ArrayList<Map<String, Object>>(rows.subList(0, exportMaxRows));
+            }
+            rows = AiReportContextBuilder.trimRowsToMaxBizGroups(rows, exportMaxBiz);
+        }
+        logPerf("internalExportQuery", t0, "year=" + fisYear + " rows=" + rows.size());
+
+        if (rows.isEmpty()) {
+            out.put("ok", Boolean.FALSE);
+            out.put("error", "해당 회계년도의 내부자료(심사조서)가 없습니다.");
+            out.put("fisYear", fisYear);
+            out.put("bizCount", Integer.valueOf(0));
+            out.put("rowCount", Integer.valueOf(0));
+            return out;
+        }
+
+        final List<Map<String, Object>> finalRows = rows;
+        Future<?> frscFuture = AI_DB_POOL.submit(new Runnable() {
+            public void run() {
+                enrichReportRowsWithFrsc(jdbcTemplate, finalRows);
+            }
+        });
+        Future<?> textFuture = AI_DB_POOL.submit(new Runnable() {
+            public void run() {
+                fillReportTextColumns(jdbcTemplate, finalRows);
+            }
+        });
+        try {
+            frscFuture.get(qTimeout, TimeUnit.SECONDS);
+            textFuture.get(qTimeout, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.warn("내보내기 재원/본문 보강 실패: " + e.getMessage());
+            try { frscFuture.cancel(true); } catch (Exception ignore) { /* */ }
+            try { textFuture.cancel(true); } catch (Exception ignore) { /* */ }
+            enrichReportRowsWithFrsc(jdbcTemplate, rows);
+            fillReportTextColumns(jdbcTemplate, rows);
+        }
+
+        AiReportContextBuilder.ContextOptions ctxOpts = AiReportContextBuilder.ContextOptions.defaults();
+        ctxOpts.includeGubun = true;
+        ctxOpts.includeDemandAmt = true;
+        ctxOpts.maxBlocks = exportMaxBiz;
+
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> multiYearGroups =
+                AiReportContextBuilder.groupRowsByBizNameAcrossYears(rows);
+
+        JSONArray businesses = new JSONArray();
+        JSONArray dataList = new JSONArray();
+        java.util.HashSet<String> detailEmitted = new java.util.HashSet<String>();
+
+        for (java.util.Iterator<java.util.Map.Entry<String, List<Map<String, Object>>>> it =
+                multiYearGroups.entrySet().iterator(); it.hasNext();) {
+            java.util.Map.Entry<String, List<Map<String, Object>>> ent = it.next();
+            List<Map<String, Object>> g = ent.getValue();
+            if (g == null || g.isEmpty()) {
+                continue;
+            }
+            Map<String, Object> first = g.get(0);
+            String bizLabel = AiReportContextBuilder.buildBizLabel(first);
+            String deptLabel = AiReportContextBuilder.formatDeptLine(first);
+            String fisFgNm = AiReportContextBuilder.getStr(first, "fis_fg_nm");
+            JSONArray detailRows = toDetailRowsJson(g, ctxOpts);
+
+            JSONObject biz = new JSONObject();
+            biz.put("bizNm", bizLabel);
+            biz.put("dept", deptLabel);
+            biz.put("fisFgNm", fisFgNm);
+            biz.put("reportNm", AiReportContextBuilder.getStr(first, "report_nm"));
+            biz.put("detailRows", detailRows);
+            businesses.add(biz);
+
+            for (int i = 0; i < g.size(); i++) {
+                Map<String, Object> row = g.get(i);
+                JSONObject obj = new JSONObject();
+                String fisYearVal = AiReportContextBuilder.getStr(row, "fis_year");
+                String rowBiz = AiReportContextBuilder.buildBizLabel(row);
+                String rowDept = AiReportContextBuilder.formatDeptLine(row);
+                obj.put("연도", fisYearVal);
+                obj.put("사업명", rowBiz);
+                obj.put("소관부서", rowDept);
+                obj.put("회계", AiReportContextBuilder.getStr(row, "fis_fg_nm"));
+                obj.put("차수", AiReportContextBuilder.buildDgrLabel(
+                        fisYearVal,
+                        AiReportContextBuilder.getStr(row, "bgt_compo_fg"),
+                        AiReportContextBuilder.getLong(row, "add_times"),
+                        AiReportContextBuilder.getStr(row, "bgt_dgr")));
+                obj.put("요구액(백만원)", AiReportContextBuilder.toMillion(
+                        AiReportContextBuilder.getLong(row, "demand_bgt_amt")));
+                obj.put("조정액(백만원)", AiReportContextBuilder.toMillion(
+                        AiReportContextBuilder.getLong(row, "bgt_amt")));
+                obj.put("조정재원", AiReportContextBuilder.formatFrscForRow(row));
+                obj.put("_detailKey", bizLabel);
+                obj.put("_detailTitle", bizLabel);
+                if (detailRows != null && !detailRows.isEmpty() && detailEmitted.add(bizLabel)) {
+                    obj.put("_detailRows", detailRows);
+                }
+                dataList.add(obj);
+            }
+        }
+
+        JSONArray columns = new JSONArray();
+        columns.add("연도");
+        columns.add("사업명");
+        columns.add("소관부서");
+        columns.add("회계");
+        columns.add("차수");
+        columns.add("요구액(백만원)");
+        columns.add("조정액(백만원)");
+        columns.add("조정재원");
+
+        out.put("ok", Boolean.TRUE);
+        out.put("format", "bcjis-ai-internal-export");
+        out.put("version", Integer.valueOf(1));
+        out.put("fisYear", fisYear);
+        out.put("exportedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                .format(new java.util.Date()));
+        out.put("source", "bcjis-internal");
+        out.put("purpose", "mobile-viewer");
+        out.put("bizCount", Integer.valueOf(businesses.size()));
+        out.put("rowCount", Integer.valueOf(rows.size()));
+        out.put("truncated", rows.size() >= exportMaxRows || businesses.size() >= exportMaxBiz);
+        out.put("columns", columns);
+        out.put("dataList", dataList);
+        out.put("businesses", businesses);
+        logPerf("internalExportBuild", t0, "year=" + fisYear + " biz=" + businesses.size()
+                + " rows=" + rows.size());
+        return out;
+    }
+
+    public JSONObject ask(JSONObject params) throws Exception {
+        if (params == null) {
+            params = new JSONObject();
+        }
+        String question = params.optString("question", "").trim();
         JSONObject result = new JSONObject();
 
-        if (question == null || question.trim().length() == 0) {
+        if (question.length() == 0) {
             result.put("answer", "질문을 입력해 주세요.");
             return result;
         }
 
+        boolean searchBizNm = isYnFlag(params.optString("searchBizNm", "N"));
+        boolean searchGubun = isYnFlag(params.optString("searchGubun", "N"));
+        boolean searchExam = isYnFlag(params.optString("searchExam", "N"));
+        boolean searchSrchVal = isYnFlag(params.optString("searchSrchVal", "N"));
+        boolean anyInternal = searchBizNm || searchGubun || searchExam || searchSrchVal;
+
+        boolean searchLaw = isYnFlag(params.optString("searchLaw", "N"));
+        boolean searchCity = isYnFlag(params.optString("searchCity", "N"));
+        boolean searchManual = isYnFlag(params.optString("searchManual", "N"));
+        int generalCnt = (searchLaw ? 1 : 0) + (searchCity ? 1 : 0) + (searchManual ? 1 : 0);
+        boolean anyGeneral = generalCnt > 0;
+
+        String fisYearFrom = params.optString("fisYearFrom", "").trim();
+        String fisYearTo = params.optString("fisYearTo", "").trim();
+
+        if (anyInternal && anyGeneral) {
+            result.put("answer", "내부자료 검색과 일반자료 검색은 동시에 선택할 수 없습니다.\n한쪽만 체크한 뒤 다시 검색해 주세요.");
+            result.put("aiProvider", "validation");
+            return result;
+        }
+        if (generalCnt > 1) {
+            result.put("answer", "일반자료 검색은 법령·조례 / 보도자료,고시공고 / 예산운용지침 중 하나만 선택할 수 있습니다.");
+            result.put("aiProvider", "validation");
+            return result;
+        }
+
+        // 일반자료 검색
+        if (searchLaw) {
+            return handleGeneralLawSearch(question, result);
+        }
+        if (searchCity) {
+            return handleGeneralCitySearch(question, result);
+        }
+        if (searchManual) {
+            return handleGeneralManualSearch(question, result);
+        }
+
+        // 내부자료 검색 체크 ≥1 → 명시적 DB OR 검색 (LLM 질문분류 생략)
+        if (anyInternal) {
+            return handleCheckboxInternalSearch(question, fisYearFrom, fisYearTo,
+                    searchBizNm, searchGubun, searchExam, searchSrchVal, result);
+        }
+
+        // 체크 없음 → 외부자료 URL + LLM 추론
+        if (params.containsKey("searchBizNm") || params.containsKey("searchGubun")
+                || params.containsKey("searchExam") || params.containsKey("searchSrchVal")
+                || params.containsKey("searchLaw") || params.containsKey("searchCity")
+                || params.containsKey("searchManual")) {
+            return handleExternalSearch(question, result);
+        }
+
+        // 하위호환: 구 클라이언트(체크 파라미터 없음) → 기존 자연어 RAG
+        return askLegacyNaturalLanguage(question, result);
+    }
+
+    private JSONObject handleGeneralLawSearch(String keyword, JSONObject result) throws Exception {
+        JSONObject api = aiLawGoKrClient.searchLawAndBusanOrdin(keyword);
+        if (!api.optBoolean("ok", false)) {
+            result.put("answer", api.optString("message", "법령·조례 검색에 실패했습니다."));
+            result.put("aiProvider", "law.go.kr");
+            return result;
+        }
+        JSONArray items = api.optJSONArray("items");
+        int cnt = api.optInt("count", items == null ? 0 : items.size());
+        if (cnt == 0) {
+            result.put("answer", "\"" + keyword + "\" 관련 법령·부산광역시 조례를 찾지 못했습니다.");
+            result.put("aiProvider", "law.go.kr");
+            result.put("generalItems", new JSONArray());
+            return result;
+        }
+
+        // 조문 본문을 모아 LLM 요약용 컨텍스트 구성 (화면에는 요약 + 출처 링크만)
+        StringBuilder bodyCtx = new StringBuilder();
+        int bodyCnt = 0;
+        if (items != null) {
+            for (int i = 0; i < items.size(); i++) {
+                JSONObject it = items.getJSONObject(i);
+                String body = it.optString("body", "");
+                if (body.length() > 0) {
+                    bodyCnt++;
+                    if (bodyCtx.length() < 14000) {
+                        bodyCtx.append("[").append(it.optString("kind")).append("] ")
+                                .append(it.optString("title")).append("\n")
+                                .append(body).append("\n\n");
+                    }
+                }
+                // 출처만 표시: 본문 텍스트는 화면 generalItems에서 제거
+                it.put("body", "");
+                if (it.optString("sub", "").length() == 0 && body.length() > 0) {
+                    it.put("sub", "조문 원문 링크 참고");
+                }
+            }
+        }
+
+        String extractAnswer = buildLawExtractAnswer(keyword, bodyCtx.toString(), api);
+        String answer = extractAnswer.length() > 0 ? extractAnswer
+                : ("○ 법령·조례 검색 결과: " + cnt + "건\n○ 조례 범위: 부산광역시 본청");
+        boolean summaryOk = false;
+        int extractCoreLen = extractAnswer.length();
+        int joNumForSummary = api.optInt("joNum", 0);
+
+        // 특정 조문(제N조) 조회: 법제처 원문 추출본을 우선 사용
+        // (LLM이 짧은 키워드 나열로 축약하던 문제 방지)
+        if (joNumForSummary > 0 && extractCoreLen >= 120) {
+            answer = extractAnswer;
+            result.put("aiProvider", "law.go.kr-extract");
+            result.put("answerHighlight", Boolean.TRUE);
+            summaryOk = true;
+        }
+
+        // 주제 검색 등: LLM으로 읽기 쉽게 다듬되, 짧은 초요약은 버리고 추출본 유지
+        if (!summaryOk && llmClient != null && llmClient.isEnabled() && bodyCtx.length() > 0) {
+            try {
+                StringBuilder prompt = new StringBuilder();
+                prompt.append("당신은 부산시 예산편성 도우미입니다.\n");
+                prompt.append("아래 [조문 원문]을 읽기 쉬운 개조식으로 재작성하세요.\n");
+                prompt.append("중요: 요약·축약이 아니라 항·호·목의 실질 문장 의미를 유지하세요.\n");
+                prompt.append("짧은 키워드 나열(예: '법률에 규정 있음')만 쓰지 말고, 각 호의 조건을 문장으로 풀어 쓰세요.\n");
+                prompt.append(REPORT_ANSWER_STYLE).append("\n");
+                prompt.append("[규칙]\n");
+                prompt.append("1. 헤더: 법령명 + 제N조(+제목)\n");
+                prompt.append("2. ①항·②항·각 호를 빠짐없이 계층(· / -)으로 정리\n");
+                prompt.append("3. 요건·예외·금지·의무·금액·기한·대상을 원문 수준으로 유지 (과도한 축약 금지)\n");
+                prompt.append("4. 출력 분량은 원문과 비슷하거나 더 길게. 초요약 금지\n");
+                prompt.append("5. 종결은 음슴체(함/임/됨/음). '~습니다' 금지\n");
+                prompt.append("6. 조문에 없는 내용 추측 금지\n");
+                prompt.append("7. 형식 예시의 짧은 길이를 따라 하지 말 것\n\n");
+                prompt.append("[질문] ").append(keyword).append("\n\n");
+                prompt.append("[조문 원문]\n");
+                if (bodyCtx.length() > 12000) {
+                    prompt.append(bodyCtx.substring(0, 12000)).append("\n...(생략)...");
+                } else {
+                    prompt.append(bodyCtx);
+                }
+                String summary = llmClient.generateUserQuery(prompt.toString());
+                if (summary != null && summary.trim().length() > 40) {
+                    String styled = toReportEumseumStyle(summary.trim());
+                    int minLen = Math.max(420, (int) (extractCoreLen * 0.70));
+                    // 추출본보다 현저히 짧으면 거부 (사용자가 본 짧은 조문요약 방지)
+                    boolean hasSubstance = styled.indexOf("①") >= 0 || styled.indexOf("1.") >= 0
+                            || styled.indexOf("제1항") >= 0 || countMatches(styled, "\n-") >= 3;
+                    if (styled.length() >= minLen && countMatches(styled, "\n") >= 5 && hasSubstance) {
+                        answer = "【조문 요약】\n" + styled;
+                        result.put("aiProvider", llmClient.getProviderName() + "-law");
+                        result.put("answerHighlight", Boolean.TRUE);
+                        summaryOk = true;
+                    } else {
+                        logger.info("법령 LLM 요약이 너무 짧아 조문 추출본 사용 (llm="
+                                + styled.length() + ", min=" + minLen + ", extract=" + extractCoreLen + ")");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("법령·조례 LLM 요약 실패: " + e.getMessage());
+            }
+        }
+
+        if (!summaryOk) {
+            if (extractAnswer.length() > 0) {
+                answer = extractAnswer;
+                result.put("answerHighlight", Boolean.TRUE);
+                result.put("aiProvider", "law.go.kr-extract");
+            } else {
+                int joNum = api.optInt("joNum", 0);
+                StringBuilder ans = new StringBuilder();
+                if (joNum > 0 && bodyCnt > 0) {
+                    ans.append("○ 검색어: 「").append(keyword).append("」\n");
+                    ans.append("○ 관련 조문: ").append(cnt).append("건\n");
+                    ans.append("○ 처리결과: 요약 미생성 → 관련자료출처 표시");
+                } else if (joNum > 0) {
+                    ans.append("「").append(keyword).append("」 조문 본문을 찾지 못해 관련 법령·조례 목록을 표시합니다.");
+                } else if (api.optString("topic", "").length() > 0 && bodyCnt == 0) {
+                    ans.append("「").append(keyword).append("」 관련 조문 본문을 찾지 못했습니다.\n");
+                    ans.append("○ 권장 형식: \"법률명 제N조\" 또는 \"법률명의 주제\" (예: 지방재정법 제34조 / 지방재정법의 예산 원칙)\n");
+                    ans.append("○ 관련자료출처의 법령 링크를 참고하세요.");
+                } else {
+                    ans.append("○ 법령·조례 검색 결과: ").append(cnt).append("건\n");
+                    ans.append("○ 조례 범위: 부산광역시 본청\n");
+                    ans.append("○ 조문 검색 형식: \"법률명 제N조\" / \"법률명의 주제\"");
+                }
+                answer = ans.toString();
+                result.put("aiProvider", "law.go.kr");
+            }
+        }
+
+        if (answer == null || answer.trim().length() == 0) {
+            answer = "○ 법령·조례 검색 결과: " + cnt + "건\n○ 관련자료출처를 아래에 표시";
+        }
+        result.put("answer", answer);
+        result.put("generalItems", items);
+        result.put("rowCount", Integer.valueOf(cnt));
+        result.put("generalSourcesOnly", Boolean.TRUE);
+        return result;
+    }
+
+    /** LLM 실패/미사용 시: 조문 원문을 읽기 쉬운 개조식으로 정리 */
+    private String buildLawExtractAnswer(String keyword, String bodyCtx, JSONObject api) {
+        if (bodyCtx == null || bodyCtx.trim().length() < 20) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("【조문 요약】\n");
+        if (keyword != null && keyword.trim().length() > 0) {
+            sb.append("○ 검색어: ").append(keyword.trim()).append("\n");
+        }
+        String lawName = api != null ? api.optString("lawName", "") : "";
+        String topic = api != null ? api.optString("topic", "") : "";
+        if (lawName.length() > 0) {
+            sb.append("○ 법령: ").append(lawName);
+            if (topic.length() > 0) {
+                sb.append(" · 주제: ").append(topic);
+            }
+            sb.append("\n");
+        }
+        sb.append("\n");
+        // [법령] 제목\n본문 블록을 잘라 붙임 (과도한 길이 제한)
+        String[] blocks = bodyCtx.split("(?=\\[(?:법령|조례)\\])");
+        int used = 0;
+        for (int i = 0; i < blocks.length; i++) {
+            String block = blocks[i].trim();
+            if (block.length() == 0) {
+                continue;
+            }
+            if (used >= 3) {
+                break;
+            }
+            String clipped = block;
+            // 조문 실질 내용이 잘리지 않도록 여유 있게 유지
+            if (clipped.length() > 5500) {
+                clipped = clipped.substring(0, 5500).trim() + "\n…";
+            }
+            // 단순 줄바꿈 정리
+            clipped = clipped.replaceAll("\n{3,}", "\n\n");
+            sb.append(toReportEumseumStyle(clipped)).append("\n\n");
+            used++;
+        }
+        return sb.toString().trim();
+    }
+
+    private JSONObject handleGeneralCitySearch(String keyword, JSONObject result) throws Exception {
+        // 시홈페이지 직접 검색(보도자료·고시공고·새소식). 부기주무관 API는 키 발급 후 보강용.
+        JSONObject api = aiBusanHomepageClient.search(keyword);
+        if (!api.optBoolean("ok", false)) {
+            if (aiBugiGovDataClient.hasApiKey()) {
+                JSONObject bugi = aiBugiGovDataClient.search(keyword);
+                if (bugi.optBoolean("ok", false)) {
+                    return putCitySearchResult(result, bugi, "bugi",
+                            "보도자료·고시공고 검색 결과 ");
+                }
+            }
+            result.put("answer", api.optString("message", "보도자료·고시공고 검색에 실패했습니다."));
+            result.put("aiProvider", "busanHomepage");
+            return result;
+        }
+        return putCitySearchResult(result, api, "busanHomepage",
+                "보도자료·고시공고 검색 결과 ");
+    }
+
+    private JSONObject putCitySearchResult(JSONObject result, JSONObject api,
+            String provider, String answerPrefix) {
+        JSONArray items = api.optJSONArray("items");
+        int cnt = api.optInt("count", items == null ? 0 : items.size());
+        if (cnt == 0) {
+            result.put("answer", "\"" + api.optString("keyword", "")
+                    + "\" 관련 보도자료·고시공고 자료를 찾지 못했습니다. (검색기간 2025~2026)");
+            result.put("aiProvider", provider);
+            result.put("generalItems", new JSONArray());
+            return result;
+        }
+        result.put("answer", "○ " + answerPrefix + cnt + "건\n○ 검색기간: 2025~2026");
+        result.put("generalItems", items);
+        result.put("aiProvider", provider);
+        result.put("rowCount", Integer.valueOf(cnt));
+        return result;
+    }
+
+    private JSONObject handleGeneralManualSearch(String keyword, JSONObject result) throws Exception {
+        JSONObject api = aiManualDocService.search(keyword);
+        if (!api.optBoolean("ok", false)) {
+            result.put("answer", api.optString("message", "예산운용지침 검색에 실패했습니다."));
+            result.put("aiProvider", "manual");
+            return result;
+        }
+        JSONArray items = api.optJSONArray("items");
+        int cnt = api.optInt("count", items == null ? 0 : items.size());
+        if (cnt == 0) {
+            result.put("answer", api.optString("message",
+                    "\"" + keyword + "\" 관련 예산운용지침 내용을 찾지 못했습니다."));
+            result.put("aiProvider", "manual");
+            result.put("generalItems", new JSONArray());
+            return result;
+        }
+
+        String summaryCtx = api.optString("summaryContext", "");
+        String hitPageLabel = api.optString("hitPageLabel", "");
+
+        // 화면에는 요약 + 출처(파일·페이지)만 표시. 발췌 본문은 서버 내부용.
+        if (items != null) {
+            for (int i = 0; i < items.size(); i++) {
+                JSONObject it = items.getJSONObject(i);
+                it.put("body", "");
+            }
+        }
+
+        String answer = "○ 예산운용지침 검색 결과: " + cnt + "건\n○ 관련자료출처를 아래에 표시";
+        // LLM 실패 시에만 발췌 fallback 생성 (성공 경로 지연 제거)
+        String fallback = "";
+
+        boolean useLlm = llmClient != null && llmClient.isEnabled() && summaryCtx.length() > 0
+                && isYnFlag(getStringProp("Globals.AiManualUseLlm", "true"));
+
+        if (useLlm) {
+            try {
+                long t0 = System.currentTimeMillis();
+                int ctxLimit = getIntProp("Globals.AiManualPromptChars", 4800);
+                // 키워드 관련 줄만 압축 → 토큰↓·속도↑ (문서 커버·핵심 내용은 유지)
+                String cleanCtx = buildCompactManualLlmContext(summaryCtx, keyword, ctxLimit);
+                StringBuilder prompt = new StringBuilder(512 + cleanCtx.length());
+                prompt.append("부산시 예산편성 도우미. PDF 발췌를 문서별 음슴체 개조식으로 요약.\n");
+                prompt.append("규칙: ○ [문서명] (p.N) / 문서당 핵심 3~6항 / 통계목·금액·기준 우선 / ");
+                prompt.append("표·OCR·장식번호 복붙 금지 / 발췌 밖 추측 금지 / '~습니다' 금지.\n");
+                prompt.append("[질문] ").append(keyword).append("  [문서수] ").append(cnt).append('\n');
+                prompt.append("[발췌]\n").append(cleanCtx);
+
+                String summary = llmClient.generateUserQuery(prompt.toString());
+                logger.info("예산운용지침 LLM ms=" + (System.currentTimeMillis() - t0)
+                        + " promptChars=" + prompt.length());
+                if (summary != null && summary.trim().length() > 0) {
+                    String styled = toReportEumseumStyle(summary.trim());
+                    if (isManualAnswerFaithful(styled, summaryCtx, keyword)
+                            || isManualSummaryAcceptable(styled, keyword)) {
+                        answer = "【예산운용지침】\n" + styled;
+                        result.put("aiProvider", llmClient.getProviderName() + "-manual");
+                        result.put("answerHighlight", Boolean.TRUE);
+                    } else {
+                        fallback = buildManualMultiFileFallback(keyword, items, hitPageLabel, summaryCtx);
+                        if (fallback.length() > 0) {
+                            answer = fallback;
+                            result.put("aiProvider", "manual-extract");
+                            result.put("answerHighlight", Boolean.TRUE);
+                            logger.info("예산운용지침 LLM 요약 품질 미달 → 발췌 요약으로 대체");
+                        } else {
+                            answer = "【예산운용지침】\n" + styled;
+                            result.put("aiProvider", llmClient.getProviderName() + "-manual");
+                            result.put("answerHighlight", Boolean.TRUE);
+                        }
+                    }
+                } else {
+                    fallback = buildManualMultiFileFallback(keyword, items, hitPageLabel, summaryCtx);
+                    if (fallback.length() > 0) {
+                        answer = fallback;
+                    }
+                    result.put("aiProvider", fallback.length() > 0 ? "manual-extract" : "manual");
+                }
+            } catch (Exception e) {
+                logger.warn("예산운용지침 LLM 요약 실패: " + e.getMessage());
+                fallback = buildManualMultiFileFallback(keyword, items, hitPageLabel, summaryCtx);
+                if (fallback.length() > 0) {
+                    answer = fallback;
+                }
+                result.put("aiProvider", fallback.length() > 0 ? "manual-extract" : "manual");
+            }
+        } else {
+            fallback = buildManualMultiFileFallback(keyword, items, hitPageLabel, summaryCtx);
+            if (fallback.length() > 0) {
+                answer = fallback;
+                result.put("answerHighlight", Boolean.TRUE);
+            }
+            result.put("aiProvider", fallback.length() > 0 ? "manual-extract" : "manual");
+        }
+
+        result.put("answer", answer);
+        result.put("generalItems", items);
+        result.put("rowCount", Integer.valueOf(cnt));
+        result.put("generalSourcesOnly", Boolean.TRUE);
+        return result;
+    }
+
+    /**
+     * LLM용 발췌 압축: 문서별로 키워드 관련 줄 위주, 잡음 제거.
+     * 검색 결과(매칭 문서·페이지)는 유지하고 전달 토큰만 줄여 응답 속도를 높인다.
+     */
+    private String buildCompactManualLlmContext(String summaryCtx, String keyword, int limit) {
+        if (summaryCtx == null || summaryCtx.length() == 0) {
+            return "";
+        }
+        int lim = limit > 800 ? limit : 4800;
+        String[] parts = summaryCtx.split("(?m)^###\\s*파일:\\s*");
+        StringBuilder out = new StringBuilder();
+        int fileCnt = 0;
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.length() == 0) {
+                continue;
+            }
+            fileCnt++;
+        }
+        if (fileCnt <= 0) {
+            fileCnt = 1;
+        }
+        int perFile = Math.max(700, lim / fileCnt);
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i].trim();
+            if (part.length() == 0) {
+                continue;
+            }
+            if (out.length() >= lim) {
+                break;
+            }
+            int nl = part.indexOf('\n');
+            String name;
+            String body;
+            if (nl > 0) {
+                name = part.substring(0, nl).trim();
+                body = part.substring(nl + 1).trim();
+            } else {
+                name = part;
+                body = "";
+            }
+            body = sanitizeManualExcerptForLlm(body);
+            body = focusManualLines(body, keyword);
+            body = reduceManualVolumeByLines(body, 0.85, 14);
+            if (body.length() > perFile) {
+                body = clipManualExcerpt(body, perFile);
+            }
+            int remain = lim - out.length();
+            if (remain < 80) {
+                break;
+            }
+            String block = "### 파일: " + name + "\n" + body + "\n";
+            if (block.length() > remain) {
+                block = block.substring(0, remain);
+            }
+            out.append(block);
+        }
+        return out.toString().trim();
+    }
+
+    /** PDF 표 추출 잡음 제거 — LLM 요약 품질 향상 */
+    private String sanitizeManualExcerptForLlm(String ctx) {
+        if (ctx == null || ctx.length() == 0) {
+            return "";
+        }
+        String s = ctx;
+        s = s.replace('\u00A0', ' ');
+        // 페이지 장식 번호 (• 30 • / · 96 ·)
+        s = s.replaceAll("[•·]\\s*\\d{1,3}\\s*[•·]", " ");
+        // 단독 짧은 숫자 줄(표 행번호)
+        s = s.replaceAll("(?m)^\\s*\\d{1,3}\\s*$", "");
+        // 현행/개정안 표 헤더 잔여
+        s = s.replaceAll("현\\s*행\\s*개\\s*정\\s*안\\s*개정사유", " ");
+        s = s.replaceAll("(?m)^\\s*개\\s*정\\s*안\\s*$", "");
+        s = s.replaceAll("[ \\t]{2,}", " ");
+        s = s.replaceAll("\n{3,}", "\n\n");
+        return s.trim();
+    }
+
+    /** LLM 요약이 원문 덤프가 아니고 질문 키워드를 담으면 허용 */
+    private boolean isManualSummaryAcceptable(String answer, String keyword) {
+        if (answer == null || answer.length() < 40) {
+            return false;
+        }
+        int polite = countMatches(answer, "습니다") + countMatches(answer, "입니다");
+        if (polite >= 3) {
+            return false;
+        }
+        // 원문 덤프 징후: 장식 페이지번호·과도한 깨진 단문
+        if (answer.indexOf("• ") >= 0 && countMatches(answer, "• ") >= 3) {
+            return false;
+        }
+        String ansNorm = AiKeywordMatcher.normalize(answer);
+        AiKeywordMatcher.SearchExpression expr = AiKeywordMatcher.parseExpression(keyword);
+        java.util.List<String> terms = expr.getTerms();
+        if (terms.isEmpty()) {
+            return ansNorm.indexOf(AiKeywordMatcher.normalize(keyword)) >= 0;
+        }
+        int hit = 0;
+        for (int i = 0; i < terms.size(); i++) {
+            String n = AiKeywordMatcher.normalize(terms.get(i));
+            if (n.length() >= 2 && ansNorm.indexOf(n) >= 0) {
+                hit++;
+            }
+        }
+        return hit >= 1;
+    }
+
+    /**
+     * LLM 실패 시: 매칭된 문서별로 핵심 발췌를 음슴체 보고 형식으로 묶는다.
+     */
+    private String buildManualMultiFileFallback(String keyword, JSONArray items,
+            String hitPageLabel, String summaryCtx) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("【예산운용지침】\n");
+        if (keyword != null && keyword.trim().length() > 0) {
+            sb.append("○ 검색어: ").append(keyword.trim()).append("\n");
+        }
+        int docCnt = items == null ? 0 : items.size();
+        sb.append("○ 검색문서: ").append(docCnt).append("건\n");
+        if (hitPageLabel != null && hitPageLabel.length() > 0) {
+            sb.append("○ 출처: ").append(hitPageLabel).append("\n");
+        }
+        sb.append("\n");
+
+        if (items != null && items.size() > 0) {
+            // items의 body는 화면용으로 비우기 전·후 모두 대응 — summaryCtx 파싱 우선
+            String ctx = summaryCtx == null ? "" : summaryCtx;
+            if (ctx.length() > 0) {
+                String[] parts = ctx.split("(?m)^###\\s*파일:\\s*");
+                for (int i = 0; i < parts.length; i++) {
+                    String part = parts[i].trim();
+                    if (part.length() == 0) {
+                        continue;
+                    }
+                    int nl = part.indexOf('\n');
+                    String name;
+                    String body;
+                    if (nl > 0) {
+                        name = part.substring(0, nl).trim();
+                        body = part.substring(nl + 1).trim();
+                    } else {
+                        name = part;
+                        body = "";
+                    }
+                    body = body.replaceAll("\\[p\\.(\\d+)\\]\\s*", "(p.$1) ");
+                    // 글자 절단(가로줄 짧아짐) 대신 줄 수 기준 정보량 약 10% 축소
+                    body = toReportEumseumStyle(reduceManualVolumeByLines(
+                            focusManualLines(body, keyword), 0.90, 24));
+                    sb.append("○ [").append(name).append("]\n");
+                    if (body.length() > 0) {
+                        sb.append(body).append("\n\n");
+                    }
+                }
+            }
+        }
+        String out = sb.toString().trim();
+        return out.length() > 30 ? out : "";
+    }
+
+    private String clipManualExcerpt(String body, int max) {
+        if (body == null) {
+            return "";
+        }
+        String s = body.trim();
+        if (s.length() <= max) {
+            return s;
+        }
+        int cut = s.lastIndexOf('\n', max);
+        if (cut < max / 2) {
+            cut = max;
+        }
+        return s.substring(0, cut).trim() + "\n…";
+    }
+
+    /**
+     * 요약 정보량 축소: 가로 글자 절단이 아니라 줄(항목) 수를 줄인다.
+     * keepRatio=0.90 → 약 10% 분량 감소, 줄 내용은 유지.
+     */
+    private String reduceManualVolumeByLines(String body, double keepRatio, int maxLines) {
+        if (body == null || body.length() == 0) {
+            return "";
+        }
+        String[] raw = body.split("\n");
+        java.util.List<String> lines = new java.util.ArrayList<String>();
+        for (int i = 0; i < raw.length; i++) {
+            String line = raw[i] == null ? "" : raw[i].trim();
+            if (line.length() == 0) {
+                continue;
+            }
+            lines.add(line);
+        }
+        if (lines.isEmpty()) {
+            return "";
+        }
+        double ratio = keepRatio > 0 && keepRatio <= 1.0 ? keepRatio : 0.90;
+        int keep = (int) Math.ceil(lines.size() * ratio);
+        if (keep < 1) {
+            keep = 1;
+        }
+        if (maxLines > 0 && keep > maxLines) {
+            keep = maxLines;
+        }
+        if (keep >= lines.size()) {
+            StringBuilder all = new StringBuilder();
+            for (int i = 0; i < lines.size(); i++) {
+                if (i > 0) {
+                    all.append('\n');
+                }
+                all.append(lines.get(i));
+            }
+            return all.toString();
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < keep; i++) {
+            if (i > 0) {
+                sb.append('\n');
+            }
+            sb.append(lines.get(i));
+        }
+        sb.append("\n…");
+        return sb.toString();
+    }
+
+    /** 키워드(및 &/, 식의 각 항)가 포함된 줄을 앞에 모아 요약 밀도를 높인다. */
+    private String focusManualLines(String body, String keyword) {
+        if (body == null || body.length() == 0) {
+            return "";
+        }
+        String kw = keyword == null ? "" : keyword.trim();
+        if (kw.length() == 0) {
+            return body;
+        }
+        AiKeywordMatcher.SearchExpression expr = AiKeywordMatcher.parseExpression(kw);
+        java.util.List<String> needles = new java.util.ArrayList<String>();
+        if (!expr.isEmpty()) {
+            java.util.List<String> terms = expr.getTerms();
+            for (int t = 0; t < terms.size(); t++) {
+                String n = AiKeywordMatcher.normalize(terms.get(t));
+                if (n.length() > 0) {
+                    needles.add(n);
+                }
+            }
+        }
+        if (needles.isEmpty()) {
+            needles.add(AiKeywordMatcher.normalize(kw));
+        }
+        String[] lines = body.split("\n");
+        StringBuilder hit = new StringBuilder();
+        StringBuilder rest = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            if (line == null || line.trim().length() == 0) {
+                continue;
+            }
+            String ln = AiKeywordMatcher.normalize(line);
+            boolean matched = line.indexOf("(p.") >= 0;
+            if (!matched) {
+                for (int n = 0; n < needles.size(); n++) {
+                    if (needles.get(n).length() > 0 && ln.indexOf(needles.get(n)) >= 0) {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (matched) {
+                if (hit.length() > 0) {
+                    hit.append('\n');
+                }
+                hit.append(line.trim());
+            } else {
+                if (rest.length() > 0) {
+                    rest.append('\n');
+                }
+                rest.append(line.trim());
+            }
+        }
+        if (hit.length() == 0) {
+            return body;
+        }
+        if (rest.length() == 0) {
+            return hit.toString();
+        }
+        return hit.append('\n').append(rest).toString();
+    }
+
+    /** LLM 답이 검색된 복수 문서 출처를 어느 정도 반영하는지 검사 */
+    private boolean coversManualSources(String answer, JSONArray items) {
+        if (answer == null || items == null || items.size() <= 1) {
+            return true;
+        }
+        String ansNorm = AiKeywordMatcher.normalize(answer);
+        int hit = 0;
+        for (int i = 0; i < items.size(); i++) {
+            JSONObject it = items.getJSONObject(i);
+            String title = it.optString("title", "");
+            if (title.length() == 0) {
+                continue;
+            }
+            // 파일명 핵심어(예산편성계획/회계관리/운영기준 등)가 답에 있으면 커버로 본다
+            String[] keys = extractManualTitleKeys(title);
+            boolean covered = false;
+            for (int k = 0; k < keys.length; k++) {
+                if (keys[k].length() >= 4 && ansNorm.indexOf(AiKeywordMatcher.normalize(keys[k])) >= 0) {
+                    covered = true;
+                    break;
+                }
+            }
+            // 페이지 표기만으로도 출처 언급으로 인정하지 않음 — 문서 구분 필요
+            if (covered) {
+                hit++;
+            }
+        }
+        // 2건 이상이면 절반 이상, 3건이면 최소 2건 반영
+        int need = items.size() >= 3 ? 2 : 1;
+        return hit >= need;
+    }
+
+    private String[] extractManualTitleKeys(String title) {
+        if (title == null) {
+            return new String[0];
+        }
+        java.util.List<String> keys = new java.util.ArrayList<String>();
+        String t = title.replace(" ", "");
+        if (t.indexOf("예산편성계획") >= 0 || t.indexOf("책자") >= 0) {
+            keys.add("예산편성계획");
+            keys.add("책자");
+        }
+        if (t.indexOf("회계관리") >= 0) {
+            keys.add("회계관리");
+        }
+        if (t.indexOf("운영기준") >= 0 || t.indexOf("기금운용") >= 0) {
+            keys.add("운영기준");
+            keys.add("예산편성");
+        }
+        if (keys.isEmpty() && title.length() >= 6) {
+            // 파일명 앞부분 일부
+            String shortName = title.length() > 20 ? title.substring(0, 20) : title;
+            keys.add(shortName.replace(" ", ""));
+        }
+        return keys.toArray(new String[keys.size()]);
+    }
+
+    /**
+     * 서술형(~습니다/~입니다)을 보고서 음슴체로 정리하고,
+     * LLM이 자주 넣는 상투적 연결문구를 제거한다.
+     */
+    private String toReportEumseumStyle(String text) {
+        if (text == null || text.length() == 0) {
+            return "";
+        }
+        String s = text;
+        s = s.replace('\u00A0', ' ');
+        // 상투적 서술 문장·연결어 제거
+        s = s.replaceAll("(?m)^\\s*(먼저|또한|그리고|마지막으로|한편|아울러)[,:]?\\s*", "");
+        s = s.replaceAll("다음과 같은 (사항들이 |내용이 )?포함되어 있습니다[.!]?", "");
+        s = s.replaceAll("이러한 (과정|절차)들은?[^.\\n]*[.!]?", "");
+        s = s.replaceAll("에 대한 지침에서는[^.\\n]*[.!]?", "");
+        // 긴 종결형부터 치환 (짧은 '습니다'가 먼저 먹으면 '있습니다'→'있음'이 깨짐)
+        s = s.replaceAll("이루어집니다", "이루어짐");
+        s = s.replaceAll("포함됩니다", "포함됨");
+        s = s.replaceAll("분류됩니다", "분류됨");
+        s = s.replaceAll("필요합니다", "필요함");
+        s = s.replaceAll("중요합니다", "중요함");
+        s = s.replaceAll("있습니다", "있음");
+        s = s.replaceAll("없습니다", "없음");
+        s = s.replaceAll("됩니다", "됨");
+        s = s.replaceAll("합니다", "함");
+        s = s.replaceAll("입니까", "임?");
+        s = s.replaceAll("합니까", "함?");
+        s = s.replaceAll("습니까", "음?");
+        s = s.replaceAll("입니다", "임");
+        s = s.replaceAll("습니다", "음");
+        s = s.replaceAll("명시되어 있음", "명시됨");
+        // 이중 변환 잔여 정리
+        s = s.replaceAll("음\\.", "음");
+        s = s.replaceAll("임\\.", "임");
+        s = s.replaceAll("함\\.", "함");
+        s = s.replaceAll("됨\\.", "됨");
+        s = s.replaceAll("[ \\t]+\\n", "\n");
+        s = s.replaceAll("\n{3,}", "\n\n");
+        return s.trim();
+    }
+
+    /**
+     * LLM 답이 발췌·질문 핵심어를 반영하는지 검사.
+     * 서술형 일반론만 있고 원문 고유어가 없으면 불성실 답으로 본다.
+     */
+    private boolean isManualAnswerFaithful(String answer, String excerpt, String keyword) {
+        if (answer == null || answer.length() < 20 || excerpt == null || excerpt.length() == 0) {
+            return false;
+        }
+        // 서술형 존댓말이 많이 남아 있으면 실패로 보고 원문 대체 유도
+        int polite = countMatches(answer, "습니다") + countMatches(answer, "입니다")
+                + countMatches(answer, "합니다") + countMatches(answer, "됩니다");
+        if (polite >= 2) {
+            return false;
+        }
+        String ansNorm = AiKeywordMatcher.normalize(answer);
+        String exNorm = AiKeywordMatcher.normalize(excerpt);
+        String kwNorm = AiKeywordMatcher.normalize(keyword);
+        if (kwNorm.length() >= 4 && ansNorm.indexOf(kwNorm) < 0
+                && exNorm.indexOf(kwNorm) >= 0) {
+            // 질문에 해당하는 원문 제목이 답에 전혀 없으면 실패
+            return false;
+        }
+        // 발췌에만 있는 고유 표기 일부가 답에 들어와야 함
+        String[] markers = {
+                "사전심사", "지방재정영향평가", "중기지방재정계획", "투자심사",
+                "예비타당성", "공유재산관리계획", "정책연구용역", "기술용역",
+                "정보화사업", "지방보조금", "정수물품", "출자", "민간위탁",
+                "편성 불가", "미 이행", "제출기한", "심사대상", "심사시기"
+        };
+        int markerInExcerpt = 0;
+        int markerInAnswer = 0;
+        for (int i = 0; i < markers.length; i++) {
+            String m = AiKeywordMatcher.normalize(markers[i]);
+            if (exNorm.indexOf(m) >= 0) {
+                markerInExcerpt++;
+                if (ansNorm.indexOf(m) >= 0) {
+                    markerInAnswer++;
+                }
+            }
+        }
+        if (markerInExcerpt >= 3) {
+            return markerInAnswer >= 2;
+        }
+        return true;
+    }
+
+    private int countMatches(String text, String token) {
+        if (text == null || token == null || token.length() == 0) {
+            return 0;
+        }
+        int n = 0;
+        int from = 0;
+        while ((from = text.indexOf(token, from)) >= 0) {
+            n++;
+            from += token.length();
+        }
+        return n;
+    }
+
+    private boolean isYnFlag(String v) {
+        if (v == null) {
+            return false;
+        }
+        String s = v.trim();
+        return "Y".equalsIgnoreCase(s) || "true".equalsIgnoreCase(s) || "1".equals(s);
+    }
+
+    /** 구버전: 자연어만으로 report/sql/chat 분기 */
+    private JSONObject askLegacyNaturalLanguage(String question, JSONObject result) throws Exception {
         boolean reportLike = looksLikeReportQuestion(question);
         boolean llmReady = llmClient.isEnabled();
-        // 심사조서 질문 + DB 직접 조립 모드는 내부 LLM 없이도 동작 (CUBRID 검색만)
         if (!llmReady && !(reportLike && isReportDbOnly())) {
             result.put("answer", "AI 챗봇 API가 설정되지 않았습니다.\n"
                     + "globals.properties 설정을 확인하세요.\n"
@@ -292,7 +1426,6 @@ public class AiChatServiceImpl implements AiChatService {
 
         result.put("aiProvider", llmReady ? llmClient.getProviderName() : "db-only");
 
-        // 1) 질문 분류 — 심사조서 질문은 규칙 기반으로 바로 처리 (LLM 1회 절약)
         JSONObject plan;
         if (looksLikeReportQuestion(question)) {
             plan = enrichPlanForReport(question, new JSONObject());
@@ -303,7 +1436,6 @@ public class AiChatServiceImpl implements AiChatService {
 
         String mode = plan.optString("mode", "");
 
-        // 사업명·심사조서 질문은 LLM 분류와 무관하게 report 경로 우선
         if ("report".equalsIgnoreCase(mode) || looksLikeReportQuestion(question)) {
             if (!looksLikeReportQuestion(question)) {
                 plan = enrichPlanForReport(question, plan);
@@ -319,6 +1451,368 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         return handleSqlQuestion(question, plan, result);
+    }
+
+    /**
+     * 내부자료 검색 체크박스 OR 검색.
+     * 대소문자·띄어쓰기 무시, 회계년도 범위 inclusive, 목록 양식은 기존과 동일.
+     */
+    private JSONObject handleCheckboxInternalSearch(String keyword, String fisYearFrom, String fisYearTo,
+            boolean searchBizNm, boolean searchGubun, boolean searchExam, boolean searchSrchVal,
+            JSONObject result) throws Exception {
+
+        if (keyword == null || keyword.trim().length() == 0) {
+            result.put("answer", "검색어를 입력해 주세요.");
+            return result;
+        }
+        keyword = keyword.trim();
+
+        final JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.setMaxRows(getMaxReportRows());
+        int qTimeout = getIntProp("Globals.AiQueryTimeoutSec", 45);
+        if (qTimeout > 0) {
+            jdbcTemplate.setQueryTimeout(qTimeout);
+        }
+
+        String yearErr = validateFisYearRange(fisYearFrom, fisYearTo, jdbcTemplate);
+        if (yearErr.length() > 0) {
+            result.put("answer", yearErr);
+            return result;
+        }
+
+        List<String> years = buildInclusiveYearList(fisYearFrom, fisYearTo);
+        CheckboxSearch chk = new CheckboxSearch(keyword, searchBizNm, searchGubun, searchExam, searchSrchVal);
+
+        long t0 = System.currentTimeMillis();
+        List<Map<String, Object>> rows = collectCheckboxRows(jdbcTemplate, years, chk);
+        logPerf("checkboxSearch", t0, "years=" + years.size() + " rows=" + rows.size()
+                + " biz=" + searchBizNm + " gubun=" + searchGubun
+                + " exam=" + searchExam + " srch=" + searchSrchVal);
+
+        if (rows == null || rows.isEmpty()) {
+            result.put("answer", "검색 결과가 없습니다.\n"
+                    + "회계년도 " + fisYearFrom + "~" + fisYearTo + ", 검색어: " + keyword);
+            result.put("aiProvider", "db-checkbox");
+            result.put("rowCount", Integer.valueOf(0));
+            return result;
+        }
+
+        // 재원·본문 후속 조회 병렬
+        final List<Map<String, Object>> finalRows = rows;
+        Future<?> frscFuture = AI_DB_POOL.submit(new Runnable() {
+            public void run() {
+                enrichReportRowsWithFrsc(jdbcTemplate, finalRows);
+            }
+        });
+        Future<?> textFuture = AI_DB_POOL.submit(new Runnable() {
+            public void run() {
+                fillReportTextColumns(jdbcTemplate, finalRows);
+            }
+        });
+        try {
+            int waitSec = Math.max(30, getIntProp("Globals.AiQueryTimeoutSec", 45) + 15);
+            frscFuture.get(waitSec, TimeUnit.SECONDS);
+            textFuture.get(waitSec, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.warn("재원/본문 병렬 보강 실패: " + e.getMessage());
+            try { frscFuture.cancel(true); } catch (Exception ignore) { /* */ }
+            try { textFuture.cancel(true); } catch (Exception ignore) { /* */ }
+            enrichReportRowsWithFrsc(jdbcTemplate, rows);
+            fillReportTextColumns(jdbcTemplate, rows);
+        }
+        return assembleReportListResult(rows, result, "db-checkbox");
+    }
+
+    private JSONObject handleExternalSearch(String question, JSONObject result) throws Exception {
+        List<String> urls = aiExternalSourceFetcher.getConfiguredUrls();
+        if (urls == null || urls.isEmpty()) {
+            result.put("answer", "외부자료 URL이 등록되지 않았습니다. 관리자에게 문의하세요.\n"
+                    + "(globals.properties 의 Globals.AiExternalSourceUrls)");
+            result.put("aiProvider", "external-none");
+            return result;
+        }
+
+        if (!llmClient.isEnabled()) {
+            result.put("answer", "외부자료 추론을 위해 내부 AI(LLM Studio) 설정이 필요합니다.\n"
+                    + "globals.properties 의 Globals.ClovaEndpoint 를 확인하세요.");
+            result.put("aiProvider", "none");
+            return result;
+        }
+
+        String context = aiExternalSourceFetcher.buildContextForLlm();
+        if (context == null || context.trim().length() == 0) {
+            result.put("answer", "등록된 외부자료를 가져오지 못했습니다. URL·네트워크를 확인한 뒤 다시 시도해 주세요.\n"
+                    + "등록 URL 수: " + urls.size());
+            result.put("aiProvider", llmClient.getProviderName());
+            return result;
+        }
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("당신은 부산시 예산편성 도우미입니다. 아래 [외부자료]만을 근거로 질문에 답하세요.\n");
+        prompt.append("자료에 없는 내용은 추측하지 말고 없다고 표시하세요.\n");
+        prompt.append(REPORT_ANSWER_STYLE).append("\n");
+        prompt.append("[질문]\n").append(question).append("\n\n");
+        prompt.append("[외부자료]\n").append(context);
+
+        String answer = llmClient.generateUserQuery(prompt.toString());
+        if (answer == null || answer.trim().length() == 0) {
+            result.put("answer", "외부자료 기반 답변을 생성하지 못했습니다.");
+        } else {
+            result.put("answer", toReportEumseumStyle(answer.trim()));
+        }
+        result.put("aiProvider", llmClient.getProviderName() + "-external");
+        return result;
+    }
+
+    private String validateFisYearRange(String from, String to, JdbcTemplate jdbcTemplate) {
+        if (from == null || !from.matches("\\d{4}") || to == null || !to.matches("\\d{4}")) {
+            return "회계년도는 4자리 숫자로 입력해 주세요.";
+        }
+        int fromN = Integer.parseInt(from);
+        int toN = Integer.parseInt(to);
+        String maxYear = getMaxFisYear(jdbcTemplate);
+        int maxN = Integer.parseInt(maxYear);
+        if (fromN < MIN_FIS_YEAR || toN < MIN_FIS_YEAR) {
+            return "회계년도는 " + MIN_FIS_YEAR + "년 이상이어야 합니다.";
+        }
+        if (fromN > maxN || toN > maxN) {
+            return "회계년도는 최근 회계년도(" + maxYear + ") 이하여야 합니다.";
+        }
+        if (fromN > toN) {
+            return "시작 회계년도가 종료 회계년도보다 클 수 없습니다.";
+        }
+        return "";
+    }
+
+    private List<String> buildInclusiveYearList(String from, String to) {
+        List<String> years = new ArrayList<String>();
+        int fromN = Integer.parseInt(from);
+        int toN = Integer.parseInt(to);
+        for (int y = fromN; y <= toN; y++) {
+            years.add(String.valueOf(y));
+        }
+        return years;
+    }
+
+    /**
+     * 체크박스 내부검색 조회.
+     *
+     * 연도 범위가 넓으면(예: 2013~2026) 단일 SQL 한 방은 조서 CLOB LIKE 를 전체 구간에 대해
+     * 한 번에 평가하고 마지막에 ORDER BY + LIMIT 를 적용하므로, LIMIT 가 작업량을 줄여주지 못한다.
+     * 연도를 작은 구간으로 쪼개 (조서구분 × 연도구간) 을 병렬로 던지면
+     * 각 조회가 fis_year 인덱스를 좁게 타고 자체 LIMIT 로 조기 종료되어 전체 대기시간이 줄어든다.
+     */
+    private List<Map<String, Object>> collectCheckboxRows(final JdbcTemplate jdbcTemplate,
+            List<String> years, final CheckboxSearch chk) {
+
+        List<List<String>> chunks = splitYearChunks(years);
+        List<Map<String, Object>> merged = new ArrayList<Map<String, Object>>();
+        String[] reportCds = new String[] { "010", "020" };
+
+        List<Future<List<Map<String, Object>>>> futures =
+                new ArrayList<Future<List<Map<String, Object>>>>();
+        for (int r = 0; r < reportCds.length; r++) {
+            final String reportCd = reportCds[r];
+            for (int c = 0; c < chunks.size(); c++) {
+                final List<String> chunkYears = chunks.get(c);
+                futures.add(AI_DB_POOL.submit(new Callable<List<Map<String, Object>>>() {
+                    public List<Map<String, Object>> call() {
+                        return runCheckboxReportQuery(jdbcTemplate, reportCd, chunkYears, chk);
+                    }
+                }));
+            }
+        }
+
+        long t0 = System.currentTimeMillis();
+        boolean failed = false;
+        int waitSec = Math.max(30, getIntProp("Globals.AiQueryTimeoutSec", 45) + 15);
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                List<Map<String, Object>> part = futures.get(i).get(waitSec, TimeUnit.SECONDS);
+                if (part != null) {
+                    merged.addAll(part);
+                }
+            } catch (Exception e) {
+                failed = true;
+                logger.warn("내부검색 분할 조회 실패(" + i + "/" + futures.size() + "): " + e.getMessage());
+            }
+        }
+        logPerf("checkboxChunks", t0, "chunks=" + chunks.size() + " tasks=" + futures.size()
+                + " rows=" + merged.size());
+
+        if (failed && merged.isEmpty()) {
+            for (int i = 0; i < futures.size(); i++) {
+                try { futures.get(i).cancel(true); } catch (Exception ignore) { /* */ }
+            }
+            logger.warn("내부검색 병렬 조회 전부 실패 — 전체 구간 순차로 재시도");
+            List<Map<String, Object>> r010 = runCheckboxReportQuery(jdbcTemplate, "010", years, chk);
+            List<Map<String, Object>> r020 = runCheckboxReportQuery(jdbcTemplate, "020", years, chk);
+            if (r010 != null) {
+                merged.addAll(r010);
+            }
+            if (r020 != null) {
+                merged.addAll(r020);
+            }
+        }
+
+        if (!merged.isEmpty()) {
+            sortReportRowsByYearAndBiz(merged);
+            // 분할 조회는 구간마다 LIMIT 이 걸리므로 합계가 상한을 넘을 수 있다.
+            // 후속 재원·본문 보강 비용을 단일 조회와 같은 수준으로 묶기 위해 상한을 다시 적용한다.
+            int maxRows = getMaxReportRows();
+            if (merged.size() > maxRows) {
+                merged = new ArrayList<Map<String, Object>>(merged.subList(0, maxRows));
+            }
+            return AiReportContextBuilder.trimRowsToMaxBizGroups(merged, getMaxReportBlocks());
+        }
+        return merged;
+    }
+
+    /**
+     * 회계연도 목록을 병렬 조회용 구간으로 분할한다.
+     * Globals.AiYearChunkSize (기본 2) 이하 구간으로 나누고, 구간 수는 최대 12개로 제한한다.
+     * 연도 수가 구간 크기 이하이면 분할하지 않는다(기존 동작 유지).
+     */
+    private List<List<String>> splitYearChunks(List<String> years) {
+        List<List<String>> chunks = new ArrayList<List<String>>();
+        if (years == null || years.isEmpty()) {
+            chunks.add(years == null ? new ArrayList<String>() : years);
+            return chunks;
+        }
+        int size = getIntProp("Globals.AiYearChunkSize", 2);
+        if (size < 1) {
+            size = 1;
+        }
+        if (years.size() <= size) {
+            chunks.add(years);
+            return chunks;
+        }
+        int maxChunks = getIntProp("Globals.AiYearMaxChunks", 12);
+        if (maxChunks < 1) {
+            maxChunks = 1;
+        }
+        int needed = (years.size() + size - 1) / size;
+        if (needed > maxChunks) {
+            size = (years.size() + maxChunks - 1) / maxChunks;
+        }
+        for (int i = 0; i < years.size(); i += size) {
+            int end = Math.min(i + size, years.size());
+            chunks.add(new ArrayList<String>(years.subList(i, end)));
+        }
+        return chunks;
+    }
+
+    private List<Map<String, Object>> runCheckboxReportQuery(JdbcTemplate jdbcTemplate,
+            String reportCd, List<String> years, CheckboxSearch chk) {
+        List<Object> args = new ArrayList<Object>();
+        String sql = buildReportSql(reportCd, years, "", 0,
+                "", "", "", "", "", "", false, chk, args);
+        return queryReport(jdbcTemplate, sql, args);
+    }
+
+    /** 심사조서 목록 JSON 조립 (기존 handleReportQuestion 표 양식과 동일) */
+    private JSONObject assembleReportListResult(List<Map<String, Object>> rows, JSONObject result,
+            String providerLabel) {
+        AiReportContextBuilder.ContextOptions ctxOpts = AiReportContextBuilder.ContextOptions.defaults();
+        ctxOpts.includeGubun = true;
+        ctxOpts.includeDemandAmt = true;
+        ctxOpts.maxBlocks = getMaxReportBlocks();
+
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> multiYearGroups =
+                AiReportContextBuilder.groupRowsByBizNameAcrossYears(rows);
+        java.util.IdentityHashMap<Map<String, Object>, JSONArray> detailRowsByRow =
+                new java.util.IdentityHashMap<Map<String, Object>, JSONArray>();
+        for (java.util.Iterator<List<Map<String, Object>>> git = multiYearGroups.values().iterator();
+                git.hasNext();) {
+            List<Map<String, Object>> g = git.next();
+            AiReportContextBuilder.ContextOptions detailOpts = copyContextOptions(ctxOpts);
+            detailOpts.includeGubun = true;
+            JSONArray detailRows = toDetailRowsJson(g, detailOpts);
+            for (int gi = 0; gi < g.size(); gi++) {
+                detailRowsByRow.put(g.get(gi), detailRows);
+            }
+        }
+
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> bizGroups =
+                AiReportContextBuilder.groupRowsByBiz(rows);
+
+        String answer = "○ 검색 결과: " + bizGroups.size() + "개 사업 / " + rows.size() + "건\n"
+                + "○ 표시 기준: 연도별·사업명별 묶음 / 차수별 구분\n"
+                + "○ 상세 확인: 사업명 클릭 → 연도별·차수별 상세";
+
+        result.put("answer", answer);
+        result.put("rowCount", Integer.valueOf(rows.size()));
+        result.put("aiProvider", providerLabel);
+
+        JSONArray columns = new JSONArray();
+        columns.add("연도");
+        columns.add("사업명");
+        columns.add("소관부서");
+        columns.add("차수");
+        columns.add("요구액(백만원)");
+        columns.add("조정액(백만원)");
+        columns.add("조정재원");
+
+        JSONArray dataList = new JSONArray();
+        java.util.HashSet<String> detailEmitted = new java.util.HashSet<String>();
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            JSONObject obj = new JSONObject();
+            String fisYearVal = AiReportContextBuilder.getStr(row, "fis_year");
+            String bizLabel = AiReportContextBuilder.buildBizLabel(row);
+            String deptLabel = (AiReportContextBuilder.getStr(row, "office_nm") + " "
+                    + AiReportContextBuilder.getStr(row, "dept_nm")).trim();
+            String grpKey = fisYearVal + "|" + bizLabel + "|" + deptLabel;
+            obj.put("연도", fisYearVal);
+            obj.put("사업명", bizLabel);
+            obj.put("소관부서", deptLabel);
+            obj.put("차수", AiReportContextBuilder.buildDgrLabel(
+                    fisYearVal,
+                    AiReportContextBuilder.getStr(row, "bgt_compo_fg"),
+                    AiReportContextBuilder.getLong(row, "add_times"),
+                    AiReportContextBuilder.getStr(row, "bgt_dgr")));
+            obj.put("요구액(백만원)", AiReportContextBuilder.toMillion(
+                    AiReportContextBuilder.getLong(row, "demand_bgt_amt")));
+            obj.put("조정액(백만원)", AiReportContextBuilder.toMillion(
+                    AiReportContextBuilder.getLong(row, "bgt_amt")));
+            obj.put("조정재원", AiReportContextBuilder.formatFrscForRow(row));
+            JSONArray detailRows = detailRowsByRow.get(row);
+            String detailKey = bizLabel;
+            obj.put("_detailKey", detailKey);
+            if (detailRows != null && !detailRows.isEmpty() && detailEmitted.add(detailKey)) {
+                obj.put("_detailRows", detailRows);
+            }
+            obj.put("_detailTitle", bizLabel);
+            obj.put("_grpKey", grpKey);
+            dataList.add(obj);
+        }
+        result.put("columns", columns);
+        result.put("dataList", dataList);
+        return result;
+    }
+
+    /** 체크박스 검색 조건 — 선택 필드 안에서 공통 키워드 식(& AND, 쉼표 OR) 적용 */
+    private static final class CheckboxSearch {
+        final String keyword;
+        final AiKeywordMatcher.SearchExpression expression;
+        final boolean bizNm;
+        final boolean gubun;
+        final boolean exam;
+        final boolean srchVal;
+
+        CheckboxSearch(String keyword, boolean bizNm, boolean gubun, boolean exam, boolean srchVal) {
+            this.keyword = keyword;
+            this.expression = AiKeywordMatcher.parseExpression(keyword);
+            this.bizNm = bizNm;
+            this.gubun = gubun;
+            this.exam = exam;
+            this.srchVal = srchVal;
+        }
+
+        boolean active() {
+            return keyword != null && keyword.length() > 0 && !expression.isEmpty()
+                    && (bizNm || gubun || exam || srchVal);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -449,7 +1943,7 @@ public class AiChatServiceImpl implements AiChatService {
         for (java.util.Iterator<List<Map<String, Object>>> git = bizNameGroups.values().iterator(); git.hasNext();) {
             List<Map<String, Object>> g = git.next();
             AiReportContextBuilder.ContextOptions detailOpts = copyContextOptions(ctxOpts);
-            detailOpts.includeGubun = false;
+            detailOpts.includeGubun = true;
             JSONArray detailRows = toDetailRowsJson(g, detailOpts);
             for (int gi = 0; gi < g.size(); gi++) {
                 detailRowsByRow.put(g.get(gi), detailRows);
@@ -460,9 +1954,9 @@ public class AiChatServiceImpl implements AiChatService {
         java.util.LinkedHashMap<String, List<Map<String, Object>>> bizGroups =
                 AiReportContextBuilder.groupRowsByBiz(rows);
 
-        String answer = "총 " + bizGroups.size() + "개 사업(" + rows.size() + "건)을 찾았습니다.\n"
-                + "표는 연도별·사업명별로 묶고 차수별로 나눠 표시했습니다.\n"
-                + "사업명을 클릭하면 해당 사업의 연도별·차수별 상세 내용을 새 창에서 확인할 수 있습니다.";
+        String answer = "○ 검색 결과: " + bizGroups.size() + "개 사업 / " + rows.size() + "건\n"
+                + "○ 표시 기준: 연도별·사업명별 묶음 / 차수별 구분\n"
+                + "○ 상세 확인: 사업명 클릭 → 연도별·차수별 상세";
         logger.info("AI RAG[report] year=" + fisYear + " rows=" + rows.size()
                 + " bizGroups=" + bizGroups.size() + " dbOnly=" + isReportDbOnly());
 
@@ -599,7 +2093,7 @@ public class AiChatServiceImpl implements AiChatService {
 
             // IN (많은 쌍) 한 방은 운영 CUBRID에서 느림 → 배치 단위로 쪼개 조회
             int pairCount = pairArgs.size() / 2;
-            int batchSize = getIntProp("Globals.AiFrscBatchSize", 40);
+            int batchSize = getIntProp("Globals.AiFrscBatchSize", 100);
             if (batchSize < 10) {
                 batchSize = 10;
             }
@@ -623,15 +2117,23 @@ public class AiChatServiceImpl implements AiChatService {
                 String sql = "SELECT BB.BGT_DGR AS bgt_dgr\n"
                         + "     , BB.TE_BGT_COMPO_ID AS te_bgt_compo_id\n"
                         + "     , A.FRSC_FG_NM AS frsc_fg_nm\n"
+                        + "     , A.STAND_FRSC_CD AS stand_frsc_cd\n"
                         + "     , NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) AS adj_def_frsc_amt\n"
+                        + "     , NVL(SUM(NVL(BB.DMN_DEF_FRSC_AMT, 0)), 0) AS dmn_def_frsc_amt\n"
+                        + "     , NVL(SUM(NVL(BB.PRE_DEF_FRSC_AMT, 0)), 0) AS pre_def_frsc_amt\n"
+                        + "     , NVL(SUM(NVL(BB.PRE_FRSC_AMT, 0)), 0) AS pre_frsc_amt\n"
+                        + "     , MAX(NVL(BB.REGI_ID, '')) AS regi_id\n"
                         + "  FROM TB_DGRCOMPOFRSC BB\n"
                         + " INNER JOIN TB_YEARFRSC A\n"
                         + "    ON A.FIS_YEAR = BB.FIS_YEAR\n"
                         + "   AND A.FRSC_FG_CD = BB.FRSC_FG_CD\n"
                         + " WHERE BB.FIS_YEAR = ?\n"
                         + "   AND (" + orClause + ")\n"
-                        + " GROUP BY BB.BGT_DGR, BB.TE_BGT_COMPO_ID, A.FRSC_FG_CD, A.FRSC_FG_NM\n"
-                        + "HAVING NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) <> 0";
+                        + " GROUP BY BB.BGT_DGR, BB.TE_BGT_COMPO_ID, A.FRSC_FG_CD, A.FRSC_FG_NM, A.STAND_FRSC_CD\n"
+                        + " HAVING NVL(SUM(NVL(BB.ADJ_DEF_FRSC_AMT, 0)), 0) <> 0\n"
+                        + "     OR NVL(SUM(NVL(BB.DMN_DEF_FRSC_AMT, 0)), 0) <> 0\n"
+                        + "     OR NVL(SUM(NVL(BB.PRE_DEF_FRSC_AMT, 0)), 0) <> 0\n"
+                        + "     OR NVL(SUM(NVL(BB.PRE_FRSC_AMT, 0)), 0) <> 0";
 
                 List<Map<String, Object>> frscRows;
                 try {
@@ -665,6 +2167,118 @@ public class AiChatServiceImpl implements AiChatService {
                 AiReportContextBuilder.applyAdjFrscFromFrscLines(row, lines);
             }
         }
+    }
+
+    /**
+     * 체크박스 목록 조회 후, 화면에 필요한 조서 본문(구분·검토내용 등)만 대상 행에 한해 채운다.
+     * 목록 SQL에서 CLOB SELECT를 빼 연도 범위 검색을 빠르게 유지한다.
+     */
+    private void fillReportTextColumns(JdbcTemplate jdbcTemplate, List<Map<String, Object>> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+        long t0 = System.currentTimeMillis();
+        java.util.LinkedHashMap<String, List<Map<String, Object>>> byKey =
+                new java.util.LinkedHashMap<String, List<Map<String, Object>>>();
+        for (int i = 0; i < rows.size(); i++) {
+            Map<String, Object> row = rows.get(i);
+            String reportNm = AiReportContextBuilder.getStr(row, "report_nm");
+            String table = reportNm.indexOf("투자") >= 0 ? "TB_REPORT020" : "TB_REPORT010";
+            String year = AiReportContextBuilder.getStr(row, "fis_year");
+            long dgr = AiReportContextBuilder.getLong(row, "bgt_dgr");
+            String compo = AiReportContextBuilder.getStr(row, "te_bgt_compo_id");
+            if (year.length() == 0 || dgr == 0L || compo.length() == 0) {
+                continue;
+            }
+            String bucket = table + "\u0001" + year;
+            List<Map<String, Object>> list = byKey.get(bucket);
+            if (list == null) {
+                list = new ArrayList<Map<String, Object>>();
+                byKey.put(bucket, list);
+            }
+            list.add(row);
+        }
+
+        int batchSize = getIntProp("Globals.AiFrscBatchSize", 100);
+        if (batchSize < 10) {
+            batchSize = 10;
+        }
+        int filled = 0;
+        for (java.util.Iterator<java.util.Map.Entry<String, List<Map<String, Object>>>> it =
+                byKey.entrySet().iterator(); it.hasNext();) {
+            java.util.Map.Entry<String, List<Map<String, Object>>> e = it.next();
+            String[] parts = e.getKey().split("\u0001", 2);
+            String table = parts[0];
+            String fisYear = parts[1];
+            List<Map<String, Object>> yearRows = e.getValue();
+
+            java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<String>();
+            List<Object> pairArgs = new ArrayList<Object>();
+            for (int i = 0; i < yearRows.size(); i++) {
+                Map<String, Object> row = yearRows.get(i);
+                long dgr = AiReportContextBuilder.getLong(row, "bgt_dgr");
+                String compo = AiReportContextBuilder.getStr(row, "te_bgt_compo_id");
+                String k = dgr + "\u0001" + compo;
+                if (seen.add(k)) {
+                    pairArgs.add(Integer.valueOf((int) dgr));
+                    pairArgs.add(compo);
+                }
+            }
+            java.util.HashMap<String, Map<String, Object>> textByKey =
+                    new java.util.HashMap<String, Map<String, Object>>();
+            int pairCount = pairArgs.size() / 2;
+            for (int offset = 0; offset < pairCount; offset += batchSize) {
+                int end = Math.min(offset + batchSize, pairCount);
+                StringBuilder orClause = new StringBuilder();
+                List<Object> args = new ArrayList<Object>();
+                args.add(fisYear);
+                for (int p = offset; p < end; p++) {
+                    if (orClause.length() > 0) {
+                        orClause.append(" OR ");
+                    }
+                    orClause.append("(R.BGT_DGR = ? AND R.TE_BGT_COMPO_ID = ?)");
+                    args.add(pairArgs.get(p * 2));
+                    args.add(pairArgs.get(p * 2 + 1));
+                }
+                String sql = "SELECT R.BGT_DGR AS bgt_dgr, R.TE_BGT_COMPO_ID AS te_bgt_compo_id,\n"
+                        + "       NVL(R.DEMAND_CONT, '') AS demand_cont,\n"
+                        + "       NVL(R.EXAM_CONT, '') AS exam_cont,\n"
+                        + "       NVL(R.INVEST_PLAN, '') AS invest_plan\n"
+                        + "  FROM " + table + " R\n"
+                        + " WHERE R.FIS_YEAR = ?\n"
+                        + "   AND (" + orClause + ")";
+                try {
+                    List<Map<String, Object>> textRows = jdbcTemplate.queryForList(sql, args.toArray());
+                    for (int i = 0; i < textRows.size(); i++) {
+                        Map<String, Object> tr = textRows.get(i);
+                        String k = AiReportContextBuilder.getLong(tr, "bgt_dgr") + "\u0001"
+                                + AiReportContextBuilder.getStr(tr, "te_bgt_compo_id");
+                        textByKey.put(k, tr);
+                    }
+                } catch (Exception ex) {
+                    logger.warn("조서 본문 후속 조회 실패 table=" + table + " year=" + fisYear
+                            + " : " + ex.getMessage());
+                }
+            }
+            for (int i = 0; i < yearRows.size(); i++) {
+                Map<String, Object> row = yearRows.get(i);
+                String k = AiReportContextBuilder.getLong(row, "bgt_dgr") + "\u0001"
+                        + AiReportContextBuilder.getStr(row, "te_bgt_compo_id");
+                Map<String, Object> tr = textByKey.get(k);
+                if (tr == null) {
+                    continue;
+                }
+                String demand = AiReportContextBuilder.getStr(tr, "demand_cont");
+                String exam = AiReportContextBuilder.getStr(tr, "exam_cont");
+                String invest = AiReportContextBuilder.getStr(tr, "invest_plan");
+                row.put("demand_cont", demand);
+                row.put("gubun", demand);
+                row.put("exam_cont", exam);
+                row.put("invest_plan", invest);
+                filled++;
+            }
+        }
+        logPerf("fillReportText", t0, "rows=" + rows.size() + " filled=" + filled);
     }
 
     /**
@@ -1498,38 +3112,49 @@ public class AiChatServiceImpl implements AiChatService {
             String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
             String contentField, String contentKeyword,
             boolean broadKeyword, List<Object> args) {
+        return buildReportSql(reportCd, years, bgtCompoFg, addTimes,
+                bizKeyword, deptKeyword, tagKeyword, implKeyword,
+                contentField, contentKeyword, broadKeyword, null, args, -1);
+    }
+
+    private String buildReportSql(String reportCd, List<String> years, String bgtCompoFg, int addTimes,
+            String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
+            String contentField, String contentKeyword,
+            boolean broadKeyword, CheckboxSearch checkbox, List<Object> args) {
+        return buildReportSql(reportCd, years, bgtCompoFg, addTimes,
+                bizKeyword, deptKeyword, tagKeyword, implKeyword,
+                contentField, contentKeyword, broadKeyword, checkbox, args, -1);
+    }
+
+    private String buildReportSql(String reportCd, List<String> years, String bgtCompoFg, int addTimes,
+            String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
+            String contentField, String contentKeyword,
+            boolean broadKeyword, CheckboxSearch checkbox, List<Object> args, int limitOverride) {
 
         boolean both = !"010".equals(reportCd) && !"020".equals(reportCd);
 
         StringBuilder sb = new StringBuilder();
 
-        // 재원(frsc_amt1~6)은 조회 후 enrichReportRowsWithFrsc()에서 일괄 부여 (연도·차수 무관 동일 로직)
-        // 성능: 키워드·부서 등 필터를 UNION 이후(W)가 아니라 각 브랜치 조인 내부(R/C/B/D)로
-        // push down 하여, 조인 단계에서 곧바로 걸러 결과 행수를 최소화한다.
         sb.append("SELECT X.* FROM (\n");
         sb.append("SELECT * FROM (\n");
         if (both || "010".equals(reportCd)) {
             appendReportBranch(sb, "010", years, bgtCompoFg, addTimes,
-                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword, broadKeyword, args);
+                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword,
+                    broadKeyword, checkbox, args);
         }
         if (both) {
             sb.append("UNION ALL\n");
         }
         if (both || "020".equals(reportCd)) {
             appendReportBranch(sb, "020", years, bgtCompoFg, addTimes,
-                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword, broadKeyword, args);
+                    bizKeyword, deptKeyword, tagKeyword, implKeyword, contentField, contentKeyword,
+                    broadKeyword, checkbox, args);
         }
         sb.append(") W\n");
         sb.append("WHERE 1=1\n");
 
-        // 같은 사업의 차수별 행이 인접하도록 사업 기준으로 정렬 (연도 → 부서 → 사업 → 차수)
         sb.append("ORDER BY W.fis_year, W.office_nm, W.dept_nm, W.comp_ground, W.te_mng_mok_cd, W.bgt_dgr\n");
-        // 연도 범위·다연도 검색이면 연도별 결과가 잘리지 않도록 행 상한을 연도 수에 비례해 확대
-        int limit = getMaxReportRows();
-        int yearCount = years == null ? 1 : Math.max(1, years.size());
-        if (yearCount > 1) {
-            limit = Math.min(limit * yearCount, 6000);
-        }
+        int limit = limitOverride > 0 ? limitOverride : getMaxReportRows();
         sb.append("LIMIT ").append(limit).append("\n");
         sb.append(") X");
 
@@ -1541,15 +3166,21 @@ public class AiChatServiceImpl implements AiChatService {
             String bgtCompoFg, int addTimes,
             String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
             String contentField, String contentKeyword, boolean broadKeyword, List<Object> args) {
+        appendReportBranch(sb, reportCd, years, bgtCompoFg, addTimes,
+                bizKeyword, deptKeyword, tagKeyword, implKeyword,
+                contentField, contentKeyword, broadKeyword, null, args);
+    }
+
+    private void appendReportBranch(StringBuilder sb, String reportCd, List<String> years,
+            String bgtCompoFg, int addTimes,
+            String bizKeyword, String deptKeyword, String tagKeyword, String implKeyword,
+            String contentField, String contentKeyword, boolean broadKeyword,
+            CheckboxSearch checkbox, List<Object> args) {
 
         boolean invest = "020".equals(reportCd);
         String table = invest ? "TB_REPORT020" : "TB_REPORT010";
         String reportNm = invest ? "투자사업심사조서" : "경상사업심사조서";
 
-        // 성능 핵심: TB_DGRCOMPO 를 파생(GROUP BY) 테이블이 아니라 직접 조인하고 바깥에서 GROUP BY 한다.
-        // 파생 테이블은 CUBRID 가 인덱스를 못 타 그 해 전체(수만 행)를 매번 materialize·순차 스캔하지만,
-        // 직접 조인은 R→C(ix_dgrcompo_te)→D/B/G 전부 인덱스 NL 조인이 되어 10배 이상 빠르다.
-        // (검증: 같은 te_bgt_compo_id 그룹 내 dept_cd/dbiz_cd 는 항상 동일하고 마스터 매칭도 100% 이므로 결과 동일)
         sb.append("SELECT '").append(reportNm).append("' AS report_nm\n");
         sb.append("     , R.fis_year AS fis_year\n");
         sb.append("     , R.bgt_dgr AS bgt_dgr\n");
@@ -1569,19 +3200,39 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("     , MIN(C.dbiz_cd) AS dbiz_cd\n");
         sb.append("     , SUM(NVL(C.pre_amt, 0)) AS pre_amt\n");
         sb.append("     , SUM(NVL(C.pre_bgt_amt, 0)) AS pre_bgt_amt\n");
-        // 심사조서 화면(ReportWrite010)과 동일: 조정액=DIFF_AMT, 요구액=DEMAND_DIFF_AMT (추경 포함)
         sb.append("     , SUM(NVL(C.demand_diff_amt, 0)) AS demand_bgt_amt\n");
         sb.append("     , SUM(NVL(C.diff_amt, 0)) AS bgt_amt\n");
         sb.append("     , SUM(NVL(C.diff_amt, 0)) AS diff_amt\n");
-        sb.append("     , NVL(MIN(R.demand_cont), '') AS gubun\n");
-        sb.append("     , NVL(MIN(R.invest_plan), '') AS invest_plan\n");
-        sb.append("     , NVL(MIN(R.demand_cont), '') AS demand_cont\n");
-        sb.append("     , NVL(MIN(R.exam_cont), '') AS exam_cont\n");
-        sb.append("     , NVL(MIN(R.srch_val), '') AS srch_val\n");
+        // 체크박스 목록 조회는 CLOB를 SELECT하지 않음(필터 WHERE만 사용) → 상세는 후속 fillReportTextColumns
+        if (checkbox != null) {
+            sb.append("     , '' AS gubun\n");
+            sb.append("     , '' AS invest_plan\n");
+            sb.append("     , '' AS demand_cont\n");
+            sb.append("     , '' AS exam_cont\n");
+            sb.append("     , NVL(MIN(R.srch_val), '') AS srch_val\n");
+        } else {
+            sb.append("     , NVL(MIN(R.demand_cont), '') AS gubun\n");
+            sb.append("     , NVL(MIN(R.invest_plan), '') AS invest_plan\n");
+            sb.append("     , NVL(MIN(R.demand_cont), '') AS demand_cont\n");
+            sb.append("     , NVL(MIN(R.exam_cont), '') AS exam_cont\n");
+            sb.append("     , NVL(MIN(R.srch_val), '') AS srch_val\n");
+        }
         if (invest) {
             sb.append("     , MIN(NVL(R.tot_frsc_amt1,0)+NVL(R.tot_frsc_amt2,0)+NVL(R.tot_frsc_amt3,0)+NVL(R.tot_frsc_amt4,0)+NVL(R.tot_frsc_amt5,0)+NVL(R.tot_frsc_amt6,0)) AS tot_biz_amt\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt1,0)) AS tot_frsc_amt1\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt2,0)) AS tot_frsc_amt2\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt3,0)) AS tot_frsc_amt3\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt4,0)) AS tot_frsc_amt4\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt5,0)) AS tot_frsc_amt5\n");
+            sb.append("     , MIN(NVL(R.tot_frsc_amt6,0)) AS tot_frsc_amt6\n");
         } else {
             sb.append("     , 0 AS tot_biz_amt\n");
+            sb.append("     , 0 AS tot_frsc_amt1\n");
+            sb.append("     , 0 AS tot_frsc_amt2\n");
+            sb.append("     , 0 AS tot_frsc_amt3\n");
+            sb.append("     , 0 AS tot_frsc_amt4\n");
+            sb.append("     , 0 AS tot_frsc_amt5\n");
+            sb.append("     , 0 AS tot_frsc_amt6\n");
         }
         sb.append("  FROM ").append(table).append(" R\n");
         sb.append("     , TB_DGRCOMPO C\n");
@@ -1604,7 +3255,6 @@ public class AiChatServiceImpl implements AiChatService {
         sb.append("   AND R.report_cd = '").append(reportCd).append("'\n");
         sb.append("   AND ").append(yearPredicate("R.fis_year", years)).append("\n");
         sb.append("   AND ").append(yearPredicate("C.fis_year", years)).append("\n");
-        // '?' 등장 순서: R(fis_year) -> C(fis_year)
         addYearPredicateArgs(args, years);
         addYearPredicateArgs(args, years);
 
@@ -1618,13 +3268,74 @@ public class AiChatServiceImpl implements AiChatService {
             }
         }
 
-        // 필터(키워드·부서·태그·구분·비정형)를 조인 WHERE 에 직접 적용 (push down)
-        appendReportBranchFilters(sb, bizKeyword, deptKeyword, tagKeyword, implKeyword,
-                contentField, contentKeyword, broadKeyword, args);
+        if (checkbox != null && checkbox.active()) {
+            appendCheckboxOrFilters(sb, checkbox, args);
+        } else {
+            appendReportBranchFilters(sb, bizKeyword, deptKeyword, tagKeyword, implKeyword,
+                    contentField, contentKeyword, broadKeyword, args);
+        }
 
-        // 사업(te_bgt_compo_id) 단위로 compo 금액을 합산
         sb.append("   GROUP BY R.fis_year, R.bgt_dgr, R.te_bgt_compo_id\n");
         sb.append("\n");
+    }
+
+    /**
+     * 체크박스 검색 — 대소문자·띄어쓰기 무시.
+     * 키워드 식: A&B,C = (A AND B) OR C.
+     * 각 term은 선택된 필드 중 하나에 있으면 충족한다.
+     */
+    private void appendCheckboxOrFilters(StringBuilder sb, CheckboxSearch chk, List<Object> args) {
+        // 행정운영경비 제외 (기존과 동일)
+        sb.append("   AND NOT (B.pbiz_nm LIKE '%행정운영경비%'\n");
+        sb.append("            AND (B.ubiz_nm LIKE '%기본경비%' OR B.ubiz_nm LIKE '%인력운영비%'\n");
+        sb.append("                 OR B.dbiz_nm LIKE '%기본경비%' OR B.dbiz_nm LIKE '%인력운영비%'))\n");
+
+        List<String> fields = new ArrayList<String>();
+        if (chk.bizNm) {
+            fields.add("C.comp_ground");
+            fields.add("B.dbiz_nm");
+        }
+        if (chk.gubun) {
+            fields.add("R.demand_cont");
+            fields.add("R.invest_plan");
+        }
+        if (chk.exam) {
+            fields.add("R.exam_cont");
+        }
+        if (chk.srchVal) {
+            fields.add("R.srch_val");
+        }
+        if (fields.isEmpty()) {
+            return;
+        }
+
+        StringBuilder expressionSql = new StringBuilder();
+        List<List<String>> groups = chk.expression.getOrGroups();
+        for (int g = 0; g < groups.size(); g++) {
+            if (expressionSql.length() > 0) {
+                expressionSql.append(" OR ");
+            }
+            expressionSql.append("(");
+            List<String> andTerms = groups.get(g);
+            for (int t = 0; t < andTerms.size(); t++) {
+                if (t > 0) {
+                    expressionSql.append(" AND ");
+                }
+                expressionSql.append("(");
+                for (int f = 0; f < fields.size(); f++) {
+                    if (f > 0) {
+                        expressionSql.append(" OR ");
+                    }
+                    expressionSql.append(spaceInsensitiveLikeCol(fields.get(f)));
+                    addSpaceInsensitiveLikeArgs(args, andTerms.get(t), 1);
+                }
+                expressionSql.append(")");
+            }
+            expressionSql.append(")");
+        }
+        if (expressionSql.length() > 0) {
+            sb.append("   AND (").append(expressionSql).append(")\n");
+        }
     }
 
     /**
@@ -1742,6 +3453,7 @@ public class AiChatServiceImpl implements AiChatService {
     private String buildReportAnswerPrompt(String question, String context) {
         StringBuilder sb = new StringBuilder();
         sb.append("아래 [심사조서 데이터]만 근거로 [사용자 질문]에 답하라.\n");
+        sb.append(REPORT_ANSWER_STYLE);
         sb.append("\n[답변 규칙]\n");
         sb.append("- 기본: [사업명(통계목)]→[소관부서]→[차수별 예산내역(재원표시)]→[차수별 요구, 검토의견] 4항목만.\n");
         sb.append("- 1번: 세세사업명 ( 통계목코드) 형식. 세부사업명 표시 금지. 예) 지역사랑상품권 인센티브 보상금 ( 308-13)\n");
@@ -1800,7 +3512,7 @@ public class AiChatServiceImpl implements AiChatService {
         return opts;
     }
 
-    /** 상세 창용 JSON 행 배열 (budget, demand, exam, dept) */
+    /** 상세 창용 JSON 행 배열 — 조건검색어·예산재원단독열·소관부서단독열 제외 */
     private JSONArray toDetailRowsJson(List<Map<String, Object>> group,
             AiReportContextBuilder.ContextOptions options) {
         JSONArray arr = new JSONArray();
@@ -1808,13 +3520,27 @@ public class AiChatServiceImpl implements AiChatService {
         for (int i = 0; i < rows.size(); i++) {
             Map<String, String> line = rows.get(i);
             JSONObject o = new JSONObject();
-            o.put("budget", line.get("budget") == null ? "" : line.get("budget"));
-            o.put("demand", line.get("demand") == null ? "" : line.get("demand"));
-            o.put("exam", line.get("exam") == null ? "" : line.get("exam"));
-            o.put("dept", line.get("dept") == null ? "" : line.get("dept"));
+            o.put("yearDgr", nullToEmpty(line.get("yearDgr")));
+            o.put("fisFgNm", nullToEmpty(line.get("fisFgNm")));
+            o.put("dept", nullToEmpty(line.get("dept")));
+            o.put("gubun", nullToEmpty(line.get("gubun")));
+            o.put("hasTot", nullToEmpty(line.get("hasTot")));
+            o.put("totAmt", nullToEmpty(line.get("totAmt")));
+            o.put("totFrsc", nullToEmpty(line.get("totFrsc")));
+            o.put("preAmt", nullToEmpty(line.get("preAmt")));
+            o.put("preFrsc", nullToEmpty(line.get("preFrsc")));
+            o.put("demandAmt", nullToEmpty(line.get("demandAmt")));
+            o.put("demandFrsc", nullToEmpty(line.get("demandFrsc")));
+            o.put("adjAmt", nullToEmpty(line.get("adjAmt")));
+            o.put("adjFrsc", nullToEmpty(line.get("adjFrsc")));
+            o.put("exam", nullToEmpty(line.get("exam")));
             arr.add(o);
         }
         return arr;
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     private boolean wantsDemandAmt(String question) {

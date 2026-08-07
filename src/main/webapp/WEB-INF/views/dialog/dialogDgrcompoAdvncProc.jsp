@@ -63,7 +63,7 @@ $(document).ready(function (){
     };
     
     $("#dialogDgrcompoAdvncProcDiv").dialog({
-        title: "사전절차 관리",
+        title: "분류항목 관리",
         autoOpen: false,
         width: 'auto',
         height: 'auto',
@@ -76,9 +76,6 @@ $(document).ready(function (){
         	dialogDgrcompoAdvncProcClose();
         },
         buttons : {
-            "저장" : function() {
-            	dialogDgrcompoAdvncProcDoSave();
-            },
             "닫기" : function() {
             	dialogDgrcompoAdvncProcClose();
             }
@@ -102,6 +99,7 @@ $(document).ready(function (){
         }
     	//dialogDgrcompoAdvncProcClose();
     	dialogDgrcompoAdvncProcGrid.addCsJsonData(data);
+    	if(typeof window.applyAttrCodeAdminUi === 'function'){ window.applyAttrCodeAdminUi(); }
     }    
     
     var getSelectedRowId = function(){
@@ -140,7 +138,7 @@ $(document).ready(function (){
         return selectedDatas;
     };
     
-    $("#addRowAdvncProcBtn", dialogObj).click(function() {
+    $("#addRowAdvncProcBtn").click(function() {
     	var rowId = dialogDgrcompoAdvncProcGrid.getGridParam("reccount");
     	var trCnt = $('#DIALOG_DGR_COMPO_ADVNC_PROC_GRD').find('input').length;
     	
@@ -161,8 +159,13 @@ $(document).ready(function (){
     	dialogDgrcompoAdvncProcGrid.jqGrid('addRowData', maxDetlCd, addData);
     });
     
-    $("#delRowAdvncProcBtn", dialogObj).click(function() {
-    	var selectedDatas = getSelectedData(dialogDgrcompoAdvncProcGrid, $("#DIALOG_DGR_COMPO_ADVNC_PROC_GRD", dialogObj)[0].rows);
+    $("#delRowAdvncProcBtn").click(function() {
+    	var $grd = $("#DIALOG_DGR_COMPO_ADVNC_PROC_GRD");
+    	if($grd.length < 1 || !$grd[0].rows){
+    		$.csAlert({ msg : '삭제할 속성을 선택해주세요.' });
+        	return false;
+    	}
+    	var selectedDatas = getSelectedData(dialogDgrcompoAdvncProcGrid, $grd[0].rows);
 
     	if(isEmpty(selectedDatas) == true || selectedDatas.length < 1){
     		$.csAlert({
@@ -180,7 +183,8 @@ $(document).ready(function (){
     var dialogDgrcompoAdvncProcDoDelete = function(){
     	
     	//삭제 실행
-    	var selectedDatas = getSelectedData(dialogDgrcompoAdvncProcGrid, $("#DIALOG_DGR_COMPO_ADVNC_PROC_GRD", dialogObj)[0].rows);
+    	var $grd = $("#DIALOG_DGR_COMPO_ADVNC_PROC_GRD");
+    	var selectedDatas = getSelectedData(dialogDgrcompoAdvncProcGrid, $grd[0].rows);
     	var data = $.csAjaxCall({
             url : "/budget/ajaxDialogDgrcompoDelCommCd.do",
             data : {codeId : "RP015", delData: selectedDatas}
@@ -213,7 +217,7 @@ $(document).ready(function (){
         
         if(isEmpty(saveData) == true || saveData.length < 1){
     		$.csAlert({
-                msg : '저장할 사전절차가 없습니다.'
+                msg : '저장할 분류항목이 없습니다.'
             });
         	return false;
     	}
@@ -342,6 +346,10 @@ $(document).ready(function (){
     			, comboTypeValue: ''
     	});
     }
+
+    window.doDialogDgrcompoAdvncProcSearch = doDialogDgrcompoAdvncProcSearch;
+    window.dialogDgrcompoAdvncProcDoSave = dialogDgrcompoAdvncProcDoSave;
+    window.dialogDgrcompoAdvncProcDoDelete = dialogDgrcompoAdvncProcDoDelete;
 });
 
 
@@ -349,7 +357,7 @@ $(document).ready(function (){
 <div id="dialogDgrcompoAdvncProcDiv" class="dialog" style="display:none;">
 	<input type="hidden" id="dialogDgrcompoAdvncProcCallBackFunction"/>
   <div id="advncProcBody">
-  	<div class="btn">
+  	<div class="btn attrCodeInnerBtn" style="display:none;">
         <div class="btnR">
           <a id="addRowAdvncProcBtn" class="btnClass" href="#">추가</a>
           <a id="delRowAdvncProcBtn" class="btnClass" href="#">삭제</a>

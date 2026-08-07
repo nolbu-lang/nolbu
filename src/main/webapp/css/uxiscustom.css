@@ -1,4 +1,4 @@
-/* ³ª´®°íµñ ¼­Ã¼ - License by : Naver Corp. */
+/* ë‚˜ëˆ”ê³ ë”• ì„œì²´ - License by : Naver Corp. */
 @font-face {
     font-family: 'Nanum Gothic';
     font-weight: 300;
@@ -40,7 +40,7 @@ option{height:auto; font-family:'Nanum Gothic' !important; font-size:12px;}
 a:-webkit-any-link{text-decoration:none;}
 .blind{width: 1px; height: 1px; overflow: hidden; position: absolute; top: -9999em; left: -9999em; display: block; text-indent: -9999em; font-size: 0px; line-height: 0;}
 
-/*·Î±×ÀÎÈ­¸é*/
+/*ë¡œê·¸ì¸í™”ë©´*/
 .login_wrap{position:fixed; width:100%; height:100%; background:url(/images/design/img_login_e5e5e5.jpg) no-repeat center top #e5e5e5;}
 .login_wrap .login_box{width:800px; margin:150px auto 0 auto; border-radius:5px; overflow:hidden; background:#fff;}
 .login_wrap .login_box .login_form{padding:30px 40px 30px 300px; background:url(/images/design/img_login_title.png) no-repeat 63px 34px; background-size:165px 95px;}
@@ -53,14 +53,57 @@ a:-webkit-any-link{text-decoration:none;}
 .login_wrap .login_form .right{float:right;}
 	.login_wrap .login_form .right a{padding:45px 40px; background-color:#417ed1; color:#fff; display:block; font-size: 16px; font-weight: 700; text-decoration:none; border-radius: 4px;}
 
-/*Çì´õ*/
+/*í—¤ë”*/
 .always_top:after{display:block; content:''; clear:both;}
 .always_top .left{float:left; margin:0; padding-left:10px;}
 .always_top .right{float:right; margin:0; padding-top:14px;}
 .always_top .right #mainNorthInfoTd{display: inline-block; border: 1px solid #aaa; padding: 3px 2px 4px 25px; border-radius: 4px; background:url(/images/design/ico_header_member.png) no-repeat 9px center;}
 .always_top .right #mainNorthLogoutBtn{display: inline-block; border: 1px solid #417ed1; padding: 3px 9px 4px 25px; border-radius: 4px; background:url(/images/design/ico_header_logout.png) no-repeat 9px center #417ed1; color: #fff; text-decoration:none;}
+.always_top .right #globalAbortBtn,
+a#globalAbortBtn.abort-fab{
+	display:inline-block !important;
+	vertical-align:middle;
+	margin:0 0 0 8px;
+	padding:4px 8px 4px 8px;
+	border:1px solid #417ed1;
+	border-radius:5px;
+	background:#417ed1;
+	color:#fff !important;
+	font-size:12px;
+	font-weight:bold;
+	line-height:1.4;
+	text-decoration:none !important;
+	text-shadow:none;
+	box-shadow:none;
+	white-space:nowrap;
+	cursor:pointer;
+}
+.always_top .right #globalAbortBtn:hover,
+a#globalAbortBtn.abort-fab:hover{background:#356bb3; border-color:#356bb3;}
+a#globalAbortBtn.abort-fab{
+	position:fixed !important;
+	z-index:2147483000 !important;
+	box-shadow:0 2px 8px rgba(0,0,0,.22);
+}
+.always_top .right #aiChatOpenBtn{
+	display:inline-block !important;
+	vertical-align:middle;
+	margin:0 0 0 8px;
+	padding:3px 12px 4px 12px;
+	border:1px solid #f0a030;
+	border-radius:4px;
+	background:#e67e22;
+	color:#fff !important;
+	font-size:12px;
+	font-weight:bold;
+	line-height:1.4;
+	text-decoration:none !important;
+	white-space:nowrap;
+	cursor:pointer;
+}
+.always_top .right #aiChatOpenBtn:hover{background:#d35400; border-color:#d35400;}
 
-/*·¹ÀÌ¾Æ¿ô°øÅë*/
+/*ë ˆì´ì•„ì›ƒê³µí†µ*/
 .ui-layout-pane{border:1px solid #f3f9ff; height:100%;}
 .ui-layout-resizer{background: #f3f9ff;}
 .ui-layout-toggler{background-color: #417ed1; border: 0;}
@@ -69,11 +112,12 @@ a:-webkit-any-link{text-decoration:none;}
 	background-color: #f26c4f;
 }
 #mainBody{height:90% !important;}
-#mainBody .ui-corner-all, .ui-dialog .ui-corner-all{overflow:hidden;}
-/*#mainTabs01{overflow-y:auto;} ¾îÁß°£ÇÏ°Ô Àß¸®´Â ¹Ù´Ú¾î¶±ÇÏÁö*/
-div#mainCenter{height:auto !important;}/*¹Ù´ÚÀß¸²¹æÁö ÀÓ½Ã*/
+/* ë‹¤ì´ì–¼ë¡œê·¸ë§Œ overflow ìˆ¨ê¹€ â€” jqGrid(ui-corner-all)ê¹Œì§€ ìˆ¨ê¸°ë©´ í•˜ë‹¨ ê°€ë¡œìŠ¤í¬ë¡¤ì´ ì˜ë¦¼ */
+.ui-dialog.ui-corner-all{overflow:hidden;}
+/*#mainTabs01{overflow-y:auto;} ì–´ì¤‘ê°„í•˜ê²Œ ì˜ë¦¬ëŠ” ë°”ë‹¥ì–´ë–¡í•˜ì§€*/
+div#mainCenter{height:auto !important;}/*ë°”ë‹¥ì˜ë¦¼ë°©ì§€ ì„ì‹œ*/
 
-/*Å×ÀÌºí°øÅë*/
+/*í…Œì´ë¸”ê³µí†µ*/
 .ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr{background: none; color:#fff;}
 .nondiv table tbody tr{border-left: none; border-top: none;}
 .nondiv table tbody tr:last-child, .nondiv table tbody tr:last-child td{border-bottom:none !important;}
@@ -96,14 +140,14 @@ table .ui-widget-header .ui-state-focus {
 	border-left:none; border-right:1px solid #aaa; border-top:none;
 }
 
-/*¹öÆ°°øÅë*/
+/*ë²„íŠ¼ê³µí†µ*/
 .ui-widget-content a.btnClass{background: #417ed1; text-shadow: none; box-shadow: none; color: #fff; border: 1px solid #417ed1; padding: 4px 8px 4px 8px; border-radius: 5px;}
 .ui-widget-content a.btnClass#deltDgrcompoDatasBtn{background: #f26c4f; border: 1px solid #f26c4f;}
 .btnDisabledClass{padding: 4px 8px 4px 8px; border-radius: 5px; background: #fff;}
 .ui-dialog .ui-dialog-buttonpane button{background: #417ed1; color: #fff; border:none;}
-.ui-draggable .ui-dialog-titlebar button.ui-dialog-titlebar-close{border-top:none; border-left:none;}/*ÆË¾÷Ã¢´İ±â¹öÆ°*/
+.ui-draggable .ui-dialog-titlebar button.ui-dialog-titlebar-close{border-top:none; border-left:none;}/*íŒì—…ì°½ë‹«ê¸°ë²„íŠ¼*/
 
-/*ÁÂÃø¸Ş´º*/
+/*ì¢Œì¸¡ë©”ë‰´*/
 #wrap > .ui-layout-pane-west{background: #f3f9ff;}
 #wrap > .ui-layout-pane-west span.cell-wrapper{font-size:13px; font-weight:700;}
 #wrap > .ui-layout-pane-west .ui-jqgrid{border:1px solid #d3d3d3; border-radius:4px; overflow:hidden;}
@@ -113,7 +157,7 @@ table .ui-widget-header .ui-state-focus {
 .ui-state-highlight, .ui-widget-content .ui-state-highlight, .ui-widget-header .ui-state-highlight{background-image: linear-gradient(135deg,#75c6e8,#867bdc); color: #fff; border: 1px solid #867bdc; border-right: none !important; border-top:none; border-left: none;}
 #wrap > .ui-layout-pane-west .ui-state-highlight .ui-icon{background-image: url(/images/design/ui-icons_2e83ff_256x240_white.png);}
 
-/*¿ìÃøÅÇ*/
+/*ìš°ì¸¡íƒ­*/
 #mainTabs01{margin: 0; padding: 0;}
 .tab_wrap{background-image: linear-gradient(135deg,#75c6e8,#867bdc); border-radius:4px 4px 0 0;}
 .tab_wrap button{display:block; cursor:pointer; width:23px; height:24px; background:none; border:none; border-radius:4px; position: absolute; top: 6px;}
@@ -133,7 +177,7 @@ table .ui-widget-header .ui-state-focus {
 #DIALOG_DGR_CNG_HISTORY_LIST_DIV .ui-jqgrid-titlebar{color:#222;}
 #DIALOG_DGR_CNG_HISTORY_LIST_DIV .ui-jqgrid-bdiv input[type=button]{padding: 3px 8px; border: none; background: #417ed1; border-radius: 4px; color: #fff; cursor: pointer;}
 
-/*¿ìÃøÄÁÅÙÃ÷*/
+/*ìš°ì¸¡ì»¨í…ì¸ */
 #mainBody .ui-jqgrid .ui-jqgrid-htable th div{padding:5px 0;}
 #mainCenter .ui-widget-header{border-radius:4px; background:#555; margin-bottom:4px;}
 #mainCenter .ui-th-ltr, #mainCenter .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr{height:40px; line-height: 20px;}
@@ -145,15 +189,28 @@ table .ui-widget-header .ui-state-focus {
 #mainCenter #subMainWest, #mainCenter #subMainCenter{overflow-y:auto !important;}
 #mainCenter #subMainWest .ui-jqgrid, #mainCenter #subMainCenter .ui-jqgrid{width:100% !important;}
 
-/*¿Â¸® Ä¿½ºÅÒ*/
+/*ì˜¨ë¦¬ ì»¤ìŠ¤í…€*/
 .btn_classify{border: none; border-radius: 5px; padding:4px 8px 4px 22px; display:inline-block; cursor:pointer; background: url(/images/design/ico_btn_tableinfo.png) no-repeat 10px center #f26c4f; color:#fff; border: 1px solid #f26c4f;}
 .btn_system,
 .ui-widget-content a.btnClass.btn_system{padding-left:25px; background: url(/images/design/ico_btn_system.png) no-repeat 8px center #f26c4f; margin-left:2px;}
 
-/*¿¹»ê½É»çÁ¶¼­ - Á¶È¸*/
-#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-view,
-#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-hdiv,
-#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-bdiv,
-#gbox_BUDGET_SELECT_NEW_GRD,
-#mainBody #mainCenter .csGrid .ui-jqgrid.ui-widget.ui-widget-content.ui-corner-all
-{width:100% !important; height:auto !important;}
+/*ì˜ˆì‚°ì‹¬ì‚¬ì¡°ì„œ - ì¡°íšŒ: í•˜ë‹¨ ê°€ë¡œ ìŠ¤í¬ë¡¤ë°” ë³´ì¥ */
+#mainBody #mainCenter .ui-jqgrid,
+#mainBody #mainCenter .csGrid .ui-jqgrid {
+	overflow: visible !important;
+}
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-view {
+	width: 100% !important;
+	overflow: hidden !important;
+}
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-hdiv {
+	width: 100% !important;
+	overflow-x: hidden !important;
+	overflow-y: hidden !important;
+}
+#mainBody #mainCenter .ui-jqgrid .ui-jqgrid-bdiv {
+	width: 100% !important;
+	overflow-x: auto !important;
+	overflow-y: auto !important;
+	/* height/max-heightëŠ” setGridHeight ë“± JSë¡œ ì œì–´ (auto !important ê¸ˆì§€) */
+}

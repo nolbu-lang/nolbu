@@ -83,9 +83,23 @@ public class HyperClovaClient implements LlmClient {
         JSONObject body = new JSONObject();
         body.put("user_query", userQuery);
         body.put("datetime", formatDatetime());
-        body.put("stream", Boolean.TRUE);
+        // stream=false 가 동기 응답에 유리한 경우가 많음 (설정으로 전환 가능)
+        body.put("stream", Boolean.valueOf(isStreamEnabled()));
         body.put("dialog_history", "[]");
         return body.toString();
+    }
+
+    private boolean isStreamEnabled() {
+        try {
+            String v = config.getProperty("Globals.ClovaStream");
+            if (v != null && v.trim().length() > 0) {
+                String s = v.trim();
+                return "true".equalsIgnoreCase(s) || "Y".equalsIgnoreCase(s) || "1".equals(s);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return false;
     }
 
     private String formatDatetime() {

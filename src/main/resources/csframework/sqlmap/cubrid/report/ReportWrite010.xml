@@ -245,6 +245,9 @@
                                                 </isNotEmpty>
                                               )
                                  </isEqual>
+                                 <isNotEmpty prepend="" property="advncProc">
+                                   AND (SELECT COUNT(*) FROM TB_REPORT WHERE 1=1 AND FIS_YEAR = A.FIS_YEAR AND BGT_DGR = A.BGT_DGR AND TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ADVNC_PROC LIKE '%' || #advncProc# || '%') <![CDATA[>]]> 0
+                                 </isNotEmpty>
                                  GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
                                                      , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || B.OFFICE_CD || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
                                                      , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || E.REPORT_DETL_CD || '_' || B.OFFICE_CD  || '_' || A.DEPT_CD || '_' || '0000000000000000' || '_' || '00000000000'
