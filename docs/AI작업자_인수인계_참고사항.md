@@ -44,8 +44,9 @@
 2. [ ] WAR 빌드본 또는 `.\scripts\package-deploy.ps1` 패키지 전달
 3. [ ] `deploy/globals.properties.ai-snippet.example` — **기존 DB URL은 건드리지 말고 AI 항목만 추가**
 4. [ ] DB: `scripts/apply-indexes.ps1` (누락 시 `check-ai-indexes.ps1`로 확인)
-5. [ ] (해당 시) 사업설명서 매칭 테이블 SQL · 메뉴 rename SQL
-6. [ ] WAS → LLM(`99.1.82.207:8080`), law.go.kr, 매뉴얼 폴더 경로 확인
+5. [ ] DB: **`scripts/apply-menu-budget-select.ps1`** — 조서·집계 / 심사조서 보고항목선택 메뉴 (**WAR만으로는 반영 안 됨**)
+6. [ ] (해당 시) 사업설명서 매칭 테이블 SQL
+7. [ ] WAS → LLM(`99.1.82.207:8080`), law.go.kr, 매뉴얼 폴더 경로 확인
 7. [ ] 배포 후 Ctrl+F5, AI 팝업·내부검색·법령·내보내기 스모크 테스트
 
 ---

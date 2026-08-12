@@ -144,6 +144,6 @@ html, body { height:100%; margin:0; padding:0; background:#f4f6f9;
     </div>
   </div>
 </div>
-<script src="<%=contextPath%>/js/ai/aiChat.js?v=20260807b"></script>
+<script src="<%=contextPath%>/js/ai/aiChat.js?v=20260812b"></script>
 </body>
 </html>

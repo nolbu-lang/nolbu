@@ -27,4 +27,4 @@ if ($RunSeed) { $dbArgs.RunSeed = $true }
 
 Write-Host ""
 Write-Host "=== deploy-all 완료 ==="
-Write-Host "Tomcat 재기동 후 로그인·전년도예산/조서 적용[신규] 메뉴를 확인하세요."
+Write-Host "Tomcat 재기동 후 로그인·예산안관리(조서·집계/심사조서 보고항목선택) 메뉴를 확인하세요."

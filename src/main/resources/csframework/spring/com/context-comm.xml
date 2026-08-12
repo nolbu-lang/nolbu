@@ -47,8 +47,9 @@
 
     <!-- regular spring resolver -->
     <bean id="spring.RegularCommonsMultipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-        <property name="maxUploadSize" value="100000000" />
-        <property name="maxInMemorySize" value="100000000" />
+        <!-- 사업설명서 HWP/HWPX 대용량(보안해제본 포함) 대비 ~300MB -->
+        <property name="maxUploadSize" value="314572800" />
+        <property name="maxInMemorySize" value="10485760" />
     </bean>
 
     <alias name="spring.RegularCommonsMultipartResolver" alias="multipartResolver" />

@@ -570,17 +570,18 @@ $(document).ready(function() {
         }
         officeCd = (officeCd == null ? "" : String(officeCd)).replace(/^\s+|\s+$/g, "");
         officeNm = (officeNm == null ? "" : String(officeNm)).replace(/^\s+|\s+$/g, "");
-        // '전체' 옵션(value='') 또는 표시명이 전체면 미선택 처리
+        // '전체' → ALL(모든 실국 공유)
         if (officeCd === "" || officeCd === "null" || officeCd === "undefined" || officeNm === "전체") {
-            officeCd = "";
-            officeNm = "";
+            tabObj.find("#bizDescOfficeCd").val("ALL");
+            tabObj.find("#bizDescOfficeNm").val("전체");
+            return { officeCd: "ALL", officeNm: "전체", allOffice: true };
         }
         tabObj.find("#bizDescOfficeCd").val(officeCd);
         tabObj.find("#bizDescOfficeNm").val(officeNm);
-        return { officeCd: officeCd, officeNm: officeNm };
+        return { officeCd: officeCd, officeNm: officeNm, allOffice: false };
     };
 
-    /** 회계년도·예산차수·실국 선택 시 사업설명서불러오기 활성화 */
+    /** 회계년도·예산차수 선택 시 사업설명서불러오기 활성화 (실국=전체 포함) */
     var getBizDescFilter = function(){
         var office = getSelectedOffice();
         var fisYear = String(tabObj.find("#condFisYear").val() || "").replace(/^\s+|\s+$/g, "");
@@ -591,7 +592,8 @@ $(document).ready(function() {
             bgtDgr: bgtDgr,
             officeCd: office.officeCd,
             officeNm: office.officeNm,
-            ready: !!(fisYear && bgtDgr && office.officeCd)
+            allOffice: !!office.allOffice,
+            ready: !!(fisYear && bgtDgr)
         };
     };
 
@@ -618,10 +620,8 @@ $(document).ready(function() {
             var missing = [];
             if (!f.fisYear) { missing.push("회계년도"); }
             if (!f.bgtDgr) { missing.push("예산차수"); }
-            if (!f.officeCd) { missing.push("실국"); }
             $.csAlert({
-                msg: "조회조건 '" + missing.join("', '") + "'을(를) 선택한 뒤 사업설명서를 불러와 주세요.\n"
-                    + "(회계년도·예산차수·실국 단위 업로드로 매칭 속도와 정확도를 높입니다)"
+                msg: "조회조건 '" + missing.join("', '") + "'을(를) 선택한 뒤 사업설명서를 불러와 주세요."
             });
             return;
         }

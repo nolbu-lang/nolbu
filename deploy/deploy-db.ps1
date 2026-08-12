@@ -38,6 +38,12 @@ if ($RunSeed) {
 if ($RunMenuPatch) {
     Write-Host "=== 메뉴 통합 (patch-menu-budget-copy.sql) ==="
     & $csql -u $DbUser -p $DbPassword $DbName -i (Join-Path $Scripts "patch-menu-budget-copy.sql")
+
+    Write-Host "=== 예산안관리 메뉴 분리 (patch-menu-budget-select-all.sql) ==="
+    & $csql -u $DbUser -p $DbPassword $DbName -i (Join-Path $Scripts "patch-menu-budget-select-all.sql")
+
+    Write-Host "=== 메뉴 점검 (check-menu-budget-select.ps1) ==="
+    & (Join-Path $Scripts "check-menu-budget-select.ps1") -DbName $DbName -DbUser $DbUser -DbPassword $DbPassword
 }
 
 Write-Host ""
