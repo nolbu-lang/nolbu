@@ -1,7 +1,8 @@
 # bcjis 개선본 — 관리자 배포 안내
 
-> **최신 운영 배포 절차(2026-08-07):**  
-> → **`docs/운영서버_배포_가이드_20260807.md`**  
+> **최신 운영 배포 절차(2026-08-12):**  
+> → **`docs/운영서버_배포_가이드_20260812.md`**  
+> → (참고) `docs/운영서버_배포_가이드_20260807.md`  
 > → 인수 요약: **`docs/AI작업자_인수인계_참고사항.md`**
 
 ## 0. 개선 범위 요약
@@ -38,7 +39,9 @@ cd "프로젝트루트"
 |--------|-----------|------|
 | `scripts/apply-indexes.ps1` | **최초 1회 + loaddb 후** | 조회 속도 개선 인덱스 (중복 skip) |
 | `scripts/check-ai-indexes.ps1` | 배포 전후 | 인덱스 누락 점검 |
-| `scripts/patch-menu-budget-copy.sql` | **1회** | 메뉴 URL 통합 |
+| `scripts/patch-menu-budget-copy.sql` | **1회** | 전년도예산/조서 적용 메뉴 URL 통합 |
+| `scripts/patch-menu-budget-select-all.sql` | **1회 (필수)** | 조서·집계 / 심사조서 보고항목선택 메뉴 분리·배치 |
+| `scripts/apply-menu-budget-select.ps1` | **1회 (권장)** | 위 SQL 적용 + `check-menu-budget-select.ps1` 점검 |
 
 ### C. 조건부 (DB)
 
@@ -46,7 +49,7 @@ cd "프로젝트루트"
 |--------|-----------|------|
 | `scripts/seed-comm-seq.sql` | loaddb·DB 재구축 후 | AJAX 채번 — **운영 중이면 DBA 협의** |
 | `scripts/create-tb-bizdesc.sql` 등 | 사업설명서 매칭 사용 시 | 테이블·컬럼 |
-| `scripts/add-menu-budget-select-split.sql` 등 | 메뉴 분리/개명 시 | 메뉴 |
+| `scripts/add-menu-budget-select-split.sql` 등 | (구버전) | → **`patch-menu-budget-select-all.sql`** 사용 |
 
 ### D. AI 예산도우미 (설정만 추가, WAR에 포함됨)
 
@@ -71,7 +74,8 @@ cd "프로젝트루트"
 ```
 1. 운영 DB 백업
 2. check-ai-indexes.ps1 → (필요 시) apply-indexes.ps1
-3. patch-menu-budget-copy.sql 및 해당 선택 SQL
+3. **apply-menu-budget-select.ps1** (또는 deploy-db -RunMenuPatch) — **필수**
+4. patch-menu-budget-copy.sql (미적용 시)
 4. (loaddb 직후만) seed-comm-seq.sql — DBA 협의
 5. globals.properties 에 AI 설정 추가 (deploy/globals.properties.ai-snippet.example)
 6. Tomcat 중지
@@ -106,7 +110,8 @@ cd "프로젝트루트"
 |---|------|-----------|
 | 1 | 로그인 | 정상 |
 | 2 | 전년도예산/조서·예산조회 | 목록 표시 |
-| 3 | 일반 메뉴 AJAX | "조회 실패" 없음 |
+| 3 | 예산안관리 → 심사조서 보고항목선택 | 분류항목·투자사업유형 화면 (조서작성 아래 **아님**) |
+| 4 | 일반 메뉴 AJAX | "조회 실패" 없음 |
 | 4 | AI 예산도우미 | 팝업, **내부 AI** 배지 |
 | 5 | 내부검색 상세 | 회계 표시, `2026년 본예산` (예산차수 괄호 없음) |
 | 6 | JSON내보내기 | 1년 단위 JSON 파일 저장 |

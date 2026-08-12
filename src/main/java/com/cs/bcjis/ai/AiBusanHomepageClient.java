@@ -38,7 +38,7 @@ public class AiBusanHomepageClient {
 
     private static final Logger logger = Logger.getLogger(AiBusanHomepageClient.class);
 
-    private static final String BASE = "https://www.busan.go.kr";
+    private static final String DEFAULT_BASE = "https://www.busan.go.kr";
     private static final String BEGIN_DT = "2025-01-01";
     private static final String END_DT = "2026-12-31";
 
@@ -217,11 +217,16 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("보도자료");
                 try {
-                    String body = "srchBeginDt=" + enc(BEGIN_DT)
+                    String qs = "srchBeginDt=" + enc(BEGIN_DT)
                             + "&srchEndDt=" + enc(END_DT)
                             + "&srchKey=sj"
                             + "&srchText=" + enc(q);
-                    String html = httpPost(BASE + "/nbtnewsBU", body);
+                    String base = getBaseUrl();
+                    // 일부 WAS/방화벽은 외부 POST를 차단 → GET 우선, 실패 시 POST
+                    String html = httpGet(base + "/nbtnewsBU?" + qs);
+                    if (html == null || html.length() < 200) {
+                        html = httpPost(base + "/nbtnewsBU", qs);
+                    }
                     br.items = parsePress(html, limit);
                 } catch (Exception e) {
                     logger.warn("보도자료 검색 실패: " + e.getMessage());
@@ -237,7 +242,7 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("고시공고");
                 try {
-                    String url = BASE + "/nbgosi/list"
+                    String url = getBaseUrl() + "/nbgosi/list"
                             + "?conIfmStdt=" + enc(BEGIN_DT)
                             + "&conIfmEnddt=" + enc(END_DT)
                             + "&conGosiGbn="
@@ -259,11 +264,15 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("새소식");
                 try {
-                    String body = "srchBeginDt=" + enc(BEGIN_DT)
+                    String qs = "srchBeginDt=" + enc(BEGIN_DT)
                             + "&srchEndDt=" + enc(END_DT)
                             + "&srchKey=sj"
                             + "&srchText=" + enc(q);
-                    String html = httpPost(BASE + "/nbnews", body);
+                    String base = getBaseUrl();
+                    String html = httpGet(base + "/nbnews?" + qs);
+                    if (html == null || html.length() < 200) {
+                        html = httpPost(base + "/nbnews", qs);
+                    }
                     br.items = parseNews(html, limit);
                 } catch (Exception e) {
                     logger.warn("새소식 검색 실패: " + e.getMessage());
@@ -285,7 +294,7 @@ public class AiBusanHomepageClient {
             collectPressBlocks(PRESS_BLOCK_ALT.matcher(html), found, limit);
         }
         for (Map.Entry<String, String[]> e : found.entrySet()) {
-            list.add(item("보도자료", e.getValue()[0], BASE + e.getKey(), e.getValue()[1]));
+            list.add(item("보도자료", e.getValue()[0], getBaseUrl() + e.getKey(), e.getValue()[1]));
         }
         return list;
     }
@@ -327,7 +336,7 @@ public class AiBusanHomepageClient {
             }
             seen.put(sno, Boolean.TRUE);
             String gbn = extractQueryParam(path, "gosiGbn");
-            StringBuilder href = new StringBuilder(BASE).append("/nbgosi/view?").append(sno);
+            StringBuilder href = new StringBuilder(getBaseUrl()).append("/nbgosi/view?").append(sno);
             if (gbn.length() > 0) {
                 href.append("&").append(gbn);
             }
@@ -346,7 +355,7 @@ public class AiBusanHomepageClient {
                 }
                 seen.put(sno, Boolean.TRUE);
                 String gbn = extractQueryParam(path, "gosiGbn");
-                StringBuilder href = new StringBuilder(BASE).append("/nbgosi/view?").append(sno);
+                StringBuilder href = new StringBuilder(getBaseUrl()).append("/nbgosi/view?").append(sno);
                 if (gbn.length() > 0) {
                     href.append("&").append(gbn);
                 }
@@ -383,7 +392,7 @@ public class AiBusanHomepageClient {
             } else {
                 date = extractDate(rest);
             }
-            list.add(item("새소식", title, BASE + key, date));
+            list.add(item("새소식", title, getBaseUrl() + key, date));
         }
         if (list.isEmpty()) {
             Matcher m2 = Pattern.compile(
@@ -400,7 +409,7 @@ public class AiBusanHomepageClient {
                     continue;
                 }
                 seen.put(key, Boolean.TRUE);
-                list.add(item("새소식", title, BASE + key, ""));
+                list.add(item("새소식", title, getBaseUrl() + key, ""));
             }
         }
         return list;
@@ -429,11 +438,38 @@ public class AiBusanHomepageClient {
     }
 
     private String httpGet(String urlStr) throws Exception {
-        return http("GET", urlStr, null);
+        return httpWithRetry("GET", urlStr, null);
     }
 
     private String httpPost(String urlStr, String formBody) throws Exception {
-        return http("POST", urlStr, formBody);
+        return httpWithRetry("POST", urlStr, formBody);
+    }
+
+    private String httpWithRetry(String method, String urlStr, String formBody) throws Exception {
+        Exception last = null;
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                return http(method, urlStr, formBody);
+            } catch (Exception e) {
+                last = e;
+                String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+                if (attempt < 2 && (msg.indexOf("reset") >= 0 || msg.indexOf("timed out") >= 0
+                        || msg.indexOf("connection") >= 0)) {
+                    try {
+                        Thread.sleep(400L);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw e;
+                    }
+                    continue;
+                }
+                throw e;
+            }
+        }
+        if (last != null) {
+            throw last;
+        }
+        throw new IllegalStateException("HTTP 실패");
     }
 
     private String http(String method, String urlStr, String formBody) throws Exception {
@@ -447,9 +483,11 @@ public class AiBusanHomepageClient {
             conn.setConnectTimeout(timeout);
             conn.setReadTimeout(timeout);
             conn.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (compatible; BCJIS-AI/1.0; +https://www.busan.go.kr)");
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            conn.setRequestProperty("Accept-Language", "ko-KR,ko;q=0.9");
+            conn.setRequestProperty("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
+            conn.setRequestProperty("Referer", getBaseUrl() + "/");
+            conn.setRequestProperty("Connection", "close");
             if ("POST".equals(method) && formBody != null) {
                 conn.setDoOutput(true);
                 conn.setRequestProperty("Content-Type",
@@ -564,6 +602,18 @@ public class AiBusanHomepageClient {
             sb.append(list.get(i));
         }
         return sb.toString();
+    }
+
+    private String getBaseUrl() {
+        String v = config == null ? null : config.getProperty("Globals.AiBusanHomepageBaseUrl");
+        if (v == null || v.trim().length() == 0) {
+            return DEFAULT_BASE;
+        }
+        String base = v.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
     }
 
     private int getIntProp(String key, int def) {

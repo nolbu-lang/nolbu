@@ -45,20 +45,9 @@ $(document).ready(function () {
         officeCd = (officeCd == null ? "" : String(officeCd)).replace(/^\s+|\s+$/g, "");
         officeNm = (officeNm == null ? "" : String(officeNm)).replace(/^\s+|\s+$/g, "");
         if (officeCd === "" || officeCd === "null" || officeCd === "undefined" || officeNm === "전체") {
-            var hid = $(".ui-tabs-panel:visible #bizDescOfficeCd").val()
-                || $("#bizDescOfficeCd").val()
-                || "";
-            hid = String(hid).replace(/^\s+|\s+$/g, "");
-            if (hid && hid !== "null" && hid !== "undefined") {
-                return {
-                    officeCd: hid,
-                    officeNm: String($(".ui-tabs-panel:visible #bizDescOfficeNm").val()
-                        || $("#bizDescOfficeNm").val() || hid).replace(/^\s+|\s+$/g, "")
-                };
-            }
-            return { officeCd: "", officeNm: officeNm || "전체" };
+            return { officeCd: "ALL", officeNm: "전체", allOffice: true };
         }
-        return { officeCd: officeCd, officeNm: officeNm };
+        return { officeCd: officeCd, officeNm: officeNm, allOffice: false };
     };
 
     var BIZDESC_POS_KEY = "bizDescViewPopupPos";
@@ -174,13 +163,12 @@ $(document).ready(function () {
             }
             if (!officeCd || officeCd === "null" || officeCd === "undefined") {
                 $.csAlert({
-                    msg: "조회조건 '실국'이 '" + (live.officeNm || "전체") + "' 입니다.\n"
-                        + "특정 실국을 선택한 뒤 사업명을 클릭해 주세요.\n"
-                        + "(해당 실국에 업로드된 사업설명서만 매칭합니다)"
+                    msg: "조회조건 '실국'을 확인해 주세요.\n(전체 또는 특정 실국에서 사업설명서를 매칭합니다)"
                 });
                 return;
             }
             params.officeCd = officeCd;
+            params.officeNm = live.officeNm || params.officeNm || officeCd;
             highlightMatchedByTeId(params.teBgtCompoId);
 
             var url = buildPopupUrl(params);

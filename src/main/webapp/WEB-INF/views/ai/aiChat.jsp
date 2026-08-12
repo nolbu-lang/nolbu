@@ -51,7 +51,7 @@
   </div>
 </div>
 
-<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260807b"></script>
+<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260812b"></script>
 <script type="text/javascript">
 /* 구버전 JS 캐시 시에도 회계년도 기본값 보정 */
 (function () {

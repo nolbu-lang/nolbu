@@ -44,6 +44,7 @@ Globals.AiExternalMaxCharsPerSource = 20000
 Globals.AiExternalFetchTimeoutMs = 15000
 
 # --- 일반자료검색 ---
+# [필수] 법제처 Open API OC — 미설정 시 "법제처 Open API OC 키가 없습니다" 오류
 Globals.AiLawGoKrOc = nolbu0326
 Globals.AiLawGoKrBaseUrl = https://www.law.go.kr/DRF/lawSearch.do
 Globals.AiLawOrdinOrgCd = 6260000
@@ -54,14 +55,20 @@ Globals.AiBugiEndpoint = https://busanai.busan.go.kr/bugi/external-research/gove
 Globals.AiBugiApiKey =
 Globals.AiBugiHttpMethod = GET
 Globals.AiBugiTimeoutMs = 20000
+# 시홈페이지(보도자료·고시공고·새소식) — WAS→www.busan.go.kr 방화벽 필요
+Globals.AiBusanHomepageBaseUrl = https://www.busan.go.kr
+Globals.AiBusanHomepageTimeoutMs = 20000
+Globals.AiBusanHomepageMaxPerBoard = 10
 Globals.AiManualStorePath = C:/bcjis/upload/ai-manual/
 # 운영 서버: true (관리권한 BC001만 업로드/삭제). 로컬 테스트: false
 Globals.AiManualUploadAdminOnly = true
-# 문장형 키워드 유사도 검색·요약 근거 범위 (속도 최적화 기본값)
-Globals.AiManualMaxPages = 2
-Globals.AiManualExcerptChars = 1400
-Globals.AiManualSummaryChars = 5500
-Globals.AiManualPromptChars = 4800
+# 문장형 키워드 유사도 검색·요약 근거 범위 (관련 본문·속도 균형)
+Globals.AiManualMaxPages = 3
+Globals.AiManualExcerptChars = 2200
+Globals.AiManualSummaryChars = 6500
+Globals.AiManualPromptChars = 3600
+Globals.AiManualMaxFiles = 4
+Globals.AiManualLlmMaxFiles = 2
 # 예산운용지침: LLM 요약 사용(true 권장). false면 원문 발췌만
 Globals.AiManualUseLlm = true
 Globals.AiManualFuzzyMaxPages = 60

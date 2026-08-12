@@ -90,7 +90,12 @@
           FROM TB_BIZDESC_FILE
          WHERE FIS_YEAR = #fisYear#
            AND BGT_DGR = #bgtDgr#
-           AND OFFICE_CD = #officeCd#
+         <isEqual property="officeCd" compareValue="ALL">
+           AND OFFICE_CD = 'ALL'
+         </isEqual>
+         <isNotEqual property="officeCd" compareValue="ALL">
+           AND (OFFICE_CD = #officeCd# OR OFFICE_CD = 'ALL')
+         </isNotEqual>
          ORDER BY REGI_DATE DESC
     </select>
 

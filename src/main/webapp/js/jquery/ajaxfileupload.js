@@ -1,6 +1,12 @@
 
 jQuery.extend({
-    
+
+    // jQuery 1.9+ 에서 제거된 handleError 호환 (iframe 업로드 오류 시 콜백 누락 방지)
+    handleError: jQuery.handleError || function (s, xhr, status, e) {
+        if (s && typeof s.error === "function") {
+            s.error.call(s.context || s, xhr, status, e);
+        }
+    },
 
     createUploadIframe: function(id, uri)
     {
@@ -189,8 +195,22 @@ jQuery.extend({
         if ( type == "script" )
             jQuery.globalEval( data );
         // Get the JavaScript object, if JSON is used.
-        if ( type == "json" )
-            eval( "data = " + data );
+        if ( type == "json" ) {
+            var text = (data == null ? "" : String(data));
+            // iframe 응답이 HTML(<pre> 등)로 감싸지거나 엔티티가 섞인 경우 보정
+            text = text.replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                .replace(/^\uFEFF/, "");
+            var m = text.match(/\{[\s\S]*\}/);
+            if (m) {
+                text = m[0];
+            }
+            if (window.JSON && typeof JSON.parse === "function") {
+                data = JSON.parse(text);
+            } else {
+                eval("data = " + text);
+            }
+        }
         // evaluate scripts within html
         if ( type == "html" )
             jQuery("<div>").html(data).evalScripts();

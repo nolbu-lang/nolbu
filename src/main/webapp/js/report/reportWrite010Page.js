@@ -912,12 +912,13 @@ $(document).ready(function() {
         officeCd = (officeCd == null ? "" : String(officeCd)).replace(/^\s+|\s+$/g, "");
         officeNm = (officeNm == null ? "" : String(officeNm)).replace(/^\s+|\s+$/g, "");
         if (officeCd === "" || officeCd === "null" || officeCd === "undefined" || officeNm === "전체") {
-            officeCd = "";
-            officeNm = "";
+            tabObj.find("#bizDescOfficeCd").val("ALL");
+            tabObj.find("#bizDescOfficeNm").val("전체");
+            return { officeCd: "ALL", officeNm: "전체", allOffice: true };
         }
         tabObj.find("#bizDescOfficeCd").val(officeCd);
         tabObj.find("#bizDescOfficeNm").val(officeNm);
-        return { officeCd: officeCd, officeNm: officeNm };
+        return { officeCd: officeCd, officeNm: officeNm, allOffice: false };
     };
 
     var getBizDescFilter = function(){
@@ -930,7 +931,8 @@ $(document).ready(function() {
             bgtDgr: bgtDgr,
             officeCd: office.officeCd,
             officeNm: office.officeNm,
-            ready: !!(fisYear && bgtDgr && office.officeCd)
+            allOffice: !!office.allOffice,
+            ready: !!(fisYear && bgtDgr)
         };
     };
 
@@ -957,10 +959,8 @@ $(document).ready(function() {
             var missing = [];
             if (!f.fisYear) { missing.push("회계년도"); }
             if (!f.bgtDgr) { missing.push("예산차수"); }
-            if (!f.officeCd) { missing.push("실국"); }
             $.csAlert({
-                msg: "조회조건 '" + missing.join("', '") + "'을(를) 선택한 뒤 사업설명서를 불러와 주세요.\n"
-                    + "(회계년도·예산차수·실국 단위 업로드로 매칭 속도와 정확도를 높입니다)"
+                msg: "조회조건 '" + missing.join("', '") + "'을(를) 선택한 뒤 사업설명서를 불러와 주세요."
             });
             return;
         }
