@@ -7,7 +7,7 @@
 <script>
   _budgetPreCopyTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/budget/budgetPreCopy.js"></script>
+<script src="${pageContext.request.contextPath}/js/budget/budgetPreCopy.js?v=20260813b"></script>
 <div class="contents" style="height:100%;">
   <!--list s-->
   <div id="mainBody" class="nondiv" style="height:95%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: auto;">

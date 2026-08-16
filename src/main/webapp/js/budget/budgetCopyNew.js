@@ -28,7 +28,26 @@ $(document).ready(function() {
 
     // 적용대상: 매핑된 사업만 이름 옆에 '해제' 표시 (색/밑줄 표시 없음)
     // ※ 매핑 키는 회계년도+예산차수+세세목ID (차수 간 표시 혼선 방지)
+    // ※ 메뉴 종료 후에도 유지되도록 localStorage에 저장
+    var MAPPED_STORAGE_KEY = "bcjis.budgetCopyNew.mappedTgtIds";
     var mappedTgtIds = {};
+    try {
+        var storedMapped = window.localStorage ? localStorage.getItem(MAPPED_STORAGE_KEY) : null;
+        if(storedMapped){
+            var parsed = JSON.parse(storedMapped);
+            if(parsed && typeof parsed === "object"){
+                mappedTgtIds = parsed;
+            }
+        }
+    } catch(e){}
+
+    var persistMappedTgtIds = function(){
+        try {
+            if(window.localStorage){
+                localStorage.setItem(MAPPED_STORAGE_KEY, JSON.stringify(mappedTgtIds));
+            }
+        } catch(e){}
+    };
 
     var makeMappedKey = function(fisYear, bgtDgr, teBgtCompoId){
         return String(fisYear == null ? "" : fisYear)
@@ -163,11 +182,18 @@ $(document).ready(function() {
         if(isEmpty(grid) == true || grid.length < 1){
             return;
         }
-        // 매핑 여부 반영: 현재 행의 회계년도+예산차수 기준으로 '해제' 표시
+        // 매핑 여부 반영: 캐시가 있으면 getRowData N회 호출 없이 키 판정
         var ids = grid.jqGrid("getDataIDs") || [];
+        var cacheById = {};
+        if(cachedTgtRows && cachedTgtRows.length > 0){
+            for(var c = 0; c < cachedTgtRows.length; c++){
+                var cr = cachedTgtRows[c];
+                if(cr && cr.teBgtCompoId){ cacheById[String(cr.teBgtCompoId)] = cr; }
+            }
+        }
         for(var i = 0; i < ids.length; i++){
             var rid = ids[i];
-            var row = grid.jqGrid("getRowData", rid);
+            var row = cacheById[String(rid)] || grid.jqGrid("getRowData", rid);
             var nm = grid.jqGrid("getCell", rid, "dgrcompoNm");
             var plain = stripNmHtml(nm);
             var html = '<span class="budget-copy-nm">' + escapeHtml(plain) + '</span>';
@@ -306,14 +332,69 @@ $(document).ready(function() {
             srcOrderYmdSeq : srcRow.orderYmdSeq,
             reportCd : srcRow.reportCd,
             reportDetlCd : srcRow.reportDetlCd,
+            reportMstr : srcRow.reportMstr || "",
             fisYear : tgtRow.fisYear,
             bgtDgr : tgtRow.bgtDgr,
             teBgtCompoId : tgtRow.teBgtCompoId,
             teBgtCompoSeq : tgtRow.teBgtCompoSeq,
-            orderYmdSeq : tgtRow.orderYmdSeq
+            orderYmdSeq : tgtRow.orderYmdSeq,
+            // 적용대상에 기존 분류가 없으면 서버에서 중복분류 정리 조회 생략
+            tgtReportEmpty : (isEmpty(tgtRow.reportCd) == true ? "Y" : "N")
         };
     };
 
+    var markMappedRowById = function(rid){
+        var grid = $("#BUDGET_COPY_GRD", tabObj);
+        if(isEmpty(grid) == true || grid.length < 1 || isEmpty(rid) == true){ return; }
+        var row = grid.jqGrid("getRowData", rid);
+        var nm = grid.jqGrid("getCell", rid, "dgrcompoNm");
+        var plain = stripNmHtml(nm);
+        var html = '<span class="budget-copy-nm">' + escapeHtml(plain) + '</span>';
+        if(isTgtMapped(row, rid)){
+            html += ' <a href="#" class="budget-copy-act-unmap" data-rowid="' + rid + '">해제</a>';
+        }
+        var $td = grid.find("#" + $.jgrid.jqID(rid) + " td[aria-describedby$='_dgrcompoNm']");
+        if($td.length > 0){ $td.html(html); }
+    };
+
+    var ensureApplyProgress = function(){
+        var $p = $("#budgetCopyApplyProgress");
+        if($p.length < 1){
+            $("body").append(
+                '<div id="budgetCopyApplyProgress" title="자동매핑 적용" style="display:none;">'
+              + '<p id="budgetCopyApplyProgressMsg" style="margin:12px 0;">적용 중...</p>'
+              + '<div style="height:10px;background:#eee;border:1px solid #ccc;">'
+              + '<div id="budgetCopyApplyProgressBar" style="height:100%;width:0%;background:#4a90d9;"></div>'
+              + '</div></div>'
+            );
+            $p = $("#budgetCopyApplyProgress");
+            $p.dialog({
+                autoOpen : false,
+                modal : true,
+                width : 360,
+                resizable : false,
+                closeOnEscape : false,
+                dialogClass : "no-close"
+            });
+        }
+        return $p;
+    };
+
+    var showApplyProgress = function(done, total, extraMsg){
+        var $p = ensureApplyProgress();
+        var pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+        var msg = extraMsg || ("자동매핑 적용 중... (" + done + " / " + total + ")");
+        $("#budgetCopyApplyProgressMsg").text(msg);
+        $("#budgetCopyApplyProgressBar").css("width", pct + "%");
+        if(!$p.dialog("isOpen")){ $p.dialog("open"); }
+    };
+
+    var hideApplyProgress = function(){
+        var $p = $("#budgetCopyApplyProgress");
+        if($p.length > 0 && $p.dialog("isOpen")){ $p.dialog("close"); }
+    };
+
+    // 서버 대기열 등록 후 상태 폴링 — 다수 사용자 동시 적용 시 DB 경합 완화
     var applyMappings = function(mappings, doneMsg){
         if(isEmpty(mappings) == true || mappings.length < 1){
             $.csAlert({ msg : "적용할 매핑이 존재하지 않습니다." });
@@ -324,23 +405,97 @@ $(document).ready(function() {
             return;
         }
 
+        var total = mappings.length;
+        showApplyProgress(0, total, "적용 대기열에 등록 중... (총 " + total + "건)");
+
         $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyNewCopyReportBatch.do",
+            url : "/budget/ajaxBudgetCopyNewCopyReportBatchEnqueue.do",
             data : { mappings : mappings },
             async : true,
             callBack : function(data){
-                if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
-                    $.csAlert({ msg : (isEmpty(data) == true ? "적용 중 오류가 발생했습니다." : data.bcjisMessage) });
+                if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC" || isEmpty(data.jobId) == true){
+                    hideApplyProgress();
+                    $.csAlert({ msg : (isEmpty(data) == true ? "적용 요청 등록 중 오류가 발생했습니다." : data.bcjisMessage) });
                     return;
                 }
 
-                for(var i = 0; i < mappings.length; i++){
-                    if(mappings[i].teBgtCompoId){
-                        mappedTgtIds[makeMappedKey(mappings[i].fisYear, mappings[i].bgtDgr, mappings[i].teBgtCompoId)] = true;
+                var jobId = data.jobId;
+                var pollTimer = null;
+                var finished = false;
+
+                var markAllMapped = function(){
+                    for(var i = 0; i < mappings.length; i++){
+                        if(mappings[i].teBgtCompoId){
+                            mappedTgtIds[makeMappedKey(mappings[i].fisYear, mappings[i].bgtDgr, mappings[i].teBgtCompoId)] = true;
+                            markMappedRowById(mappings[i].teBgtCompoId);
+                        }
                     }
+                    persistMappedTgtIds();
+                };
+
+                var stopPoll = function(){
+                    finished = true;
+                    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+                };
+
+                var updateProgressUi = function(st){
+                    var status = st.status || "";
+                    var applied = parseInt(st.appliedCnt, 10) || 0;
+                    var tot = parseInt(st.totalCnt, 10) || total;
+                    var qpos = parseInt(st.queuePos, 10) || 0;
+                    if(status === "QUEUED"){
+                        showApplyProgress(0, tot, "대기 중... (대기열 " + qpos + "번째, 총 " + tot + "건)");
+                    }else if(status === "RUNNING"){
+                        showApplyProgress(applied, tot, "적용 중... (" + applied + " / " + tot + ")");
+                    }else if(status === "DONE"){
+                        showApplyProgress(tot, tot, "적용 완료 (" + tot + "건)");
+                    }
+                };
+
+                var pollOnce = function(){
+                    if(finished){ return; }
+                    $.csAjaxCall({
+                        url : "/budget/ajaxBudgetCopyNewCopyReportBatchStatus.do",
+                        data : { jobId : jobId },
+                        async : true,
+                        callBack : function(st){
+                            if(finished){ return; }
+                            if(isEmpty(st) == true || st[BCJIS_RETURN_CODE] != "SUCC"){
+                                stopPoll();
+                                hideApplyProgress();
+                                $.csAlert({ msg : (isEmpty(st) == true ? "적용 상태 조회 중 오류가 발생했습니다." : st.bcjisMessage) });
+                                return;
+                            }
+                            updateProgressUi(st);
+                            if(st.status === "DONE"){
+                                stopPoll();
+                                markAllMapped();
+                                hideApplyProgress();
+                                $.csAlert({ msg : doneMsg || st.jobMessage || (total + "건 적용되었습니다.") });
+                            }else if(st.status === "ERROR"){
+                                stopPoll();
+                                hideApplyProgress();
+                                $.csAlert({ msg : st.jobMessage || st.bcjisMessage || "적용 중 오류가 발생했습니다." });
+                            }
+                        }
+                    });
+                };
+
+                updateProgressUi(data);
+                if(data.status === "DONE"){
+                    markAllMapped();
+                    hideApplyProgress();
+                    $.csAlert({ msg : doneMsg || data.jobMessage || (total + "건 적용되었습니다.") });
+                    return;
                 }
-                markMappedRows();
-                $.csAlert({ msg : doneMsg || data.bcjisMessage });
+                if(data.status === "ERROR"){
+                    hideApplyProgress();
+                    $.csAlert({ msg : data.jobMessage || data.bcjisMessage || "적용 중 오류가 발생했습니다." });
+                    return;
+                }
+
+                pollTimer = setInterval(pollOnce, 1500);
+                setTimeout(pollOnce, 400);
             }
         });
     };
@@ -365,7 +520,7 @@ $(document).ready(function() {
             return;
         }
 
-        var srcRows = collectGridRows("#BUDGET_COPY_SRC_GRD");
+        var srcRows = cachedSrcRows.length > 0 ? cachedSrcRows : collectGridRows("#BUDGET_COPY_SRC_GRD");
         if(srcRows.length < 1){
             $.csAlert({ msg : "기정예산 목록을 먼저 조회하여 주십시오." });
             return;
@@ -420,6 +575,7 @@ $(document).ready(function() {
             return;
         }
         delete mappedTgtIds[key];
+        persistMappedTgtIds();
         markMappedRows();
         $.csAlert({ msg : "매핑이 해제되었습니다. (자동매핑 대상에 다시 포함됩니다)" });
     };
@@ -509,6 +665,10 @@ $(document).ready(function() {
             $("#budgetCopyMatchDialog").dialog("close");
         });
     };
+    // 조회 결과 캐시 — 자동매핑 시 jqGrid getRowData N회 파싱 비용 제거
+    var cachedSrcRows = [];
+    var cachedTgtRows = [];
+
     var doSearchSrcCallBack = function(data){
         if (isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC") {
             $.csAlert({ msg : data.bcjisMessage });
@@ -516,6 +676,7 @@ $(document).ready(function() {
         }
 
         selectedSrcRowId = "";
+        cachedSrcRows = normalizeCachedRows(data.dataList || data.rows || []);
         $("#BUDGET_COPY_SRC_GRD", tabObj).clearGridData();
         budgetCopySrcGrid.addCsJsonData(data);
         resizeListGrid("#BUDGET_COPY_SRC_GRD", "subMainWest");
@@ -529,6 +690,7 @@ $(document).ready(function() {
         }
 
         selectedTgtRowId = "";
+        cachedTgtRows = normalizeCachedRows(data.dataList || data.rows || []);
         suppressTgtSelectPopup = true;
         $("#BUDGET_COPY_GRD", tabObj).clearGridData();
         budgetCopyGrid.addCsJsonData(data);
@@ -536,6 +698,34 @@ $(document).ready(function() {
         markMappedRows();
         setTimeout(function(){ suppressTgtSelectPopup = false; }, 0);
         data = null;
+    };
+
+    var normalizeCachedRows = function(list){
+        var rows = [];
+        if(!list || !list.length){ return rows; }
+        for(var i = 0; i < list.length; i++){
+            var r = list[i];
+            if(isEmpty(r) == true){ continue; }
+            var teId = r.teBgtCompoId || r.TE_BGT_COMPO_ID;
+            if(isEmpty(teId) == true){ continue; }
+            rows.push({
+                teBgtCompoId : teId,
+                teBgtCompoSeq : r.teBgtCompoSeq || r.TE_BGT_COMPO_SEQ,
+                reportCd : r.reportCd || r.REPORT_CD || "",
+                reportDetlCd : r.reportDetlCd || r.REPORT_DETL_CD || "",
+                reportMstr : r.reportMstr || r.REPORT_MSTR || "",
+                fisYear : r.fisYear || r.FIS_YEAR,
+                bgtDgr : r.bgtDgr || r.BGT_DGR,
+                orderYmdSeq : r.orderYmdSeq || r.ORDER_YMD_SEQ || 0,
+                teMngMokCd : r.teMngMokCd || r.TE_MNG_MOK_CD || "",
+                teMngMokNm : r.teMngMokNm || r.TE_MNG_MOK_NM || "",
+                compGround : r.compGround || r.COMP_GROUND || "",
+                dbizNm : r.dbizNm || r.DBIZ_NM || "",
+                pbizNm : r.pbizNm || r.PBIZ_NM || "",
+                dgrcompoNm : r.dgrcompoNm || r.DGRCOMPO_NM || ""
+            });
+        }
+        return rows;
     };
 
     var buildMapSearchData = function(condPrefix){
@@ -625,9 +815,11 @@ $(document).ready(function() {
     };
 
     // ===== 자동매핑: 행정운영경비 제외, 통계목+사업명(산출근거) 100% =====
+    // 실국 필터 등으로 목록이 커도 사업명 인덱스로 O(N+M) 처리 (기존 이중루프 O(N*M) 개선)
+    // 후보 좁힌 뒤 isSameMok으로 기존과 동일 판정 유지
     var doAutoMap = function(){
-        var tgtRows = collectGridRows("#BUDGET_COPY_GRD");
-        var srcRows = collectGridRows("#BUDGET_COPY_SRC_GRD");
+        var tgtRows = cachedTgtRows.length > 0 ? cachedTgtRows : collectGridRows("#BUDGET_COPY_GRD");
+        var srcRows = cachedSrcRows.length > 0 ? cachedSrcRows : collectGridRows("#BUDGET_COPY_SRC_GRD");
 
         if(tgtRows.length < 1){
             $.csAlert({ msg : "적용대상 목록을 먼저 조회하여 주십시오." });
@@ -640,26 +832,34 @@ $(document).ready(function() {
 
         var usedSrc = {};
         var mappings = [];
+        var srcByBiz = {};
+
+        for(var s = 0; s < srcRows.length; s++){
+            var src = srcRows[s];
+            if(isAdminOpExpense(src)){ continue; }
+            var srcBizKey = normalizeBizNm(getBizNmForMatch(src));
+            if(srcBizKey.length < 1){ continue; }
+            if(!srcByBiz[srcBizKey]){ srcByBiz[srcBizKey] = []; }
+            srcByBiz[srcBizKey].push(src);
+        }
 
         for(var i = 0; i < tgtRows.length; i++){
             var tgt = tgtRows[i];
             if(isTgtMapped(tgt, tgt.teBgtCompoId)){ continue; }
             if(isAdminOpExpense(tgt)){ continue; }
 
-            var tgtBiz = getBizNmForMatch(tgt);
-            if(normalizeBizNm(tgtBiz).length < 1){ continue; }
+            var tgtBizKey = normalizeBizNm(getBizNmForMatch(tgt));
+            if(tgtBizKey.length < 1){ continue; }
 
+            var candidates = srcByBiz[tgtBizKey] || [];
             var best = null;
-            for(var j = 0; j < srcRows.length; j++){
-                var src = srcRows[j];
-                if(usedSrc[src.teBgtCompoId]){ continue; }
-                if(isAdminOpExpense(src)){ continue; }
+            for(var j = 0; j < candidates.length; j++){
+                var cand = candidates[j];
+                if(usedSrc[cand.teBgtCompoId]){ continue; }
                 // 조서성질 상속: 적용대상 분류가 비어 있으면 기정예산 분류와 무관하게 매칭
-                if(isEmpty(tgt.reportCd) == false && src.reportCd != tgt.reportCd){ continue; }
-                if(!isSameMok(tgt, src)){ continue; }
-                var score = bizNameSimilarity(tgtBiz, getBizNmForMatch(src));
-                if(score < 1){ continue; }
-                best = src;
+                if(isEmpty(tgt.reportCd) == false && cand.reportCd != tgt.reportCd){ continue; }
+                if(!isSameMok(tgt, cand)){ continue; }
+                best = cand;
                 break;
             }
 

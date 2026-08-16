@@ -22,7 +22,7 @@
     cursor: pointer;
   }
 </style>
-<script src="${pageContext.request.contextPath}/js/budget/budgetCopyNew.js?v=20260804f"></script>
+<script src="${pageContext.request.contextPath}/js/budget/budgetCopyNew.js?v=20260816c"></script>
 <div class="contents" style="height:100%;">
   <!--list s-->
   <div id="mainBody" class="nondiv" style="height:100%;margin: 0 auto;width: 100%;min-width: 700px;_width: 700px;overflow: hidden;">

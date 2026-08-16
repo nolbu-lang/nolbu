@@ -249,6 +249,8 @@
              , A.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
              , E.REPORT_CD       AS REPORT_CD
              , E.REPORT_DETL_CD  AS REPORT_DETL_CD
+             , NVL(R.REPORT_MSTR, '') AS REPORT_MSTR
+             , NVL(R.GOV_SUB, '') AS GOV_SUB
              , 0                 AS ORDER_YMD_SEQ
              , NVL(A.TE_MNG_MOK_CD, '') AS TE_MNG_MOK_CD
              , NVL(T.TE_MNG_MOK_NM, '') AS TE_MNG_MOK_NM
@@ -265,6 +267,7 @@
              , TB_DGRDEPT B
              , TB_DGRBIZ C
              , TB_DGRTEMNGMOK T
+             , TB_REPORT R
          WHERE 1 = 1
            AND E.REPORT_CD = #reportCd#
            <isNotEmpty prepend="" property="reportDetlCd">
@@ -285,6 +288,11 @@
            AND T.FIS_YEAR (+) = A.FIS_YEAR
            AND T.BGT_DGR (+) = A.BGT_DGR
            AND T.TE_MNG_MOK_CD (+) = A.TE_MNG_MOK_CD
+           AND R.REPORT_CD (+) = E.REPORT_CD
+           AND R.REPORT_DETL_CD (+) = E.REPORT_DETL_CD
+           AND R.FIS_YEAR (+) = E.FIS_YEAR
+           AND R.BGT_DGR (+) = E.BGT_DGR
+           AND R.TE_BGT_COMPO_ID (+) = E.TE_BGT_COMPO_ID
            AND (A.CNG_TYPE IS NULL OR A.CNG_TYPE = 'CH02' OR (A.CNG_TYPE = 'CH01' AND A.GRP_LVL != '2'))
            <isNotEmpty prepend="" property="fisFgCd">
              AND C.FIS_FG_CD = #fisFgCd#
@@ -424,27 +432,185 @@
                 , A.TE_BGT_COMPO_ID
     </select>
 
-    <!-- 기정예산 사업의 조서성질(TB_REPORT) — 사업키 기준. 조서.집계 필터와 무관 -->
-    <select id="BudgetCopyNew.selectSrcReportNature" parameterClass="Map" resultClass="egovMap" >
-        /*BudgetCopyNew.selectSrcReportNature*/
-        SELECT REPORT_CD AS REPORT_CD
-             , REPORT_DETL_CD AS REPORT_DETL_CD
-             , NVL(REPORT_MSTR, '') AS REPORT_MSTR
-             , NVL(GOV_SUB, '') AS GOV_SUB
-             , NVL(INDI_ATTR, '') AS INDI_ATTR
-             , NVL(ADVNC_PROC, '') AS ADVNC_PROC
+    <!-- 일괄적용: 기정예산 조서성질 다건 조회 (TE_BGT_COMPO_ID IN (...)) -->
+    <select id="BudgetCopyNew.selectSrcReportNatureBatch" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectSrcReportNatureBatch*/
+        SELECT T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , TRIM(NVL(T.REPORT_CD, '')) AS REPORT_CD
+             , TRIM(NVL(T.REPORT_DETL_CD, '')) AS REPORT_DETL_CD
+             , TRIM(NVL(T.REPORT_MSTR, '')) AS REPORT_MSTR
+             , TRIM(NVL(T.GOV_SUB, '')) AS GOV_SUB
+             , TRIM(NVL(T.INDI_ATTR, '')) AS INDI_ATTR
+             , TRIM(NVL(T.ADVNC_PROC, '')) AS ADVNC_PROC
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , T.SRC_ORD AS SRC_ORD
+          FROM (
+                SELECT A.TE_BGT_COMPO_ID
+                     , A.REPORT_CD
+                     , A.REPORT_DETL_CD
+                     , NVL(TRIM(A.REPORT_MSTR), '') AS REPORT_MSTR
+                     , NVL(TRIM(A.GOV_SUB), '') AS GOV_SUB
+                     , NVL(TRIM(A.INDI_ATTR), '') AS INDI_ATTR
+                     , NVL(TRIM(A.ADVNC_PROC), '') AS ADVNC_PROC
+                     , A.TE_BGT_COMPO_SEQ
+                     , 0 AS SRC_ORD
+                  FROM TB_REPORT A
+                 WHERE A.FIS_YEAR = #srcFisYear#
+                   AND A.BGT_DGR = #srcBgtDgr#
+                   AND A.TE_BGT_COMPO_ID IN ($srcTeBgtCompoIdIn$)
+                   AND A.REPORT_CD NOT IN ('030', '070', '0A0', '0B0', '0C0', '0D0')
+                UNION ALL
+                SELECT A.TE_BGT_COMPO_ID
+                     , A.REPORT_CD
+                     , A.REPORT_DETL_CD
+                     , NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D
+                              WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR
+                     , '' AS GOV_SUB
+                     , '' AS INDI_ATTR
+                     , '' AS ADVNC_PROC
+                     , A.TE_BGT_COMPO_SEQ
+                     , 1 AS SRC_ORD
+                  FROM TB_REPORT010 A
+                 WHERE A.FIS_YEAR = #srcFisYear#
+                   AND A.BGT_DGR = #srcBgtDgr#
+                   AND A.TE_BGT_COMPO_ID IN ($srcTeBgtCompoIdIn$)
+                UNION ALL
+                SELECT A.TE_BGT_COMPO_ID
+                     , A.REPORT_CD
+                     , A.REPORT_DETL_CD
+                     , NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D
+                              WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR
+                     , '' AS GOV_SUB
+                     , '' AS INDI_ATTR
+                     , '' AS ADVNC_PROC
+                     , A.TE_BGT_COMPO_SEQ
+                     , 1 AS SRC_ORD
+                  FROM TB_REPORT020 A
+                 WHERE A.FIS_YEAR = #srcFisYear#
+                   AND A.BGT_DGR = #srcBgtDgr#
+                   AND A.TE_BGT_COMPO_ID IN ($srcTeBgtCompoIdIn$)
+               ) T
+         ORDER BY T.TE_BGT_COMPO_ID
+                , T.SRC_ORD
+                , CASE WHEN NVL(TRIM(T.REPORT_MSTR), '') != '' THEN 0 ELSE 1 END
+                , CASE WHEN NVL(TRIM(T.REPORT_DETL_CD), '') != '' THEN 0 ELSE 1 END
+                , T.REPORT_CD
+                , T.REPORT_DETL_CD
+    </select>
+
+    <!-- 일괄적용: 기정예산 집계표 다건 -->
+    <select id="BudgetCopyNew.selectSrcSheetListBatch" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectSrcSheetListBatch*/
+        SELECT TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , SHEET_CD AS SHEET_CD
+             , SHEET_DETL_CD AS SHEET_DETL_CD
              , TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
-          FROM TB_REPORT
+          FROM TB_SHEET
          WHERE FIS_YEAR = #srcFisYear#
            AND BGT_DGR = #srcBgtDgr#
-           AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
-         <isNotEmpty prepend="" property="srcReportCd">
-           AND REPORT_CD = #srcReportCd#
-         </isNotEmpty>
-         <isNotEmpty prepend="" property="srcReportDetlCd">
-           AND REPORT_DETL_CD = #srcReportDetlCd#
-         </isNotEmpty>
-           AND ROWNUM = 1
+           AND TE_BGT_COMPO_ID IN ($srcTeBgtCompoIdIn$)
+    </select>
+
+    <!-- 일괄적용: 기정예산 보고항목 다건 -->
+    <select id="BudgetCopyNew.selectSrcReportAttrListBatch" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectSrcReportAttrListBatch*/
+        SELECT TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , INDI_ATTR AS INDI_ATTR
+             , REPORT_CD AS REPORT_CD
+             , REPORT_DETL_CD AS REPORT_DETL_CD
+          FROM TB_REPORT_ATTR
+         WHERE FIS_YEAR = #srcFisYear#
+           AND BGT_DGR = #srcBgtDgr#
+           AND TE_BGT_COMPO_ID IN ($srcTeBgtCompoIdIn$)
+    </select>
+
+    <!-- 기정예산 사업의 조서성질 — TB_REPORT 우선, 없으면 TB_REPORT010/020 등 본문에서 추론 -->
+    <select id="BudgetCopyNew.selectSrcReportNature" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectSrcReportNature*/
+        SELECT TRIM(NVL(T.REPORT_CD, '')) AS REPORT_CD
+             , TRIM(NVL(T.REPORT_DETL_CD, '')) AS REPORT_DETL_CD
+             , TRIM(NVL(T.REPORT_MSTR, '')) AS REPORT_MSTR
+             , TRIM(NVL(T.GOV_SUB, '')) AS GOV_SUB
+             , TRIM(NVL(T.INDI_ATTR, '')) AS INDI_ATTR
+             , TRIM(NVL(T.ADVNC_PROC, '')) AS ADVNC_PROC
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+          FROM (
+                SELECT REPORT_CD
+                     , REPORT_DETL_CD
+                     , REPORT_MSTR
+                     , GOV_SUB
+                     , INDI_ATTR
+                     , ADVNC_PROC
+                     , TE_BGT_COMPO_SEQ
+                     , SRC_ORD
+                  FROM (
+                        SELECT REPORT_CD
+                             , REPORT_DETL_CD
+                             , NVL(TRIM(REPORT_MSTR), '') AS REPORT_MSTR
+                             , NVL(TRIM(GOV_SUB), '') AS GOV_SUB
+                             , NVL(TRIM(INDI_ATTR), '') AS INDI_ATTR
+                             , NVL(TRIM(ADVNC_PROC), '') AS ADVNC_PROC
+                             , TE_BGT_COMPO_SEQ
+                             , 0 AS SRC_ORD
+                          FROM TB_REPORT
+                         WHERE FIS_YEAR = #srcFisYear#
+                           AND BGT_DGR = #srcBgtDgr#
+                           AND TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                           AND REPORT_CD NOT IN ('030', '070', '0A0', '0B0', '0C0', '0D0')
+                         <isNotEmpty prepend="" property="srcReportCd">
+                           AND REPORT_CD = #srcReportCd#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="srcReportDetlCd">
+                           AND REPORT_DETL_CD = #srcReportDetlCd#
+                         </isNotEmpty>
+                        UNION ALL
+                        SELECT A.REPORT_CD
+                             , A.REPORT_DETL_CD
+                             , NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D
+                                      WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR
+                             , '' AS GOV_SUB
+                             , '' AS INDI_ATTR
+                             , '' AS ADVNC_PROC
+                             , A.TE_BGT_COMPO_SEQ
+                             , 1 AS SRC_ORD
+                          FROM TB_REPORT010 A
+                         WHERE A.FIS_YEAR = #srcFisYear#
+                           AND A.BGT_DGR = #srcBgtDgr#
+                           AND A.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                         <isNotEmpty prepend="" property="srcReportCd">
+                           AND A.REPORT_CD = #srcReportCd#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="srcReportDetlCd">
+                           AND A.REPORT_DETL_CD = #srcReportDetlCd#
+                         </isNotEmpty>
+                        UNION ALL
+                        SELECT A.REPORT_CD
+                             , A.REPORT_DETL_CD
+                             , NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D
+                                      WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR
+                             , '' AS GOV_SUB
+                             , '' AS INDI_ATTR
+                             , '' AS ADVNC_PROC
+                             , A.TE_BGT_COMPO_SEQ
+                             , 1 AS SRC_ORD
+                          FROM TB_REPORT020 A
+                         WHERE A.FIS_YEAR = #srcFisYear#
+                           AND A.BGT_DGR = #srcBgtDgr#
+                           AND A.TE_BGT_COMPO_ID = #srcTeBgtCompoId#
+                         <isNotEmpty prepend="" property="srcReportCd">
+                           AND A.REPORT_CD = #srcReportCd#
+                         </isNotEmpty>
+                         <isNotEmpty prepend="" property="srcReportDetlCd">
+                           AND A.REPORT_DETL_CD = #srcReportDetlCd#
+                         </isNotEmpty>
+                       ) U
+                 ORDER BY SRC_ORD
+                        , CASE WHEN NVL(TRIM(REPORT_MSTR), '') != '' THEN 0 ELSE 1 END
+                        , CASE WHEN NVL(TRIM(REPORT_DETL_CD), '') != '' THEN 0 ELSE 1 END
+                        , REPORT_CD
+                        , REPORT_DETL_CD
+               ) T
+         WHERE ROWNUM = 1
     </select>
 
     <select id="BudgetCopyNew.selectReportCnt" parameterClass="Map" resultClass="Integer" >
@@ -454,6 +620,18 @@
          WHERE REPORT_CD = #reportCd#
            AND REPORT_DETL_CD = #reportDetlCd#
            AND FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+
+    <!-- 적용대상 사업의 조서·집계 분류 목록 (상속 시 중복 분류 정리용) -->
+    <select id="BudgetCopyNew.selectTgtReportNatureList" parameterClass="Map" resultClass="egovMap" >
+        /*BudgetCopyNew.selectTgtReportNatureList*/
+        SELECT REPORT_CD AS REPORT_CD
+             , REPORT_DETL_CD AS REPORT_DETL_CD
+             , NVL(REPORT_MSTR, '') AS REPORT_MSTR
+          FROM TB_REPORT
+         WHERE FIS_YEAR = #fisYear#
            AND BGT_DGR = #bgtDgr#
            AND TE_BGT_COMPO_ID = #teBgtCompoId#
     </select>
@@ -495,5 +673,58 @@
            AND REPORT_DETL_CD = #srcReportDetlCd#
          </isNotEmpty>
     </select>
+
+    <select id="BudgetCopyNew.selectReportMstrByReportCd" parameterClass="Map" resultClass="java.lang.String" >
+        /*BudgetCopyNew.selectReportMstrByReportCd*/
+        SELECT TRIM(NVL(GROUP_ID, ''))
+          FROM TB_COMMCDDETL
+         WHERE CL_CD = 'RP011'
+           AND DETL_CD = #reportCd#
+           AND ROWNUM = 1
+    </select>
+
+    <select id="BudgetCopyNew.selectReportCdByReportDetlCd" parameterClass="Map" resultClass="java.lang.String" >
+        /*BudgetCopyNew.selectReportCdByReportDetlCd*/
+        SELECT TRIM(NVL(GROUP_ID, ''))
+          FROM TB_COMMCDDETL
+         WHERE CL_CD = 'RP012'
+           AND DETL_CD = #reportDetlCd#
+           AND ROWNUM = 1
+    </select>
+
+    <!-- 조서·집계 분류만 상속 (조서 본문 테이블 없이 TB_REPORT 만 생성) -->
+    <insert id="BudgetCopyNew.insertReportNature" parameterClass="Map" >
+        /*BudgetCopyNew.insertReportNature*/
+        INSERT
+          INTO TB_REPORT(
+               REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , TE_BGT_COMPO_SEQ
+             , REPORT_MSTR
+             , GOV_SUB
+             , INDI_ATTR
+             , ADVNC_PROC
+             , REGI_ID
+             , REGI_DATE
+             , MODI_ID
+             , MODI_DATE)
+        VALUES (#reportCd#
+             , NVL(#reportDetlCd#, '')
+             , #fisYear#
+             , #bgtDgr#
+             , #teBgtCompoId#
+             , #teBgtCompoSeq#
+             , NVL(#reportMstr#, '')
+             , NVL(#govSub#, '')
+             , NVL(#indiAttr#, '')
+             , NVL(#advncProc#, '')
+             , #userId#
+             , SYSTIMESTAMP
+             , #userId#
+             , SYSTIMESTAMP)
+    </insert>
 
 </sqlMap>

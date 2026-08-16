@@ -1,4 +1,5 @@
-# 앱(WAR) + DB(인덱스·메뉴) 일괄 배포
+# 앱(WAR) + DB + globals 일괄 — run-ops-deploy 권장
+# 하위 호환용. 운영은 deploy\run-ops-deploy.ps1 사용.
 param(
     [Parameter(Mandatory = $true)]
     [string]$TomcatHome,
@@ -8,23 +9,19 @@ param(
 
     [string]$DbName = "bcjis",
     [string]$DbUser = "bcjisapp",
+    [string]$ContextName = "ROOT",
     [switch]$RunSeed
 )
 
 $ErrorActionPreference = "Stop"
 $Here = $PSScriptRoot
 
-$dbArgs = @{
+Write-Host "run-ops-deploy.ps1 으로 위임합니다 (메뉴 PC동기화 + WAR + globals AI 병합)."
+$argsHash = @{
+    TomcatHome = $TomcatHome
+    DbPassword = $DbPassword
     DbName = $DbName
     DbUser = $DbUser
-    DbPassword = $DbPassword
-    RunMenuPatch = $true
+    ContextName = $ContextName
 }
-if ($RunSeed) { $dbArgs.RunSeed = $true }
-
-& (Join-Path $Here "deploy-db.ps1") @dbArgs
-& (Join-Path $Here "deploy-app.ps1") -TomcatHome $TomcatHome
-
-Write-Host ""
-Write-Host "=== deploy-all 완료 ==="
-Write-Host "Tomcat 재기동 후 로그인·예산안관리(조서·집계/심사조서 보고항목선택) 메뉴를 확인하세요."
+& (Join-Path $Here "run-ops-deploy.ps1") @argsHash

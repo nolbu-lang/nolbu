@@ -240,11 +240,16 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>';
+        var matched = false;
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
         	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    			matched = true;
     		}
+        }
+        if(!matched && firstCode(cellValue)){
+            rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
         }
         
         rVal += '</div>';
@@ -272,11 +277,16 @@ $(document).ready(function() {
         }
     	
     	var rVal = '<div>';
+    	var matched = false;
     	for(var i=0 ; i<itemList.length ; i++){
     		var data = itemList[i];
     		if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    			matched = true;
     		}
+    	}
+    	if(!matched && firstCode(cellValue)){
+    		rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
     	}
     	
     	rVal += '</div>';
@@ -304,17 +314,24 @@ $(document).ready(function() {
         }
     	
     	var rVal = '<div>';
+    	var matched = false;
     	if(hasSelectedCode(cellValue, '024') || hasSelectedCode(cellValue, '025') || hasSelectedCode(cellValue, '026')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">자체투자</span><br />';
+    		matched = true;
     	}else if(hasSelectedCode(cellValue, '021') || hasSelectedCode(cellValue, '022') || hasSelectedCode(cellValue, '023')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">국고투자</span><br />';
+    		matched = true;
     	}else{
     		for(var i=0 ; i<itemList.length ; i++){
         		var data = itemList[i];
         		if(hasSelectedCode(cellValue, data.code)){
         			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+        			matched = true;
         		}
         	}
+    	}
+    	if(!matched && firstCode(cellValue)){
+    		rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
     	}
     	
     	rVal += '</div>';
@@ -342,12 +359,17 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>';
+        var matched = false;
         for(var i=0 ; i<govSubList.length ; i++){
         	var data = govSubList[i];
         	
         	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
+    			matched = true;
     		}
+        }
+        if(!matched && firstCode(cellValue)){
+            rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
         }
         
         rVal += '</div>';
@@ -857,6 +879,7 @@ $(document).ready(function() {
                 root : "dataList"
             },
             onSelectRow: function(rowId){
+                fillClassSelsFromRow(budgetSelectGrid.getRowData(rowId));
             },
             loadComplete: function() {
                 var iColSelYn = getColumnIndexByName ($(this), 'selYn');
@@ -2545,6 +2568,43 @@ $(document).ready(function() {
 
     // 콤보 로드를 다음 틱으로 미뤄 탭 화면이 먼저 그려지게 함 (오픈 체감속도)
     
+    // 조회된 사업의 조서·집계 분류를 대/중/소 선택목록에 채워 수정적용 가능하게 함
+    var fillClassSelsFromRow = function(rowData){
+        if(!rowData || rowData.teBgtCompoId == "00000000000"){
+            return;
+        }
+        var mstr = firstCode(rowData.reportMstr);
+        var cd = firstCode(rowData.reportCd);
+        var detl = firstCode(rowData.reportDetlCd);
+        if(!mstr && cd && comboData && comboData['reportCd']){
+            for(var i = 0; i < comboData['reportCd'].length; i++){
+                if(String(comboData['reportCd'][i].code) === cd){
+                    mstr = comboData['reportCd'][i].groupId || '';
+                    break;
+                }
+            }
+        }
+        if(!mstr && !cd && !detl){
+            return;
+        }
+        if(mstr){
+            $("#reportMstrSel", tabObj).val(mstr);
+            reportCdSelCreateCombo(mstr, cd || '');
+            if(cd){
+                reportDetlCdSelCreateCombo(cd, detl || '');
+            }else{
+                reportDetlCdSelCreateCombo('', '');
+            }
+        }else if(cd){
+            reportCdSelCreateCombo('ALL', cd);
+            reportDetlCdSelCreateCombo(cd, detl || '');
+        }
+        var gov = firstCode(rowData.govSub);
+        if(gov){
+            $("#govSubSel", tabObj).val(gov);
+        }
+    };
+
     //대분류 데이터에 따라 중분류 새로 세팅
     var reportCdSelCreateCombo = function(groupId, selectedValue){
     	if(!comboData){ return; }

@@ -74,7 +74,7 @@
              , (SELECT Z.FIS_YEAR
                      , Z.BGT_DGR
                      , Z.TE_BGT_COMPO_ID
-                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_MSTR),'') != '' THEN Z.REPORT_MSTR ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
+                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN NVL(NULLIF(TRIM(Z.REPORT_MSTR),''), (SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = TRIM(Z.REPORT_CD))) ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN Z.REPORT_CD ELSE NULL END SEPARATOR ',') AS REPORT_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_DETL_CD),'') != '' THEN Z.REPORT_DETL_CD ELSE NULL END SEPARATOR ',') AS REPORT_DETL_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD != '030' AND NVL(TRIM(Z.GOV_SUB),'') != '' THEN Z.GOV_SUB ELSE NULL END SEPARATOR ',') AS GOV_SUB
@@ -86,9 +86,40 @@
                      , MAX(CASE WHEN Z.REPORT_CD = '060' THEN 'Y' ELSE 'N' END) AS SEL060_YN
                      , MAX(CASE WHEN Z.REPORT_CD = '090' THEN 'Y' ELSE 'N' END) AS SEL090_YN
                      , MAX(CASE WHEN Z.REPORT_CD IN ('040','050','055','060','070','080','090') THEN 'Y' ELSE 'N' END) AS SELETC_YN
-                  FROM TB_REPORT Z
-                 WHERE Z.FIS_YEAR = #fisYear#
-                   AND Z.BGT_DGR = #bgtDgr#
+                  FROM (
+                        SELECT FIS_YEAR, BGT_DGR, TE_BGT_COMPO_ID, REPORT_CD, REPORT_DETL_CD,
+                               NVL(TRIM(REPORT_MSTR), '') AS REPORT_MSTR, NVL(TRIM(GOV_SUB), '') AS GOV_SUB
+                          FROM TB_REPORT
+                         WHERE FIS_YEAR = #fisYear#
+                           AND BGT_DGR = #bgtDgr#
+                           AND REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB
+                          FROM TB_REPORT010 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB
+                          FROM TB_REPORT020 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                       ) Z
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
              , (SELECT Y.FIS_YEAR
@@ -140,16 +171,42 @@
            AND CAST((A.DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) <![CDATA[<=]]> #condAmtTo#
          </isNotEmpty>
          <isNotEmpty prepend="" property="reportMstl">
-           AND EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
-                         AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_MSTR = #reportMstl#)
+           AND EXISTS (
+                 SELECT 1 FROM (
+                        SELECT ZR.TE_BGT_COMPO_ID, NVL(NULLIF(TRIM(ZR.REPORT_MSTR),''), (SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD='RP011' AND D.DETL_CD=TRIM(ZR.REPORT_CD))) AS REPORT_MSTR
+                          FROM TB_REPORT ZR
+                         WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                           AND ZR.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                        UNION
+                        SELECT A010.TE_BGT_COMPO_ID, NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD='RP011' AND D.DETL_CD=A010.REPORT_CD),'') AS REPORT_MSTR
+                          FROM TB_REPORT010 A010
+                         WHERE A010.FIS_YEAR = A.FIS_YEAR AND A010.BGT_DGR = A.BGT_DGR AND A010.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                        UNION
+                        SELECT A020.TE_BGT_COMPO_ID, NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD='RP011' AND D.DETL_CD=A020.REPORT_CD),'') AS REPORT_MSTR
+                          FROM TB_REPORT020 A020
+                         WHERE A020.FIS_YEAR = A.FIS_YEAR AND A020.BGT_DGR = A.BGT_DGR AND A020.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                      ) ZR WHERE ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_MSTR = #reportMstl#
+               )
          </isNotEmpty>
          <isNotEmpty prepend="" property="reportCd">
-           AND EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
-                         AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_CD = #reportCd#)
+           AND (
+                 EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_CD = #reportCd#)
+              OR EXISTS (SELECT 1 FROM TB_REPORT010 ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_CD = #reportCd#)
+              OR EXISTS (SELECT 1 FROM TB_REPORT020 ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_CD = #reportCd#)
+               )
          </isNotEmpty>
          <isNotEmpty prepend="" property="reportDetlCd">
-           AND EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
-                         AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_DETL_CD = #reportDetlCd#)
+           AND (
+                 EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_DETL_CD = #reportDetlCd#)
+              OR EXISTS (SELECT 1 FROM TB_REPORT010 ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_DETL_CD = #reportDetlCd#)
+              OR EXISTS (SELECT 1 FROM TB_REPORT020 ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
+                           AND ZR.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID AND ZR.REPORT_DETL_CD = #reportDetlCd#)
+               )
          </isNotEmpty>
          <isNotEmpty prepend="" property="govSub">
            AND EXISTS (SELECT 1 FROM TB_REPORT ZR WHERE ZR.FIS_YEAR = A.FIS_YEAR AND ZR.BGT_DGR = A.BGT_DGR
@@ -241,7 +298,7 @@
              , (SELECT Z.FIS_YEAR
                      , Z.BGT_DGR
                      , Z.TE_BGT_COMPO_ID
-                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_MSTR),'') != '' THEN Z.REPORT_MSTR ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
+                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN NVL(NULLIF(TRIM(Z.REPORT_MSTR),''), (SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = TRIM(Z.REPORT_CD))) ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN Z.REPORT_CD ELSE NULL END SEPARATOR ',') AS REPORT_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_DETL_CD),'') != '' THEN Z.REPORT_DETL_CD ELSE NULL END SEPARATOR ',') AS REPORT_DETL_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD != '030' AND NVL(TRIM(Z.GOV_SUB),'') != '' THEN Z.GOV_SUB ELSE NULL END SEPARATOR ',') AS GOV_SUB
@@ -249,9 +306,41 @@
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.ADVNC_PROC),'') != '' THEN TRIM(Z.ADVNC_PROC) ELSE NULL END SEPARATOR '|') AS ADVNC_PROC
                      , MAX(CASE WHEN Z.REPORT_CD = '010' THEN 'Y' ELSE 'N' END) AS SEL010_YN
                      , MAX(CASE WHEN Z.REPORT_CD = '020' THEN 'Y' ELSE 'N' END) AS SEL020_YN
-                  FROM TB_REPORT Z
-                 WHERE Z.FIS_YEAR = #fisYear#
-                   AND Z.BGT_DGR = #bgtDgr#
+                  FROM (
+                        SELECT FIS_YEAR, BGT_DGR, TE_BGT_COMPO_ID, REPORT_CD, REPORT_DETL_CD,
+                               NVL(TRIM(REPORT_MSTR), '') AS REPORT_MSTR, NVL(TRIM(GOV_SUB), '') AS GOV_SUB,
+                               NVL(TRIM(INDI_ATTR), '') AS INDI_ATTR, NVL(TRIM(ADVNC_PROC), '') AS ADVNC_PROC
+                          FROM TB_REPORT
+                         WHERE FIS_YEAR = #fisYear#
+                           AND BGT_DGR = #bgtDgr#
+                           AND REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB, '' AS INDI_ATTR, '' AS ADVNC_PROC
+                          FROM TB_REPORT010 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB, '' AS INDI_ATTR, '' AS ADVNC_PROC
+                          FROM TB_REPORT020 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                       ) Z
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
          WHERE A.FIS_YEAR = #fisYear#
@@ -391,7 +480,7 @@
              , (SELECT Z.FIS_YEAR
                      , Z.BGT_DGR
                      , Z.TE_BGT_COMPO_ID
-                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_MSTR),'') != '' THEN Z.REPORT_MSTR ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
+                     , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN NVL(NULLIF(TRIM(Z.REPORT_MSTR),''), (SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = TRIM(Z.REPORT_CD))) ELSE NULL END SEPARATOR ',') AS REPORT_MSTR
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_CD),'') != '' THEN Z.REPORT_CD ELSE NULL END SEPARATOR ',') AS REPORT_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0') AND NVL(TRIM(Z.REPORT_DETL_CD),'') != '' THEN Z.REPORT_DETL_CD ELSE NULL END SEPARATOR ',') AS REPORT_DETL_CD
                      , GROUP_CONCAT(CASE WHEN Z.REPORT_CD != '030' AND NVL(TRIM(Z.GOV_SUB),'') != '' THEN Z.GOV_SUB ELSE NULL END SEPARATOR ',') AS GOV_SUB
@@ -408,9 +497,39 @@
                      , MAX(CASE WHEN Z.REPORT_CD = '030' AND Z.REPORT_DETL_CD = '033' THEN 'Y' ELSE 'N' END) AS CHECK_YN033
                      , MAX(CASE WHEN Z.REPORT_CD = '030' AND Z.REPORT_DETL_CD = '034' THEN 'Y' ELSE 'N' END) AS CHECK_YN034
                      , MAX(CASE WHEN Z.REPORT_CD = '030' AND Z.REPORT_DETL_CD = '035' THEN 'Y' ELSE 'N' END) AS CHECK_YN035
-                  FROM TB_REPORT Z
-                 WHERE Z.FIS_YEAR = #fisYear#
-                   AND Z.BGT_DGR = #bgtDgr#
+                  FROM (
+                        SELECT FIS_YEAR, BGT_DGR, TE_BGT_COMPO_ID, REPORT_CD, REPORT_DETL_CD,
+                               NVL(TRIM(REPORT_MSTR), '') AS REPORT_MSTR, NVL(TRIM(GOV_SUB), '') AS GOV_SUB
+                          FROM TB_REPORT
+                         WHERE FIS_YEAR = #fisYear#
+                           AND BGT_DGR = #bgtDgr#
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB
+                          FROM TB_REPORT010 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                        UNION
+                        SELECT A.FIS_YEAR, A.BGT_DGR, A.TE_BGT_COMPO_ID, A.REPORT_CD, A.REPORT_DETL_CD,
+                               NVL((SELECT MAX(D.GROUP_ID) FROM TB_COMMCDDETL D WHERE D.CL_CD = 'RP011' AND D.DETL_CD = A.REPORT_CD AND D.USE_YN = 'Y'), '') AS REPORT_MSTR,
+                               '' AS GOV_SUB
+                          FROM TB_REPORT020 A
+                         WHERE A.FIS_YEAR = #fisYear#
+                           AND A.BGT_DGR = #bgtDgr#
+                           AND NOT EXISTS (
+                                 SELECT 1 FROM TB_REPORT R
+                                  WHERE R.FIS_YEAR = A.FIS_YEAR AND R.BGT_DGR = A.BGT_DGR
+                                    AND R.TE_BGT_COMPO_ID = A.TE_BGT_COMPO_ID
+                                    AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
+                               )
+                       ) Z
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
          WHERE A.FIS_YEAR = #fisYear#

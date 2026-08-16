@@ -40,6 +40,8 @@ $deployFiles = @(
     "deploy\deploy-all.ps1",
     "deploy\deploy-app.ps1",
     "deploy\deploy-db.ps1",
+    "deploy\run-ops-deploy.ps1",
+    "deploy\merge-globals-ai.ps1",
     "deploy\README-관리자용.md",
     "deploy\README-운영배포-AI.md",
     "deploy\globals.properties.ai-snippet.example"
@@ -56,9 +58,13 @@ $scriptFiles = @(
     "scripts\check-ai-indexes.ps1",
     "scripts\check-menu-budget-select.ps1",
     "scripts\apply-menu-budget-select.ps1",
+    "scripts\apply-menu-budget-pc-parity.ps1",
     "scripts\create-indexes.sql",
     "scripts\patch-menu-budget-copy.sql",
     "scripts\patch-menu-budget-select-all.sql",
+    "scripts\sync-menu-budget-pc-parity.sql",
+    "scripts\reorder-menu-budget-select-copy.sql",
+    "scripts\restore-menu-budget-copynew.sql",
     "scripts\seed-comm-seq.sql",
     "scripts\create-tb-bizdesc.sql",
     "scripts\alter-tb-bizdesc-bgt-dgr.sql",
@@ -75,9 +81,11 @@ foreach ($f in $scriptFiles) {
     }
 }
 
-$guideName = "docs\운영서버_배포_가이드_$DateTag.md"
+$guideName = "docs\운영서버_배포목록_$DateTag.md"
 $docFiles = @(
     $guideName,
+    "docs\운영서버_배포_미반영_원인분석_20260816.md",
+    "docs\운영서버_배포목록_20260816.md",
     "docs\운영서버_배포_가이드_20260812.md",
     "docs\운영서버_배포목록_20260812.md",
     "docs\운영서버_배포_가이드_20260812.pdf",
@@ -98,31 +106,34 @@ foreach ($f in $docFiles) {
     }
 }
 
-# 패키지 루트 README
 $readme = @"
 # bcjis 개선본 배포 패키지 ($DateTag)
 
 ## 전달 목적
-예산편성심사정보시스템 — AI 예산도우미 + 심사정보 기능개선 (2026-08-12, 8/7 이후 누적)
+예산편성심사정보시스템 — AI 예산도우미 + 심사정보 기능개선 (8/7·8/12 미반영 보완 + 2026-08-16)
 
-## 이전 배포
-- bcjis-배포-20260807 (또는 그 이전) 적용 후 **본 패키지** 적용
-- **필수:** WAR + DB 메뉴 패치 + globals AI 설정
+## 중요 (이전 배포 실패 원인)
+- 메뉴는 WAR가 아니라 DB(TB_MENU)입니다.
+- 서버에 [삭제예정]/[매핑일괄테스트]가 보이면 메뉴 SQL 미적용입니다.
+- 반드시 scripts\apply-menu-budget-pc-parity.ps1 을 실행하고 SELECT 결과를 회신하세요.
+- patch-menu-budget-copy.sql 은 실행하지 마세요 (New 화면을 숨깁니다).
 
-## 관리자가 받을 파일 (이 폴더 전체)
-1. **bcjis-webapp.war** — 애플리케이션 (필수)
-2. **deploy/** — 배포 스크립트·README·globals AI 스니펫
-3. **scripts/** — DB 인덱스·메뉴·(선택)사업설명서 SQL
-4. **docs/** — 적용 가이드
+## 관리자가 받을 파일
+1. bcjis-webapp.war
+2. deploy/ (globals AI 스니펫)
+3. scripts/ (인덱스 + 메뉴 PC동기화)
+4. docs/운영서버_배포_미반영_원인분석_20260816.md
+5. docs/운영서버_배포목록_20260816.md  ← 적용 체크리스트
 
 ## 빠른 시작
-1. docs\운영서버_배포_가이드_20260812.md 를 먼저 읽으세요.
-2. docs\AI작업자_인수인계_참고사항.md 로 범위 확인.
-3. deploy\README-관리자용.md / 배포 가이드 절차대로 DB → globals → WAR.
-4. AI 설정: deploy\globals.properties.ai-snippet.example → 기존 globals.properties 에 추가.
+1. docs\운영서버_배포_미반영_원인분석_20260816.md 열람
+2. docs\운영서버_배포목록_20260816.md 확인
+3. 서버에서 한 줄 실행:
+   .\deploy\run-ops-deploy.ps1 -TomcatHome "..." -DbPassword "..." -ContextName "ROOT"
+4. (보도자료 reset 시) WAS→www.busan.go.kr:443 방화벽 허용 후 동일 명령 재실행
 
 ## GitHub
-https://github.com/nolbu-lang/nolbu.git (main, commit $(git -C $ProjectRoot rev-parse --short HEAD 2>$null))
+https://github.com/nolbu-lang/nolbu.git (main)
 "@
 $readmePath = Join-Path $OutDir "README-DEPLOY.txt"
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
