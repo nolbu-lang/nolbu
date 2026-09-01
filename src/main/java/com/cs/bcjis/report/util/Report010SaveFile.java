@@ -129,6 +129,7 @@ public class Report010SaveFile {
         sheet = wb.createSheet(ReportSaveUtil.getStringValue(reportInfo.get("sheetNm")));
         ReportFormulaUtil reportFormulaUtil = new ReportFormulaUtil(sheet);
         boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 7);
 
@@ -137,10 +138,10 @@ public class Report010SaveFile {
             category = (JSONObject) categories.remove(0);
             rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil);
         }*/
-        
+
         for (int i = 0; i < categories.size(); i++) {
             category = (JSONObject) categories.get(i);
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil);
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil, advncProcNmMap);
         }
 
         if (sheet != null) {
@@ -246,7 +247,7 @@ public class Report010SaveFile {
         return rowNum;
     }
 
-    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil) throws Exception {
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil, Map<String, String> advncProcNmMap) throws Exception {
         float rowHeight = 21.7f;
         Row row = null;
         Cell cell = null;
@@ -385,7 +386,14 @@ public class Report010SaveFile {
         cell.setCellStyle(styles.get(preStyleNm + "Col9"));
         cell.setCellValue(ReportSaveUtil.getStringValue(category.get("srchVal")));
 
-        if (dgrLevel < 4) { 
+        //분류항목(ADVNC_PROC) — 심사조서 보고항목선택에서 지정한 값
+        cell = row.createCell(10);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col10", preStyleNm + "Col9");
+        if (dgrLevel >= 4) {
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
+        }
+
+        if (dgrLevel < 4) {
             sheet.addMergedRegion(CellRangeAddress.valueOf("$A$" + rowNum + ":$B$" + rowNum));
         }
 
@@ -530,6 +538,7 @@ public class Report010SaveFile {
         boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm"));
         if (BcjisCommUtil.isNullString(sheetName) == true) {
@@ -556,7 +565,7 @@ public class Report010SaveFile {
                 totDataCnt++;
             }
 
-            rowNum = writeData012ListData(sheet, rowNum, category, styles, totDataCnt, bgtCompoFlag, reportFormulaUtil, unit);
+            rowNum = writeData012ListData(sheet, rowNum, category, styles, totDataCnt, bgtCompoFlag, reportFormulaUtil, unit, advncProcNmMap);
         }
 
         if (sheet != null) {
@@ -595,6 +604,7 @@ public class Report010SaveFile {
         boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm"));
         if (BcjisCommUtil.isNullString(sheetName) == true) {
@@ -621,7 +631,7 @@ public class Report010SaveFile {
                 totDataCnt++;
             }
 
-            rowNum = writeData012ListData2(sheet, rowNum, category, styles, totDataCnt, bgtCompoFlag, reportFormulaUtil, unit);
+            rowNum = writeData012ListData2(sheet, rowNum, category, styles, totDataCnt, bgtCompoFlag, reportFormulaUtil, unit, advncProcNmMap);
         }
 
         if (sheet != null) {
@@ -720,7 +730,7 @@ public class Report010SaveFile {
         return rowNum;
     }
 
-    public int writeData012ListData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil, int unit) {
+    public int writeData012ListData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil, int unit, Map<String, String> advncProcNmMap) {
         float rowHeight = 30.0f;
         Row row = null;
         Cell cell = null;
@@ -863,6 +873,13 @@ public class Report010SaveFile {
             cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("frscAmt6")) + "/" + unit);
         }
 
+        //분류항목(ADVNC_PROC) — 심사조서 보고항목선택에서 지정한 값
+        cell = row.createCell(15);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col15", preStyleNm + "Col13");
+        if (dgrLevel >= 4) {
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
+        }
+
         addBizDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum, bgtCompoFlag);
         if (formulaFlag == true) {
             addBizDataFormulaCell(reportFormulaUtil, dgrcompoId, rowNum, bgtCompoFlag);
@@ -871,7 +888,7 @@ public class Report010SaveFile {
         return rowNum;
     }
     //리스트탭	추가 기존 조서데이터로 변경_20210602
-    public int writeData012ListData2(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil, int unit) {
+    public int writeData012ListData2(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, int totDataCnt, boolean bgtCompoFlag, ReportFormulaUtil reportFormulaUtil, int unit, Map<String, String> advncProcNmMap) {
     	float rowHeight = 30.0f;
     	Row row = null;
     	Cell cell = null;
@@ -1017,12 +1034,19 @@ public class Report010SaveFile {
     	if (formulaFlag == false) {
     		cell.setCellFormula(ReportSaveUtil.getAmtValue(category.get("frscAmt6")) + "/" +  unit);
     	}
-    	
+
+    	//분류항목(ADVNC_PROC) — 심사조서 보고항목선택에서 지정한 값
+    	cell = row.createCell(15);
+    	ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col15", preStyleNm + "Col13");
+    	if (dgrLevel >= 4) {
+    		cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
+    	}
+
     	addBizDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum, bgtCompoFlag);
     	if (formulaFlag == true) {
     		addBizDataFormulaCell(reportFormulaUtil, dgrcompoId, rowNum, bgtCompoFlag);
     	}
-    	
+
     	return rowNum;
     }
 
@@ -1103,6 +1127,11 @@ public class Report010SaveFile {
         long preFrscAmt5 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt5"));
         long preDefFrscAmt5 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt5"));
         long frscAmt5 = ReportSaveUtil.getAmtValue(category.get("frscAmt5"));
+
+        long dmnFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("dmnFrscAmt6"));
+        long preFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("preFrscAmt6"));
+        long preDefFrscAmt6 = ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt6"));
+        long frscAmt6 = ReportSaveUtil.getAmtValue(category.get("frscAmt6"));
         /*
          * System.out.println("시" + dmnFrscAmt1
          * +","+preFrscAmt1+","+preDefFrscAmt1+","+frscAmt1);
@@ -1117,7 +1146,7 @@ public class Report010SaveFile {
          */
 
         if (bgtCompoFlag == false) {
-            if (dmnFrscAmt2 == 0 && preFrscAmt2 == 0 && preDefFrscAmt2 == 0 && frscAmt2 == 0 && dmnFrscAmt3 == 0 && preFrscAmt3 == 0 && preDefFrscAmt3 == 0 && frscAmt3 == 0 && dmnFrscAmt4 == 0 && preFrscAmt4 == 0 && preDefFrscAmt4 == 0 && frscAmt4 == 0 && dmnFrscAmt5 == 0 && preFrscAmt5 == 0 && preDefFrscAmt5 == 0 && frscAmt5 == 0) {
+            if (dmnFrscAmt2 == 0 && preFrscAmt2 == 0 && preDefFrscAmt2 == 0 && frscAmt2 == 0 && dmnFrscAmt3 == 0 && preFrscAmt3 == 0 && preDefFrscAmt3 == 0 && frscAmt3 == 0 && dmnFrscAmt4 == 0 && preFrscAmt4 == 0 && preDefFrscAmt4 == 0 && frscAmt4 == 0 && dmnFrscAmt5 == 0 && preFrscAmt5 == 0 && preDefFrscAmt5 == 0 && frscAmt5 == 0 && dmnFrscAmt6 == 0 && preFrscAmt6 == 0 && preDefFrscAmt6 == 0 && frscAmt6 == 0) {
                 return list;
             }
 
@@ -1141,6 +1170,10 @@ public class Report010SaveFile {
                 //list.add(new Report010SaveFrscAmtsVO("특", dmnFrscAmt5, preFrscAmt5, preDefFrscAmt5, frscAmt5));
             	//20240429 채무부담 : 특 -> 부 로 변경
                 list.add(new Report010SaveFrscAmtsVO("부", dmnFrscAmt5, preFrscAmt5, preDefFrscAmt5, frscAmt5));
+            }
+
+            if (dmnFrscAmt6 != 0 || preFrscAmt6 != 0 || preDefFrscAmt6 != 0 || frscAmt6 != 0) {
+                list.add(new Report010SaveFrscAmtsVO("기", dmnFrscAmt6, preFrscAmt6, preDefFrscAmt6, frscAmt6));
             }
         } else {
             if (dmnFrscAmt2 == 0 && preFrscAmt2 == 0 && frscAmt2 == 0 && dmnFrscAmt3 == 0 && preFrscAmt3 == 0 && frscAmt3 == 0 && dmnFrscAmt4 == 0 && preFrscAmt4 == 0 && frscAmt4 == 0 && dmnFrscAmt5 == 0 && preFrscAmt5 == 0 && frscAmt5 == 0) {
@@ -1210,7 +1243,7 @@ public class Report010SaveFile {
         sheet = wb.createSheet(sheetName);
         reportFormulaUtil = new ReportFormulaUtil(sheet);
 
-        rowNum = writeDataListHeader(param, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(fisYear, 0)));
+        rowNum = writeDataListHeader(param, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(fisYear, 0)).replace("§bgtDgrNm§", ReportSaveUtil.getStringValue(reportInfo.get("bgtDgrNm"))));
 
         for (int i = 0; i < categories.size(); i++) {
             category = (JSONObject) categories.get(i);
@@ -1284,7 +1317,7 @@ public class Report010SaveFile {
         sheet = wb.createSheet(sheetName);
         reportFormulaUtil = new ReportFormulaUtil(sheet);
 
-        rowNum = writeDataListHeader(param, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(fisYear, 0)));
+        rowNum = writeDataListHeader(param, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")).replace("§toYear§", rtnYear(fisYear, 0)).replace("§bgtDgrNm§", ReportSaveUtil.getStringValue(reportInfo.get("bgtDgrNm"))));
 
         for (int i = 0; i < categories.size(); i++) {
             category = (JSONObject) categories.get(i);
@@ -1488,23 +1521,20 @@ public class Report010SaveFile {
 	    cell = row.createCell(3);
 	    cell.setCellStyle(styles.get(preStyleNm + "Col3"));
 	    if (formulaFlag == false) {
-	    	cell.setCellFormula("" + "0" + "/" + unit);	//기투자
+	    	cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt0")) + "/" + unit);	//기정액
 	    }
 
         cell = row.createCell(4);
         cell.setCellStyle(styles.get(preStyleNm + "Col4"));
         //System.out.println("@@@@@@@@@@@@@@  bgtDgr : " + bgtDgr + " nm : " + ReportSaveUtil.getStringValue(category.get("dgrcompoNm")) + "  preFrscAmt0 : " + ReportSaveUtil.getAmtValue(category.get("preFrscAmt0")) + "  frscAmt0 : " + ReportSaveUtil.getAmtValue(category.get("frscAmt0")));
-        
+
         if (formulaFlag == false) {
-        	if("1".equals(bgtDgr)){
-        		//preDefFrscAmt0 기정액 -> preFrscAmt0 전년도 예산액
-        		//cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preDefFrscAmt0")) + "/" + unit);
-        		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preFrscAmt0")) + "/" + unit);
-        	}else{
-        		cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("frscAmt0")) + "/" + unit);
-        	}
+        	//preFrscAmt0 : 전년도('25) 최종예산 - 예산차수(bgtDgr, 본예산/추경 여부)와 무관하게 항상 전년도 값을 사용해야 함.
+        	//과거에는 bgtDgr != "1"(추경) 인 경우 frscAmt0(금번 조정액, 조정액 컬럼과 동일 값)을 잘못 사용하여
+        	//'25최종예산 컬럼이 조정액과 동일하게 표시되는 결함이 있었음.
+        	cell.setCellFormula("" + ReportSaveUtil.getAmtValue(category.get("preFrscAmt0")) + "/" + unit);
         }
-        
+
         cell = row.createCell(5);
         cell.setCellStyle(styles.get(preStyleNm + "Col5"));
         if (formulaFlag == false) {
@@ -1804,6 +1834,7 @@ public class Report010SaveFile {
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(model, wb);
 
         boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         //rowNum = writeHeader(model, sheet, rowNum, styles, reportInfo, ReportSaveUtil.getStringValue(reportInfo.get("reportNm")), 7);
 
@@ -1855,7 +1886,7 @@ public class Report010SaveFile {
             
             //if(dgrLevel == 1 || dgrLevel == 3 || dgrLevel == 4){
             if(dgrLevel > 0){
-            	rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil);
+            	rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, reportFormulaUtil, advncProcNmMap);
             }
         }
 

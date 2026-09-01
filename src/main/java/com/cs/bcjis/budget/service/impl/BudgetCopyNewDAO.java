@@ -34,16 +34,6 @@ public class BudgetCopyNewDAO extends BcjisCommAbstractDAO {
         return (Map) selectByPk("BudgetCopyNew.selectSrcReportNature", map);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public List selectSrcReportNatureBatch(Map map) throws Exception {
-        return list("BudgetCopyNew.selectSrcReportNatureBatch", map);
-    }
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-    public List selectTgtReportNatureList(Map map) throws Exception {
-        return list("BudgetCopyNew.selectTgtReportNatureList", map);
-    }
-
 	@SuppressWarnings({ "rawtypes", "unchecked" })
     public int selectReportCnt(Map map) throws Exception {
         Integer cnt = (Integer) selectByPk("BudgetCopyNew.selectReportCnt", map);
@@ -60,37 +50,13 @@ public class BudgetCopyNewDAO extends BcjisCommAbstractDAO {
         return list("BudgetCopyNew.selectSrcSheetList", map);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public List selectSrcSheetListBatch(Map map) throws Exception {
-        return list("BudgetCopyNew.selectSrcSheetListBatch", map);
-    }
-
 	@SuppressWarnings({ "rawtypes", "unchecked" })
     public List selectSrcReportAttrList(Map map) throws Exception {
         return list("BudgetCopyNew.selectSrcReportAttrList", map);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public List selectSrcReportAttrListBatch(Map map) throws Exception {
-        return list("BudgetCopyNew.selectSrcReportAttrListBatch", map);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public String selectReportMstrByReportCd(String reportCd) throws Exception {
-        Map p = new java.util.HashMap();
-        p.put("reportCd", reportCd);
-        return (String) selectByPk("BudgetCopyNew.selectReportMstrByReportCd", p);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public String selectReportCdByReportDetlCd(String reportDetlCd) throws Exception {
-        Map p = new java.util.HashMap();
-        p.put("reportDetlCd", reportDetlCd);
-        return (String) selectByPk("BudgetCopyNew.selectReportCdByReportDetlCd", p);
-    }
-
-	@SuppressWarnings("rawtypes")
-    public void insertReportNature(Map map) throws Exception {
-        insert("BudgetCopyNew.insertReportNature", map);
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+    public List selectExistReportKeys(Map map) throws Exception {
+        return list("BudgetCopyNew.selectExistReportKeys", map);
     }
 }

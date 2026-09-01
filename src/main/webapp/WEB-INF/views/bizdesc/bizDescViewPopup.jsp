@@ -98,6 +98,7 @@ body { font-family:"맑은 고딕","Malgun Gothic",sans-serif; }
   <input type="hidden" id="dialogBizDescViewTeBgtCompoId" value="<c:out value='${param.teBgtCompoId}'/>"/>
   <input type="hidden" id="dialogBizDescViewDgrcompoId" value="<c:out value='${param.dgrcompoId}'/>"/>
   <input type="hidden" id="dialogBizDescViewReportBizNm" value="<c:out value='${param.reportBizNm}'/>"/>
+  <input type="hidden" id="dialogBizDescViewDbizNm" value="<c:out value='${param.dbizNm}'/>"/>
   <input type="hidden" id="dialogBizDescViewOfficeCd" value="<c:out value='${param.officeCd}'/>"/>
   <input type="hidden" id="dialogBizDescViewTabId" value="<c:out value='${param.tabId}'/>"/>
   <input type="hidden" id="dialogBizDescViewGridId" value="<c:out value='${param.gridId}'/>"/>
@@ -141,6 +142,6 @@ body { font-family:"맑은 고딕","Malgun Gothic",sans-serif; }
 <script>
 window.BIZDESC_VIEW_MODE = "popup";
 </script>
-<script src="<%=contextPath%>/js/dialog/dialogBizDescView.js?v=2026072814"></script>
+<script src="<%=contextPath%>/js/dialog/dialogBizDescView.js?v=20260830a"></script>
 </body>
 </html>

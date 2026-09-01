@@ -18,7 +18,6 @@ crypto.password=
 
 Globals.DbType = cubrid
 Globals.DriverClassName=cubrid.jdbc.driver.CUBRIDDriver
-# 로컬 DB: localhost / 운영 DB 조회: 99.1.1.39
 Globals.Url=jdbc:CUBRID:localhost:33000:bcjis:::?charset=utf8
 Globals.UserName = bcjisapp
 Globals.Password = bcjisapp00
@@ -61,9 +60,9 @@ Globals.AiPerfLog = true
 Globals.AiYearChunkSize = 2
 # 분할 구간 최대 개수 (DB 부하 상한. 연도 수가 많으면 구간 크기가 자동으로 커진다)
 Globals.AiYearMaxChunks = 12
-# 내부자료 JSON 내보내기(모바일 뷰어용, 1년 단위). 0 = 한도 없음(필터 전체)
-Globals.AiInternalExportMaxRows = 0
-Globals.AiInternalExportMaxBiz = 0
+# 내부자료 JSON 내보내기(모바일 뷰어용, 1년 단위)
+Globals.AiInternalExportMaxRows = 8000
+Globals.AiInternalExportMaxBiz = 2500
 
 # --- 외부자료 (내부검색 체크 미선택 시 LLM 추론) ---
 # 관리자 사전등록 URL. 쉼표 또는 줄바꿈으로 복수 지정. 수정 후 WAS 재기동
@@ -84,22 +83,22 @@ Globals.AiBugiEndpoint = https://busanai.busan.go.kr/bugi/external-research/gove
 Globals.AiBugiApiKey =
 Globals.AiBugiHttpMethod = GET
 Globals.AiBugiTimeoutMs = 20000
-# 시홈페이지 직접검색(보도자료·고시공고·새소식). WAS→www.busan.go.kr 방화벽 필요
-Globals.AiBusanHomepageBaseUrl = https://www.busan.go.kr
+# 시홈페이지 직접검색(보도자료·고시공고·새소식). 부기 API 키 없이도 동작
 Globals.AiBusanHomepageMaxPerBoard = 10
-Globals.AiBusanHomepageTimeoutMs = 20000
+Globals.AiBusanHomepageTimeoutMs = 15000
 # 매뉴얼 PDF 저장 경로 / 운영에서는 AdminOnly=true (POW_GR_CD=BC001만 업로드·삭제)
 Globals.AiManualStorePath = C:/bcjis/upload/ai-manual/
 Globals.AiManualUploadAdminOnly = false
-# 예산운용지침 검색·요약 (관련 본문 충실 + 속도)
-#  MaxPages / ExcerptChars : 키워드 뒤 기준·금액 문단 확보
-#  PromptChars / LlmMaxFiles : LLM 입력 압축(상위 문서만) → 응답 속도
-Globals.AiManualMaxPages = 3
-Globals.AiManualExcerptChars = 2200
-Globals.AiManualSummaryChars = 6500
-Globals.AiManualPromptChars = 3600
-Globals.AiManualMaxFiles = 4
-Globals.AiManualLlmMaxFiles = 2
+# 예산운용지침 검색·요약 속도/범위
+#  MaxPages     : 파일당 상위 페이지 수
+#  ExcerptChars : 페이지당 발췌 길이
+#  SummaryChars : 전체 발췌 컨텍스트 상한
+#  PromptChars  : LLM 프롬프트 발췌 상한 (작을수록 빠름)
+#  ExactUseLlm  : 정확일치 시 LLM 호출 여부 (false=발췌 요약만, 빠름)
+Globals.AiManualMaxPages = 2
+Globals.AiManualExcerptChars = 1400
+Globals.AiManualSummaryChars = 5500
+Globals.AiManualPromptChars = 4800
 Globals.AiManualUseLlm = true
 Globals.AiManualFuzzyMaxPages = 60
 Globals.ClovaStream = false

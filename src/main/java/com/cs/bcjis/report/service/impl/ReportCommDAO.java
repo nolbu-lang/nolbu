@@ -205,6 +205,24 @@ public class ReportCommDAO extends BcjisCommAbstractDAO {
         return list("ReportComm.selectReportMergeList", map);
     }
 
+    /** 투자사업유형(RP014)/분류항목(RP015) 등 공통코드를 CODE -> CODE_NM Map으로 조회 */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public Map<String, String> selectCommCodeNmMap(String clCd) throws Exception {
+        Map<String, String> codeNmMap = new HashMap<String, String>();
+
+        Map param = new HashMap();
+        param.put("clCd", clCd);
+
+        List list = list("ReportComm.selectCommCodeList", param);
+        Map map = null;
+        for (int i = 0; i < list.size(); i++) {
+            map = (Map) list.get(i);
+            codeNmMap.put(String.valueOf(map.get("code")), String.valueOf(map.get("codeNm")));
+        }
+
+        return codeNmMap;
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void copyReport(Map map) throws Exception {
         try {

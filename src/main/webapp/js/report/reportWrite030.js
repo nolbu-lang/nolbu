@@ -546,8 +546,13 @@ $(document).ready(function() {
                 natnBudnRate = $('#natnBudnRate_'+rowId, tabObj).val();
                 siBudnRate = $('#siBudnRate_'+rowId, tabObj).val();
                 guBudnRate = $('#guBudnRate_'+rowId, tabObj).val();
-                indiAttr = getIndiAttrCheckVal(rowData.dgrcompoId);
-                advncProc = getAdvncProcCheckVal(rowData.dgrcompoId);
+                // getIndiAttrCheckVal/getAdvncProcCheckVal은 checkYnIndiAttr_*/checkYnAdvncProc_* 체크박스를
+                // DOM에서 찾는데, 이 화면(reportWrite030)에는 그 체크박스를 렌더링하는 코드 자체가 없어
+                // 항상 빈 문자열을 반환한다. 그 결과 보고항목/분류항목이 있는 사업은 이 화면에서 아무 필드나
+                // 저장할 때마다 TB_REPORT.INDI_ATTR/ADVNC_PROC가 매번 빈값으로 덮어써졌다(결함 J, 020화면과 동일 패턴).
+                // 이 화면엔 보고항목/분류항목을 편집하는 UI가 없으므로 원본값을 그대로 되돌려준다.
+                indiAttr = rowData.indiAttr; //getIndiAttrCheckVal(rowData.dgrcompoId);
+                advncProc = rowData.advncProc; //getAdvncProcCheckVal(rowData.dgrcompoId);
                 preBgtAmtExp = $('#preBgtAmtExp_'+rowId, tabObj).val().replaceAll(",", "");
                 
                 if(rowData.examCont != examCont

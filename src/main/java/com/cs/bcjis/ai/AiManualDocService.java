@@ -300,9 +300,9 @@ public class AiManualDocService {
             out.put("message", "검색할 키워드를 입력해 주세요.");
             return out;
         }
-        int maxPages = getIntProp("Globals.AiManualMaxPages", 3);
-        int excerptChars = getIntProp("Globals.AiManualExcerptChars", 2200);
-        int summaryLimit = getIntProp("Globals.AiManualSummaryChars", 6500);
+        int maxPages = getIntProp("Globals.AiManualMaxPages", 2);
+        int excerptChars = getIntProp("Globals.AiManualExcerptChars", 1400);
+        int summaryLimit = getIntProp("Globals.AiManualSummaryChars", 5500);
 
         File dir = getManualDir();
         List<FileHits> found = new ArrayList<FileHits>();
@@ -357,12 +357,10 @@ public class AiManualDocService {
         StringBuilder contextForSummary = new StringBuilder();
         StringBuilder hitPageLabel = new StringBuilder();
         // 파일별 공정 배분 — 한 문서가 컨텍스트를 독점하지 않게
-        // LLM 속도: 상위 매칭 문서 위주(최대 4)로 발췌 구성
-        int maxFiles = Math.min(found.size(), getIntProp("Globals.AiManualMaxFiles", 4));
-        int fileCount = Math.max(1, maxFiles);
-        int perFileBudget = Math.max(1400, summaryLimit / fileCount);
+        int fileCount = Math.max(1, found.size());
+        int perFileBudget = Math.max(1100, summaryLimit / fileCount);
         int pageLimit = maxPages;
-        for (int i = 0; i < found.size() && items.size() < maxFiles; i++) {
+        for (int i = 0; i < found.size() && items.size() < 10; i++) {
             FileHits fh = found.get(i);
             StringBuilder body = new StringBuilder();
             StringBuilder pages = new StringBuilder();
@@ -576,64 +574,11 @@ public class AiManualDocService {
             int originalPos = doc.norm.map[at];
             int[] page = locatePage(doc.pageStarts, originalPos, doc.text.length());
             if (page != null && !containsPageHit(out, page[1])) {
-                double score = 100d;
-                // TOC(목차)만 있는 페이지보다 금액·기준이 있는 본문 페이지를 우선
-                String pageBody = doc.text.substring(page[0], Math.min(doc.text.length(), page[2]));
-                if (pageHasSubstanceNearKeyword(pageBody, needle)) {
-                    score += 40d;
-                } else if (looksLikeTocPage(pageBody)) {
-                    score -= 25d;
-                }
-                out.add(new PageHit(page[1], originalPos, page[0], page[2], score, true));
+                out.add(new PageHit(page[1], originalPos, page[0], page[2], 100d, true));
             }
             from = at + Math.max(1, needle.length());
         }
         return out;
-    }
-
-    /** 키워드 근처에 금액·기준(억/원/이상/미만 등)이 있으면 본문 페이지로 본다 */
-    private boolean pageHasSubstanceNearKeyword(String pageBody, String needleNorm) {
-        if (pageBody == null || pageBody.length() < 20) {
-            return false;
-        }
-        String norm = AiKeywordMatcher.normalize(pageBody);
-        int at = needleNorm == null || needleNorm.length() == 0 ? -1 : norm.indexOf(needleNorm);
-        String window;
-        if (at >= 0) {
-            int from = Math.max(0, at - 40);
-            int to = Math.min(norm.length(), at + needleNorm.length() + 220);
-            window = norm.substring(from, to);
-        } else {
-            window = norm.length() > 400 ? norm.substring(0, 400) : norm;
-        }
-        return window.indexOf("억") >= 0 || window.indexOf("원") >= 0
-                || window.indexOf("이상") >= 0 || window.indexOf("미만") >= 0
-                || window.indexOf("초과") >= 0 || window.indexOf("이하") >= 0
-                || window.matches(".*\\d{2,}.*");
-    }
-
-    private boolean looksLikeTocPage(String pageBody) {
-        if (pageBody == null) {
-            return false;
-        }
-        String s = pageBody.replace('\u00A0', ' ');
-        int dots = countChar(s, '·') + countChar(s, '.');
-        int lines = s.split("\n").length;
-        // 목차: 짧은 줄·점선·페이지숫자만 많은 경우
-        return lines >= 12 && dots >= 15 && s.length() < 1800;
-    }
-
-    private int countChar(String s, char c) {
-        int n = 0;
-        if (s == null) {
-            return 0;
-        }
-        for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) == c) {
-                n++;
-            }
-        }
-        return n;
     }
 
     private List<PageHit> intersectPageHits(List<PageHit> a, List<PageHit> b) {
@@ -910,7 +855,8 @@ public class AiManualDocService {
      * 히트 지점 주변을 발췌한다.
      *  - 발췌 구간을 해당 페이지 안으로 제한
      *  - 줄바꿈 유지 (표·항목 구조 보존)
-     *  - 정확일치·짧은 제목형 키워드는 히트 줄 이후 기준·금액 본문을 충분히 포함
+     *  - 긴 정확일치 문구(예: 세출예산 절차별 이행사항)는 해당 줄~페이지 끝까지
+     *  - 짧은 키워드(예: 사무관리비)는 주변 발췌만 사용해 여러 문서 요약을 균형 있게
      */
     private String excerptStructured(String text, PageHit hit, int chars,
             AiKeywordMatcher.SearchExpression expression) {
@@ -925,29 +871,19 @@ public class AiManualDocService {
         }
         int pageLen = pageEnd - pageStart;
         boolean longExact = hit.exact && isLongExactPhrase(expression);
-        // "투자심사 대상"처럼 제목만 맞는 경우 → 뒤따르는 기준 문단을 넓게 확보
-        boolean sectionExpand = hit.exact || isSectionLikeQuery(expression);
 
         int start;
         int end;
-        if (longExact || sectionExpand) {
+        if (longExact) {
             int lineStart = text.lastIndexOf('\n', Math.max(hit.pos, pageStart));
             if (lineStart >= pageStart && lineStart < pageEnd) {
                 start = lineStart + 1;
             } else {
                 start = Math.max(pageStart, hit.pos);
             }
-            // 히트 이후 본문(금액·기준)을 우선 확보. 필요하면 페이지 끝까지.
-            int want = Math.max(limit, sectionExpand ? 2200 : 1600);
-            end = Math.min(pageEnd, start + want);
-            // 문단 경계까지 조금 더 확장
-            int extendTo = Math.min(pageEnd, start + want + 400);
-            int nlBreak = text.indexOf("\n\n", end);
-            if (nlBreak > end && nlBreak < extendTo) {
-                end = nlBreak;
-            }
-            if (end - start > Math.max(want, 9000)) {
-                end = start + Math.max(want, 9000);
+            end = pageEnd;
+            if (end - start > Math.max(limit, 8000)) {
+                end = start + Math.max(limit, 8000);
                 int nlEnd = text.lastIndexOf('\n', end);
                 if (nlEnd > start + 200) {
                     end = nlEnd;
@@ -957,8 +893,7 @@ public class AiManualDocService {
             start = pageStart;
             end = pageEnd;
         } else {
-            // 앞보다 뒤를 넓게 (기준·금액이 제목 뒤에 옴)
-            int before = Math.min(limit / 5, 280);
+            int before = Math.min(limit / 4, 400);
             start = Math.max(pageStart, hit.pos - before);
             end = Math.min(pageEnd, start + limit);
             if (end - start < limit) {
@@ -980,28 +915,13 @@ public class AiManualDocService {
         snip = snip.replaceAll("(?m) +$", "");
         snip = snip.replaceAll("\n{3,}", "\n\n");
         snip = snip.trim();
-        if (!longExact && !sectionExpand && start > pageStart) {
+        if (!longExact && start > pageStart) {
             snip = "..." + snip;
         }
         if (end < pageEnd) {
             snip = snip + "...";
         }
         return snip;
-    }
-
-    /** 제목·대상 지정형 질의(짧은 정확 키워드) — 뒤 문단 확장 필요 */
-    private boolean isSectionLikeQuery(AiKeywordMatcher.SearchExpression expression) {
-        if (expression == null || expression.isEmpty()) {
-            return false;
-        }
-        java.util.List<String> terms = expression.getTerms();
-        for (int i = 0; i < terms.size(); i++) {
-            String n = AiKeywordMatcher.normalize(terms.get(i));
-            if (n.length() >= 4 && n.length() <= 24) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /** 표·절차 제목처럼 긴 정확 문구인지 (공백제거 길이 기준) */

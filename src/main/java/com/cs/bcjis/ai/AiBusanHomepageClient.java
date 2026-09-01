@@ -1,11 +1,7 @@
 package com.cs.bcjis.ai;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -38,9 +34,12 @@ public class AiBusanHomepageClient {
 
     private static final Logger logger = Logger.getLogger(AiBusanHomepageClient.class);
 
-    private static final String DEFAULT_BASE = "https://www.busan.go.kr";
+    private static final String BASE = "https://www.busan.go.kr";
     private static final String BEGIN_DT = "2025-01-01";
     private static final String END_DT = "2026-12-31";
+    // 운영 WAS의 구버전 JDK(JSSE)가 TLS1.2를 지원하지 않아 HttpsURLConnection 대신
+    // OS의 curl(OpenSSL)로 우회 요청한다. (2026-08-20)
+    private static final String HTTP_CODE_MARK = "\n@@BCJIS_HTTP_CODE@@:";
 
     private static final Pattern PRESS_BLOCK = Pattern.compile(
             "(?is)<a\\s+[^>]*href=\"(/nbtnewsBU/\\d+)[^\"]*\"[^>]*class=\"[^\"]*item[^\"]*\"[^>]*>"
@@ -217,19 +216,14 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("보도자료");
                 try {
-                    String qs = "srchBeginDt=" + enc(BEGIN_DT)
+                    String body = "srchBeginDt=" + enc(BEGIN_DT)
                             + "&srchEndDt=" + enc(END_DT)
                             + "&srchKey=sj"
                             + "&srchText=" + enc(q);
-                    String base = getBaseUrl();
-                    // 일부 WAS/방화벽은 외부 POST를 차단 → GET 우선, 실패 시 POST
-                    String html = httpGet(base + "/nbtnewsBU?" + qs);
-                    if (html == null || html.length() < 200) {
-                        html = httpPost(base + "/nbtnewsBU", qs);
-                    }
+                    String html = httpPost(BASE + "/nbtnewsBU", body);
                     br.items = parsePress(html, limit);
                 } catch (Exception e) {
-                    logger.warn("보도자료 검색 실패: " + e.getMessage());
+                    logger.warn("보도자료 검색 실패: " + e.getMessage(), e);
                     br.error = e.getMessage();
                 }
                 return br;
@@ -242,7 +236,7 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("고시공고");
                 try {
-                    String url = getBaseUrl() + "/nbgosi/list"
+                    String url = BASE + "/nbgosi/list"
                             + "?conIfmStdt=" + enc(BEGIN_DT)
                             + "&conIfmEnddt=" + enc(END_DT)
                             + "&conGosiGbn="
@@ -251,7 +245,7 @@ public class AiBusanHomepageClient {
                     String html = httpGet(url);
                     br.items = parseGosi(html, limit);
                 } catch (Exception e) {
-                    logger.warn("고시공고 검색 실패: " + e.getMessage());
+                    logger.warn("고시공고 검색 실패: " + e.getMessage(), e);
                     br.error = e.getMessage();
                 }
                 return br;
@@ -264,18 +258,14 @@ public class AiBusanHomepageClient {
             public BoardResult call() {
                 BoardResult br = new BoardResult("새소식");
                 try {
-                    String qs = "srchBeginDt=" + enc(BEGIN_DT)
+                    String body = "srchBeginDt=" + enc(BEGIN_DT)
                             + "&srchEndDt=" + enc(END_DT)
                             + "&srchKey=sj"
                             + "&srchText=" + enc(q);
-                    String base = getBaseUrl();
-                    String html = httpGet(base + "/nbnews?" + qs);
-                    if (html == null || html.length() < 200) {
-                        html = httpPost(base + "/nbnews", qs);
-                    }
+                    String html = httpPost(BASE + "/nbnews", body);
                     br.items = parseNews(html, limit);
                 } catch (Exception e) {
-                    logger.warn("새소식 검색 실패: " + e.getMessage());
+                    logger.warn("새소식 검색 실패: " + e.getMessage(), e);
                     br.error = e.getMessage();
                 }
                 return br;
@@ -294,7 +284,7 @@ public class AiBusanHomepageClient {
             collectPressBlocks(PRESS_BLOCK_ALT.matcher(html), found, limit);
         }
         for (Map.Entry<String, String[]> e : found.entrySet()) {
-            list.add(item("보도자료", e.getValue()[0], getBaseUrl() + e.getKey(), e.getValue()[1]));
+            list.add(item("보도자료", e.getValue()[0], BASE + e.getKey(), e.getValue()[1]));
         }
         return list;
     }
@@ -336,7 +326,7 @@ public class AiBusanHomepageClient {
             }
             seen.put(sno, Boolean.TRUE);
             String gbn = extractQueryParam(path, "gosiGbn");
-            StringBuilder href = new StringBuilder(getBaseUrl()).append("/nbgosi/view?").append(sno);
+            StringBuilder href = new StringBuilder(BASE).append("/nbgosi/view?").append(sno);
             if (gbn.length() > 0) {
                 href.append("&").append(gbn);
             }
@@ -355,7 +345,7 @@ public class AiBusanHomepageClient {
                 }
                 seen.put(sno, Boolean.TRUE);
                 String gbn = extractQueryParam(path, "gosiGbn");
-                StringBuilder href = new StringBuilder(getBaseUrl()).append("/nbgosi/view?").append(sno);
+                StringBuilder href = new StringBuilder(BASE).append("/nbgosi/view?").append(sno);
                 if (gbn.length() > 0) {
                     href.append("&").append(gbn);
                 }
@@ -392,7 +382,7 @@ public class AiBusanHomepageClient {
             } else {
                 date = extractDate(rest);
             }
-            list.add(item("새소식", title, getBaseUrl() + key, date));
+            list.add(item("새소식", title, BASE + key, date));
         }
         if (list.isEmpty()) {
             Matcher m2 = Pattern.compile(
@@ -409,7 +399,7 @@ public class AiBusanHomepageClient {
                     continue;
                 }
                 seen.put(key, Boolean.TRUE);
-                list.add(item("새소식", title, getBaseUrl() + key, ""));
+                list.add(item("새소식", title, BASE + key, ""));
             }
         }
         return list;
@@ -438,120 +428,78 @@ public class AiBusanHomepageClient {
     }
 
     private String httpGet(String urlStr) throws Exception {
-        return httpWithRetry("GET", urlStr, null);
+        return http("GET", urlStr, null);
     }
 
     private String httpPost(String urlStr, String formBody) throws Exception {
-        return httpWithRetry("POST", urlStr, formBody);
+        return http("POST", urlStr, formBody);
     }
 
-    private String httpWithRetry(String method, String urlStr, String formBody) throws Exception {
-        Exception last = null;
-        for (int attempt = 1; attempt <= 2; attempt++) {
-            try {
-                return http(method, urlStr, formBody);
-            } catch (Exception e) {
-                last = e;
-                String msg = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
-                if (attempt < 2 && (msg.indexOf("reset") >= 0 || msg.indexOf("timed out") >= 0
-                        || msg.indexOf("connection") >= 0)) {
-                    try {
-                        Thread.sleep(400L);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw e;
-                    }
-                    continue;
-                }
-                throw e;
-            }
-        }
-        if (last != null) {
-            throw last;
-        }
-        throw new IllegalStateException("HTTP 실패");
-    }
-
+    /**
+     * HttpsURLConnection(JVM 내장 JSSE) 대신 OS의 curl(OpenSSL)로 요청한다.
+     * 운영 WAS의 구버전 JDK가 TLS1.2를 지원하지 않아 www.busan.go.kr(TLS1.2 필수)과의
+     * 핸드셰이크가 항상 실패했기 때문(2026-08-20 확인) — curl은 OS OpenSSL을 쓰므로 무관하다.
+     */
     private String http(String method, String urlStr, String formBody) throws Exception {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setInstanceFollowRedirects(true);
-            conn.setRequestMethod(method);
-            int timeout = getIntProp("Globals.AiBusanHomepageTimeoutMs", 15000);
-            conn.setConnectTimeout(timeout);
-            conn.setReadTimeout(timeout);
-            conn.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-            conn.setRequestProperty("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7");
-            conn.setRequestProperty("Referer", getBaseUrl() + "/");
-            conn.setRequestProperty("Connection", "close");
-            if ("POST".equals(method) && formBody != null) {
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type",
-                        "application/x-www-form-urlencoded; charset=UTF-8");
-                byte[] bytes = formBody.getBytes("UTF-8");
-                conn.setRequestProperty("Content-Length", String.valueOf(bytes.length));
-                OutputStream os = conn.getOutputStream();
-                os.write(bytes);
-                os.flush();
-                os.close();
-            }
-            int code = conn.getResponseCode();
-            InputStream in = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-            String charset = charsetFromContentType(conn.getContentType());
-            String resp = readStream(in, charset);
-            if (code >= 400) {
-                throw new Exception("HTTP " + code + " " + urlStr);
-            }
-            return resp;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+        int timeoutMs = getIntProp("Globals.AiBusanHomepageTimeoutMs", 15000);
+        int timeoutSec = Math.max(1, (timeoutMs + 999) / 1000);
+
+        List<String> cmd = new ArrayList<String>();
+        cmd.add("curl");
+        cmd.add("-s");
+        cmd.add("-S");
+        cmd.add("-L");
+        cmd.add("--max-time");
+        cmd.add(String.valueOf(timeoutSec));
+        cmd.add("-A");
+        cmd.add("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        cmd.add("-H");
+        cmd.add("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        cmd.add("-H");
+        cmd.add("Accept-Language: ko-KR,ko;q=0.9");
+        if ("POST".equals(method) && formBody != null) {
+            cmd.add("-H");
+            cmd.add("Content-Type: application/x-www-form-urlencoded; charset=UTF-8");
+            cmd.add("--data");
+            cmd.add(formBody);
         }
+        cmd.add("-w");
+        cmd.add(HTTP_CODE_MARK + "%{http_code}");
+        cmd.add(urlStr);
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        pb.redirectErrorStream(true);
+        Process proc = pb.start();
+        String out = new String(readAllBytes(proc.getInputStream()), "UTF-8");
+        int exitCode = proc.waitFor();
+
+        int mark = out.lastIndexOf(HTTP_CODE_MARK);
+        String body = mark >= 0 ? out.substring(0, mark) : out;
+        String codeStr = mark >= 0 ? out.substring(mark + HTTP_CODE_MARK.length()).trim() : "";
+
+        if (exitCode != 0) {
+            String detail = out.trim();
+            if (detail.length() > 300) {
+                detail = detail.substring(0, 300);
+            }
+            throw new Exception("curl 실행 실패(exit=" + exitCode + "): " + urlStr
+                    + (detail.length() > 0 ? " - " + detail : ""));
+        }
+        int code = codeStr.length() > 0 ? Integer.parseInt(codeStr) : 0;
+        if (code >= 400) {
+            throw new Exception("HTTP " + code + " " + urlStr);
+        }
+        return body;
     }
 
-    private static String readStream(InputStream in, String charset) throws Exception {
-        if (in == null) {
-            return "";
-        }
-        BufferedReader br = new BufferedReader(new InputStreamReader(in, charset));
-        StringBuilder sb = new StringBuilder();
-        char[] buf = new char[4096];
+    private static byte[] readAllBytes(InputStream in) throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
         int n;
-        int max = 2 * 1024 * 1024;
-        while ((n = br.read(buf)) >= 0) {
-            if (sb.length() + n > max) {
-                sb.append(buf, 0, max - sb.length());
-                break;
-            }
-            sb.append(buf, 0, n);
+        while ((n = in.read(chunk)) >= 0) {
+            buf.write(chunk, 0, n);
         }
-        br.close();
-        return sb.toString();
-    }
-
-    private static String charsetFromContentType(String ct) {
-        if (ct == null) {
-            return "UTF-8";
-        }
-        String lower = ct.toLowerCase();
-        int i = lower.indexOf("charset=");
-        if (i < 0) {
-            return "UTF-8";
-        }
-        String cs = ct.substring(i + 8).trim();
-        int sc = cs.indexOf(';');
-        if (sc > 0) {
-            cs = cs.substring(0, sc).trim();
-        }
-        if (cs.startsWith("\"") && cs.endsWith("\"") && cs.length() > 1) {
-            cs = cs.substring(1, cs.length() - 1);
-        }
-        return cs.length() > 0 ? cs : "UTF-8";
+        return buf.toByteArray();
     }
 
     private static String enc(String s) throws Exception {
@@ -602,18 +550,6 @@ public class AiBusanHomepageClient {
             sb.append(list.get(i));
         }
         return sb.toString();
-    }
-
-    private String getBaseUrl() {
-        String v = config == null ? null : config.getProperty("Globals.AiBusanHomepageBaseUrl");
-        if (v == null || v.trim().length() == 0) {
-            return DEFAULT_BASE;
-        }
-        String base = v.trim();
-        while (base.endsWith("/")) {
-            base = base.substring(0, base.length() - 1);
-        }
-        return base;
     }
 
     private int getIntProp(String key, int def) {

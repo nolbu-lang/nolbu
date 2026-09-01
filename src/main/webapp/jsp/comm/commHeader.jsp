@@ -45,7 +45,7 @@
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/autoNumeric.js" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/jquery.maxlength.js" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/jquery/sly.js" /></script>
-<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/cs.jquery.js?v=20260804j" /></script>
+<script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/cs.jquery.js?v=20260827a" /></script>
 <script language="javascript1.2" src="${pageContext.request.contextPath}/js/comm/bcjisComm.js"></script>
 
 <script>

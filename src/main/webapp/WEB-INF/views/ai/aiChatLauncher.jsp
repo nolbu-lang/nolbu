@@ -59,7 +59,7 @@
   border-color: #d35400 !important;
 }
 </style>
-<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260812b"></script>
+<script src="${pageContext.request.contextPath}/js/ai/aiChat.js?v=20260807b"></script>
 <script type="text/javascript">
 (function () {
   var SLOT_ID = "aiChatOpenBtnSlot";

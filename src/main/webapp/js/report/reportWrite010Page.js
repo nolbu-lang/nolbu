@@ -73,21 +73,27 @@ $(document).ready(function() {
         return "실국: "+officeNm+"<br>"+"부서: "+deptNm+"<br>"+"세부: "+dbizNm;
     };
     
+    var bizDescAttrEsc = function(v) {
+        return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;");
+    };
+
     var dgrcompoNmFormatter = function(cellValue, options, rowObject){
         if(isEmpty(cellValue) == true){
             cellValue = "";
         }
-        
+
         if(rowObject.teBgtCompoId == "00000000000"){
             return cellValue;
         }
-        
-        var demandCont = rowObject.demandCont; 
+
+        var demandCont = rowObject.demandCont;
         if(isEmpty(demandCont) == true){
             demandCont = "";
         }
-        
-        var encNm = encodeURIComponent(cellValue);
+
         var rVal = '<a href="#" class="bizdesc-nm-link" style="color:#06c;text-decoration:underline;"'
                  + ' data-te-id="'+rowObject.teBgtCompoId+'"'
                  + ' data-tebgtcompoid="'+rowObject.teBgtCompoId+'"'
@@ -95,9 +101,10 @@ $(document).ready(function() {
                  + ' data-fisyear="'+(rowObject.fisYear||'')+'"'
                  + ' data-bgtdgr="'+(rowObject.bgtDgr||'')+'"'
                  + ' data-reportcd="'+(rowObject.reportCd||'010')+'"'
-                 + ' data-biznm="'+encNm+'">' + cellValue + '</a><br>'
+                 + ' data-biznm="'+bizDescAttrEsc(cellValue)+'"'
+                 + ' data-dbiznm="'+bizDescAttrEsc(rowObject.dbizNm||'')+'">' + cellValue + '</a><br>'
                  + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" style="width:210px;ime-mode:active;resize:none;" rows="12" cols="22" >'+demandCont+'</textarea>';
-        
+
         return rVal;
     };
     
@@ -271,39 +278,7 @@ $(document).ready(function() {
     	return rVal;
     };
     
-  //보고항목 그리드fomatter
-    var indiAttrFormatter = function(cellValue, options, rowObject){
-    	if(isEmpty() == true){
-    		cellValue = "";
-    	}
-    	
-    	if(rowObject.teBgtCompoId == "00000000000" ){
-    		return cellValue;
-    	}
-    	
-    	if(cellValue == "" && isEmpty(rowObject.indiAttr) != true){
-        	cellValue = rowObject.indiAttr;
-        }
-    	
-    	var itemList = comboData['indiAttr'];
-    	
-    	var rVal = '<div>';
-        for(var i=0 ; i<itemList.length ; i++){
-        	var data = itemList[i];
-        	var checked = '';
-        	
-        	if(cellValue.includes(data.code)){
-        		//checked = 'checked';
-        		rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><label for="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
-        	}
-        	//rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;"><input type="checkbox" id="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '" value="' + data.code + '" class="chkBudgetSelect" style="margin-top: 5px;" ' + checked + ' /><label for="checkYnIndiAttr_' + rowObject.dgrcompoId + '_' +data.code + '">' + data.codeNm + '</label></span><br />';
-        }
-        rVal += '</div>';
-        
-    	return rVal;
-    };
-    
-    //사전절차 그리드fomatter
+    //분류항목 그리드fomatter
     var advncProcFgFormatter = function(cellValue, options, rowObject){
     	if(isEmpty(cellValue) == true){
     		cellValue = "";
@@ -335,7 +310,7 @@ $(document).ready(function() {
     };
     
     var colNames = ['', '[실국-부서-세부]', '구분', '통계목', '본예산', '증감액', '전년도예산액', '요구액', '조정액', '검토내용', '재원정보', '공약정보', '조건검색어',
-                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '사전절차',
+                    '대분류', '중분류', '소분류', '국고보조', '분류항목',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal', 'investPlan',
                     'indiAttr','advncProc'
                    ];
@@ -374,9 +349,6 @@ $(document).ready(function() {
                         },
                         {name : 'govSub', index : 'govSub', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
                         	formatter:govSubFormatter
-                        },
-                        {name : 'indiAttrChk', index : 'indiAttr', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
-                        	formatter:indiAttrFormatter
                         },
                         {name : 'advncProcChk', index : 'advncProc', width : 100, sortable : false, hidden : false, fixed : true, align : 'left', cellattr: myCellattr,
                         	formatter:advncProcFgFormatter
@@ -667,9 +639,10 @@ $(document).ready(function() {
         $("#condDeptNmTo", tabObj).val("");
         $("#condDeptRankTo", tabObj).val("");
         $("#condSrchVal", tabObj).val("");
+        $("#rankBtn", tabObj).btnChangeState(true);
         updateBizDescFileBtnState();
     };
-    
+
     $("#condInitBtn", tabObj).click(function() {
         doCondInit();
     });
@@ -988,7 +961,8 @@ $(document).ready(function() {
             reportCd: $a.data("reportcd") || "010",
             teBgtCompoId: $a.data("tebgtcompoid"),
             dgrcompoId: $a.data("dgrcompoid"),
-            reportBizNm: decodeURIComponent($a.data("biznm") || ""),
+            reportBizNm: $a.attr("data-biznm") || "",
+            dbizNm: $a.attr("data-dbiznm") || "",
             officeCd: office.officeCd,
             officeNm: office.officeNm,
             tabId: tabId
@@ -998,23 +972,51 @@ $(document).ready(function() {
     $("#saveFileBtn", tabObj).click(function() {
         var param = getSearchParam();
         param["fileNm"] = "경상사업심사조서";
-        
+
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite010SaveFile.do"
           , data: param
         });
     });
+
+    $("#saveFileTotalBtn", tabObj).click(function() {
+    	var param = getSearchParam();
+    	param["fileNm"] = "경상사업심사조서(통합)";
+    	param["flag"] = "total";
+    	$.bcjisExcelAjaxCall({
+    		url : "/report/ajaxReportWrite010SaveFile.do"
+    			, data: param
+    	});
+    });
     
     $("#saveSheetBtn", tabObj).click(function() {
         var param = getSearchParam();
         param["fileNm"] = "경상사업심사조서";
-        
+
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite010SaveSheet.do"
           , data: param
         });
     });
-    
+
+    $("#rankBtn", tabObj).click(function() {
+        if($(this).attr("enabledYn") != "Y"){
+            return;
+        }
+
+        $("#dialogDgroffice010SortCallBackFunction", $("#dialogDgroffice010SortDiv")).val("reportWrite010PageDialogDgroffice010SortCallBackFunction");
+        $("#dialogDgroffice010SortFisYear", $("#dialogDgroffice010SortDiv")).val($("#condFisYear option:selected", tabObj).val());
+        $("#dialogDgroffice010SortBgtDgr", $("#dialogDgroffice010SortDiv")).val($("#condBgtDgr option:selected", tabObj).val());
+
+        $("#dialogDgroffice010SortDiv").dialog('open');
+    });
+
+    reportWrite010PageDialogDgroffice010SortCallBackFunction = function(param){
+        $.csAlert({
+            msg : "다시 조회하시면 변경된 실국순서로 정렬됩니다."
+        });
+    };
+
     var doChangeCondFisYear = function(){
         var fisYear = $("#condFisYear option:selected", tabObj).val();
         condBgtDgrCreateCombo(fisYear, '');

@@ -7,7 +7,7 @@
 <script>
 _reportWrite010PageTabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite010Page.js?v=20260811a"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite010Page.js?v=20260830a"></script>
 <style>
 .ui-jqgrid .ui-jqgrid-htable th div {
     height:auto;

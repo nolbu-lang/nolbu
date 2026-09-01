@@ -1111,65 +1111,47 @@
             return;
         }
         if (!window.confirm(fromY + "년 내부자료(심사조서)를 JSON으로 내보내시겠습니까?\n"
-                + "(모바일 뷰어용 · 보통 1분 이내)")) {
+                + "(모바일 뷰어용 · 데이터량에 따라 수십 초 걸릴 수 있습니다)")) {
             return;
         }
         $btn.prop("disabled", true).text("내보내는중…");
         var $loadingEl = appendBotLoading();
         $loadingEl.find(".ai-bubble").text(fromY + "년 내부자료 JSON을 생성하는 중…");
-        var dlUrl = (typeof ctx === "string" ? ctx : "")
-            + "/ai/downloadAiInternalExport.do?fisYear=" + encodeURIComponent(fromY);
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", dlUrl, true);
-        xhr.responseType = "blob";
-        xhr.timeout = 180000;
-        xhr.onload = function () {
-            $btn.prop("disabled", false).text("JSON내보내기");
-            if (xhr.status < 200 || xhr.status >= 300) {
-                var errTxt = "내보내기에 실패했습니다. (HTTP " + xhr.status + ")";
-                try {
-                    var fr = new FileReader();
-                    fr.onload = function () {
-                        appendBotError($loadingEl, (fr.result ? String(fr.result) : errTxt));
-                    };
-                    fr.readAsText(xhr.response || new Blob());
-                } catch (e1) {
-                    appendBotError($loadingEl, errTxt);
+        $.csAjaxCall({
+            url: "/ai/ajaxAiInternalExport.do",
+            data: { fisYear: fromY },
+            async: true,
+            timeout: 300000,
+            callBack: function (rtnData) {
+                $btn.prop("disabled", false).text("JSON내보내기");
+                if (!rtnData) {
+                    appendBotError($loadingEl, "서버 응답을 받지 못했습니다.");
+                    return;
                 }
-                return;
+                var msg = rtnData.message || "";
+                var data = rtnData.data || null;
+                if (!data || data.ok === false) {
+                    appendBotError($loadingEl, msg || (data && data.error) || "내보내기에 실패했습니다.");
+                    return;
+                }
+                try {
+                    downloadJsonFile(data, "bcjis-ai-internal-" + fromY + ".json");
+                    var note = "○ " + fromY + "년 내부자료 JSON 내보내기 완료\n"
+                        + "○ 사업 " + (data.bizCount || 0) + "개 / 행 " + (data.rowCount || 0) + "건\n"
+                        + "○ 파일: bcjis-ai-internal-" + fromY + ".json";
+                    if (data.truncated) {
+                        note += "\n○ 참고: 상한으로 일부만 포함됨(AiInternalExportMaxRows/MaxBiz)";
+                    }
+                    appendBotAnswer($loadingEl, { answer: note, aiProvider: "internal-export" });
+                } catch (e) {
+                    appendBotError($loadingEl, "파일 저장 실패: " + (e && e.message ? e.message : e));
+                }
+            },
+            error: function () {
+                $btn.prop("disabled", false).text("JSON내보내기");
+                appendBotError($loadingEl, "내보내기 요청 중 오류가 발생했습니다.");
             }
-            try {
-                var blob = xhr.response;
-                var fileName = "bcjis-ai-internal-" + fromY + ".json";
-                var url = (window.URL || window.webkitURL).createObjectURL(blob);
-                var a = document.createElement("a");
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(function () {
-                    document.body.removeChild(a);
-                    try { (window.URL || window.webkitURL).revokeObjectURL(url); } catch (ignore) {}
-                }, 200);
-                var sizeMb = blob && blob.size ? (blob.size / 1024 / 1024).toFixed(1) : "-";
-                appendBotAnswer($loadingEl, {
-                    answer: "○ " + fromY + "년 내부자료 JSON 내보내기 완료\n"
-                        + "○ 파일: " + fileName + " (" + sizeMb + "MB)",
-                    aiProvider: "internal-export"
-                });
-            } catch (e) {
-                appendBotError($loadingEl, "파일 저장 실패: " + (e && e.message ? e.message : e));
-            }
-        };
-        xhr.onerror = function () {
-            $btn.prop("disabled", false).text("JSON내보내기");
-            appendBotError($loadingEl, "내보내기 요청 중 네트워크 오류가 발생했습니다.");
-        };
-        xhr.ontimeout = function () {
-            $btn.prop("disabled", false).text("JSON내보내기");
-            appendBotError($loadingEl, "내보내기 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
-        };
-        xhr.send();
+        });
     }
 
     function downloadJsonFile(obj, filename) {
@@ -1498,21 +1480,6 @@
                 $("#aiChatSendBtn").prop("disabled", false);
                 if (!rtnData) {
                     appendBotError($loadingEl, "서버 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.");
-                    return;
-                }
-                var code = rtnData.bcjisRtnCode || "";
-                if (code && code !== "SUCC") {
-                    var errMsg = rtnData.bcjisMessage
-                        ? String(rtnData.bcjisMessage).replace(/<BR>/gi, "\n").replace(/<br\s*\/?>/gi, "\n")
-                        : "요청 처리에 실패했습니다.";
-                    if (/세션|로그인/i.test(errMsg)) {
-                        errMsg += "\n\n다시 로그인한 뒤 AI 도우미를 다시 열어 주세요.";
-                    }
-                    appendBotError($loadingEl, errMsg);
-                    return;
-                }
-                if (!rtnData.data) {
-                    appendBotError($loadingEl, "응답 데이터가 없습니다. 잠시 후 다시 시도해 주세요.");
                     return;
                 }
                 appendBotAnswer($loadingEl, rtnData.data);

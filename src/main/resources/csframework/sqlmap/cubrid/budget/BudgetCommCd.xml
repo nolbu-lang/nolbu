@@ -59,6 +59,23 @@
          </isNotEmpty> 
     </select>
     
+    <!-- 사용안함(USE_YN='N') 코드도 포함해서 조회 — 이미 사업에 연결된 삭제 코드의 이름표시 전용(선택목록 아님) -->
+    <select id="BudgetCommCd.selectListAll" parameterClass="Map" resultClass="egovMap">
+        /*BudgetCommCd.selectListAll*/
+        SELECT B.GROUP_ID AS GROUP_ID
+             , B.DETL_CD
+             , B.DETL_CD_NM
+             , B.LINE_UP_ORD
+             , B.USE_YN
+          FROM TB_COMMCD A
+             , TB_COMMCDDETL B
+         WHERE 1 = 1
+           AND B.CL_CD = A.CL_CD
+           AND A.CL_CD = #codeId#
+           AND A.USE_YN = 'Y'
+         ORDER BY DECODE(B.LINE_UP_ORD, NULL, 0, B.LINE_UP_ORD), B.DETL_CD
+    </select>
+
     <select id="BudgetCommCd.selectMaxCd" parameterClass="Map" resultClass="java.lang.String">
         /*BudgetCommCd.selectMaxCd*/
         SELECT IFNULL(MAX(CAST(detl_cd   AS NUMERIC(19, 0))), 0) FROM tb_commcddetl WHERE CL_CD = #codeId#

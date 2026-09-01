@@ -875,7 +875,7 @@
         DELETE
           FROM TB_REPORT_ATTR
          WHERE 1 = 1
-           AND REPORT_CD = #reportCd# 
+           AND REPORT_CD = #reportCd#
            AND REPORT_DETL_CD = #reportDetlCd#
            AND FIS_YEAR = #fisYear#
            AND BGT_DGR = #bgtDgr#
@@ -884,7 +884,30 @@
           	INDI_ATTR = #indiAttr#
           </isNotEmpty>
     </delete>
-    
+
+    <select id="ReportWrite0F0.selectReportAttrListByCompo" parameterClass="Map" resultClass="egovMap" >
+        /*ReportWrite0F0.selectReportAttrListByCompo*/
+        SELECT REPORT_CD
+             , REPORT_DETL_CD
+             , FIS_YEAR
+             , BGT_DGR
+             , TE_BGT_COMPO_ID
+             , INDI_ATTR
+          FROM TB_REPORT_ATTR
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </select>
+
+    <delete id="ReportWrite0F0.deleteReportAttrByCompo" parameterClass="Map" >
+        /*ReportWrite0F0.deleteReportAttrByCompo*/
+        DELETE
+          FROM TB_REPORT_ATTR
+         WHERE FIS_YEAR = #fisYear#
+           AND BGT_DGR = #bgtDgr#
+           AND TE_BGT_COMPO_ID = #teBgtCompoId#
+    </delete>
+
     <select id="ReportWrite0F0.selectReport0F0ExcelList" parameterClass="Map" resultClass="egovMap" >
         /*ReportWrite0F0.selectReport0F0ExcelList*/
         SELECT T.ROW_NUM AS ROW_NUM

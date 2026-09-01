@@ -141,7 +141,7 @@ public class BizDescMatchController {
             }
             if (BcjisCommUtil.isNullString(param.get("officeCd"))) {
                 throw new IllegalArgumentException(
-                        "조회조건 '실국'(또는 '전체')을 선택해 주세요.");
+                        "조회조건 '실국'을 특정 실국으로 선택해 주세요.");
             }
             JSONObject data = bizDescMatchService.suggestByBizNm(param);
             jsonObject.put("data", data);
@@ -249,7 +249,6 @@ public class BizDescMatchController {
             param.put("officeCd", jsonParam.get("officeCd"));
             param.put("officeNm", jsonParam.get("officeNm") == null ? "" : jsonParam.get("officeNm"));
             param.put("reportCd", jsonParam.get("reportCd") == null ? "" : jsonParam.get("reportCd"));
-            param.put("bizdescFileIds", jsonParam.get("bizdescFileIds"));
             requireYearBgtOffice(param);
 
             JSONObject root = bizDescMatchService.buildExportJson(param);
@@ -302,7 +301,7 @@ public class BizDescMatchController {
         }
         if (BcjisCommUtil.isNullString(param.get("officeCd"))) {
             throw new IllegalArgumentException(
-                    "조서 조회조건의 실국(또는 '전체')을 선택해 주세요.");
+                    "조서 조회조건의 실국을 '전체'가 아닌 특정 실국으로 선택해 주세요.");
         }
     }
 

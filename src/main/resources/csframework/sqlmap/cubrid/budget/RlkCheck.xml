@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN" "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+<sqlMap namespace="RlkCheck">
+
+    <typeAlias alias="egovMap" type="egovframework.rte.psl.dataaccess.util.EgovMap"/>
+
+    <!--
+        좌측 부서 목록 (연계정보확인 신규메뉴).
+        계층이 없는 평면 목록이지만, 기존 화면들과 동일한 jqGrid treeGrid(adjacency model, csTreeGrid) 파이프라인을
+        그대로 재사용하기 위해 모든 행을 level=0(root)/leaf로 채워서 내려준다(트리 UI가 필요없는 화면이라도
+        별도의 flat-grid 로더가 이 코드베이스에 없으므로, 기존 검증된 로딩 경로를 그대로 씀).
+    -->
+    <select id="RlkCheck.selectDeptList" parameterClass="Map" resultClass="egovMap" >
+        /*RlkCheck.selectDeptList*/
+        SELECT B.DEPT_CD AS DGRCOMPO_ID
+             , 'ROOT' AS UP_DGRCOMPO_ID
+             , 0 AS "LEVEL"
+             , 'true' AS IS_LEAF
+             , 'true' AS EXPANDED
+             , 'true' AS LOADED
+             , B.FIS_YEAR AS FIS_YEAR
+             , B.BGT_DGR AS BGT_DGR
+             , B.OFFICE_CD AS OFFICE_CD
+             , B.OFFICE_NM AS OFFICE_NM
+             , B.OFFICE_RANK AS OFFICE_RANK
+             , B.DEPT_CD AS DEPT_CD
+             , B.DEPT_NM AS DEPT_NM
+             , B.DEPT_RANK AS DEPT_RANK
+             , NVL((SELECT COUNT(*)
+                      FROM TB_DGRCOMPO Z
+                     WHERE Z.FIS_YEAR = B.FIS_YEAR
+                       AND Z.BGT_DGR = B.BGT_DGR
+                       AND Z.DEPT_CD = B.DEPT_CD
+                       AND Z.COMPO_LEVEL = '1'), 0) AS DBIZ_CNT
+          FROM TB_DGRDEPT B
+         WHERE B.FIS_YEAR = #fisYear#
+           AND B.BGT_DGR = #bgtDgr#
+        <isNotEmpty prepend="" property="officeCd">
+           AND B.OFFICE_CD = #officeCd#
+        </isNotEmpty>
+        <isNotEmpty prepend="" property="srchNm">
+           AND B.DEPT_NM LIKE '%' || #srchNm# || '%'
+        </isNotEmpty>
+         ORDER BY B.OFFICE_RANK
+                , B.OFFICE_CD
+                , B.DEPT_RANK
+                , B.DEPT_CD
+    </select>
+
+    <!--
+        우측 세부사업 목록 (연계정보확인 신규메뉴).
+        BudgetApply.selectDgrcompoList와 동일한 회계-실국-부서-세부사업-개별사업 트리 생성 기법(ROWNUM 생성기 + DECODE)을
+        사용하되, TB_DGRDEPT/TB_DGRBIZ 조인을 콤마조인(INNER)이 아니라 (+) 외부조인으로 바꿔서
+        부서/세부사업 마스터에 매칭이 안 되는("고아") TB_DGRCOMPO 행도 항상 트리에 나타나게 한다.
+        OFFICE_CD/DBIZ_CD/FIS_FG_CD는 매칭 안 될 때 NVL로 '9999'/A.DBIZ_CD/'999' 대체값을 써서
+        트리 계층 생성용 DECODE가 NULL 때문에 깨지지 않도록 한다(개발DB 직접 조회로 검증 완료).
+    -->
+    <select id="RlkCheck.selectDgrcompoList" parameterClass="Map" resultClass="egovMap" >
+        /*RlkCheck.selectDgrcompoList*/
+        SELECT T.DGRCOMPO_ID AS DGRCOMPO_ID
+             , T.UP_DGRCOMPO_ID AS UP_DGRCOMPO_ID
+             , T.DGR_LEVEL AS DGR_LEVEL
+             , T.FIS_YEAR AS FIS_YEAR
+             , T.BGT_DGR AS BGT_DGR
+             , T.DEPT_CD AS DEPT_CD
+             , T.DBIZ_CD AS DBIZ_CD
+             , T.TE_BGT_COMPO_ID AS TE_BGT_COMPO_ID
+             , T.TE_BGT_COMPO_SEQ AS TE_BGT_COMPO_SEQ
+             , CAST((T.PRE_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS PRE_AMT
+             , CAST((T.DEMAND_DIFF_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_DIFF_AMT
+             , CAST((T.DEMAND_BGT_AMT/DECODE(#amtUnit#, NULL, 1, '', 1, '0', 1, #amtUnit#)) AS NUMERIC(19,0)) AS DEMAND_BGT_AMT
+             , NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.FIS_FG_CD = T.FIS_FG_CD AND ROWNUM = 1), '(정보없음)') AS FIS_FG_NM
+             , NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.OFFICE_CD = T.OFFICE_CD AND ROWNUM = 1), '(정보없음)') AS OFFICE_NM
+             , NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.DEPT_CD = T.DEPT_CD AND ROWNUM = 1), '(정보없음)') AS DEPT_NM
+             , NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.DBIZ_CD = T.DBIZ_CD AND ROWNUM = 1), '(정보없음)') AS DBIZ_NM
+             , NVL((SELECT COUNT(*) FROM TB_REPORT WHERE FIS_YEAR = T.FIS_YEAR AND BGT_DGR = T.BGT_DGR AND TE_BGT_COMPO_ID = T.TE_BGT_COMPO_ID AND REPORT_CD IN ('010', '020', '040', '050', '055', '060', '090') ), 0) AS REPORT_CNT
+             , TRIM(CASE WHEN T.DGR_LEVEL = 0 THEN NVL((SELECT Z.FIS_FG_NM FROM TB_YEARFISFG Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.FIS_FG_CD = T.FIS_FG_CD AND ROWNUM = 1), '(정보없음)')
+                         WHEN T.DGR_LEVEL = 1 THEN NVL((SELECT Z.OFFICE_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.OFFICE_CD = T.OFFICE_CD AND ROWNUM = 1), '(정보없음)')
+                         WHEN T.DGR_LEVEL = 2 THEN NVL((SELECT Z.DEPT_NM FROM TB_DGRDEPT Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.DEPT_CD = T.DEPT_CD AND ROWNUM = 1), '(정보없음)')
+                         WHEN T.DGR_LEVEL = 3 THEN NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = T.FIS_YEAR AND Z.BGT_DGR = T.BGT_DGR AND Z.DBIZ_CD = T.DBIZ_CD AND ROWNUM = 1), '(정보없음)')
+                         WHEN T.DGR_LEVEL = 4 THEN T.COMP_GROUND
+                         ELSE ''
+                    END) AS DGRCOMPO_NM
+             , T.UP_DGRCOMPO_ID AS PARENT
+             , CASE WHEN T.DGR_LEVEL >= 4 THEN 'true' ELSE 'false' END AS IS_LEAF
+             , CASE WHEN 1 >= T.DGR_LEVEL THEN 'true' ELSE 'false' END AS EXPANDED
+             , 'true' AS LOADED
+             , T.DGR_LEVEL AS "LEVEL"
+             , 'N' AS SEL_YN
+          FROM (SELECT DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || A.DBIZ_CD || '_' || '00000000000'
+                                    , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || A.DBIZ_CD || '_' || A.TE_BGT_COMPO_ID) AS DGRCOMPO_ID
+                            , DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || '000' || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || '0000000000000000' || '_' || '00000000000'
+                                    , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || A.DBIZ_CD || '_' || '00000000000') AS UP_DGRCOMPO_ID
+                            , DECODE(H.CT, 1, 0, 2, 1, 3, 2, 4, 3, 4) AS DGR_LEVEL
+                            , A.FIS_YEAR AS FIS_YEAR
+                            , A.BGT_DGR AS BGT_DGR
+                            , DECODE(H.CT, 5, A.TE_BGT_COMPO_ID, '00000000000') AS TE_BGT_COMPO_ID
+                            , DECODE(H.CT, 5, A.TE_BGT_COMPO_SEQ, 0) AS TE_BGT_COMPO_SEQ
+                            , NVL(C.FIS_FG_CD, '999') AS FIS_FG_CD
+                            , DECODE(H.CT, 1, '0000', NVL(B.OFFICE_CD, '9999')) AS OFFICE_CD
+                            , DECODE(H.CT, 1, '0000000', 2, '0000000', A.DEPT_CD) AS DEPT_CD
+                            , DECODE(H.CT, 1, '0000000000000000', 2, '0000000000000000', 3, '0000000000000000', A.DBIZ_CD) AS DBIZ_CD
+                            , DECODE(H.CT, 5, A.COMP_GROUND, '') AS COMP_GROUND
+                            , SUM(DECODE(H.CT, 1, 0, 2, 0, 3, 0, 4, 0, A.PRE_AMT)) AS PRE_AMT
+                            , SUM(DECODE(H.CT, 1, 0, 2, 0, 3, 0, 4, 0, A.DEMAND_DIFF_AMT)) AS DEMAND_DIFF_AMT
+                            , SUM(DECODE(H.CT, 1, 0, 2, 0, 3, 0, 4, 0, A.DEMAND_BGT_AMT)) AS DEMAND_BGT_AMT
+                         FROM TB_DGRCOMPO A
+                            , TB_DGRDEPT B
+                            , TB_DGRBIZ C
+                            , (SELECT ROWNUM AS CT FROM TB_COMMCD WHERE ROWNUM BETWEEN 1 AND 5) H
+                        WHERE 1 = 1
+                          AND B.FIS_YEAR(+) = A.FIS_YEAR
+                          AND B.BGT_DGR(+) = A.BGT_DGR
+                          AND B.DEPT_CD(+) = A.DEPT_CD
+                          AND C.FIS_YEAR(+) = A.FIS_YEAR
+                          AND C.BGT_DGR(+) = A.BGT_DGR
+                          AND C.DBIZ_CD(+) = A.DBIZ_CD
+                          AND A.FIS_YEAR = #fisYear#
+                          AND A.BGT_DGR = #bgtDgr#
+                          AND A.COMPO_LEVEL = '1'
+                        <isNotEmpty prepend="" property="officeCd">
+                          AND NVL(B.OFFICE_CD, '9999') = #officeCd#
+                        </isNotEmpty>
+                        <isNotEmpty prepend="" property="srchNm">
+                          AND (A.COMP_GROUND LIKE '%' || #srchNm# || '%'
+                               OR NVL(B.DEPT_NM, '') LIKE '%' || #srchNm# || '%'
+                               OR NVL((SELECT Z.DBIZ_NM FROM TB_DGRBIZ Z WHERE Z.FIS_YEAR = A.FIS_YEAR AND Z.BGT_DGR = A.BGT_DGR AND Z.DBIZ_CD = A.DBIZ_CD AND ROWNUM = 1), '') LIKE '%' || #srchNm# || '%')
+                        </isNotEmpty>
+                        GROUP BY DECODE(H.CT, 1, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || '0000' || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                       , 2, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || '0000000' || '_' || '0000000000000000' || '_' || '00000000000'
+                                       , 3, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || '0000000000000000' || '_' || '00000000000'
+                                       , 4, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || A.DBIZ_CD || '_' || '00000000000'
+                                       , 5, A.FIS_YEAR || '_' || TO_CHAR(A.BGT_DGR, '000') || '_' || NVL(C.FIS_FG_CD, '999') || '_' || NVL(B.OFFICE_CD, '9999') || '_' || A.DEPT_CD || '_' || A.DBIZ_CD || '_' || A.TE_BGT_COMPO_ID)
+               ) T
+         WHERE 1 = 1
+         ORDER BY T.FIS_YEAR
+                , NVL(T.BGT_DGR, 0)
+                , NVL(T.FIS_FG_CD, '999')
+                , NVL(T.OFFICE_CD, '9999')
+                , NVL(T.DEPT_CD, '0000000')
+                , NVL(T.DBIZ_CD, '0000000000000000')
+                , NVL(T.TE_BGT_COMPO_ID, '00000000000')
+    </select>
+
+    <!-- 적용: 좌측에서 선택한 부서 코드로 DEPT_CD만 UPDATE (DBIZ_CD/TE_BGT_COMPO_ID/TE_BGT_COMPO_SEQ/금액 등은 손대지 않음) -->
+    <update id="RlkCheck.updateDgrcompoDept" parameterClass="Map" >
+        /*RlkCheck.updateDgrcompoDept*/
+        UPDATE TB_DGRCOMPO A
+           SET DEPT_CD = #deptCd#
+             , MODI_ID = #userId#
+             , MODI_DATE = SYSTIMESTAMP
+         WHERE 1 = 1
+           AND A.FIS_YEAR = #fisYear#
+           AND A.BGT_DGR = #bgtDgr#
+           AND A.TE_BGT_COMPO_ID = #teBgtCompoId#
+    </update>
+
+    <!-- 변경이력 헤더 1건 (기존 병합/분리 도구의 TB_CNG_HISTORY 패턴 재사용, CNG_TYPE='CH04' 신규 부여) -->
+    <insert id="RlkCheck.insertCngHistory" parameterClass="Map" >
+        /*RlkCheck.insertCngHistory*/
+        INSERT INTO TB_CNG_HISTORY
+                  ( CNG_HISTORY_ID
+                  , CNG_TYPE
+                  , TITLE
+                  , INDI_BNS
+                  , NOTE
+                  , REGI_ID
+                  , REGI_DATE
+                  , MODI_ID
+                  , MODI_DATE)
+            VALUES( #cngHistoryId#
+                  , 'CH04'
+                  , #title#
+                  , #indiBns#
+                  , #note#
+                  , #userId#
+                  , SYSTIMESTAMP
+                  , #userId#
+                  , SYSTIMESTAMP)
+    </insert>
+
+    <!-- 변경 후 상태 스냅샷 (기존 병합/분리 도구의 TB_DGRCOMPO_ORI 패턴을 GRP_ID 대신 TE_BGT_COMPO_ID 목록으로 재작성) -->
+    <insert id="RlkCheck.insertDgrCompoOri" parameterClass="Map" >
+        /*RlkCheck.insertDgrCompoOri*/
+        INSERT INTO TB_DGRCOMPO_ORI
+                  ( FIS_YEAR
+                  , BGT_DGR
+                  , TE_BGT_COMPO_ID
+                  , CNG_HISTORY_ID
+                  , DEPT_CD
+                  , DBIZ_CD
+                  , TE_MNG_MOK_CD
+                  , TE_MNG_MOK_NM
+                  , TE_BGT_COMPO_SEQ
+                  , DEMAND_COMPO_SORT_SEQ
+                  , DEMAND_COMPO_LEVEL
+                  , DEMAND_COMP_GROUND
+                  , DEMAND_COMP_FORMULAR
+                  , DEMAND_BGT_AMT
+                  , DEMAND_DIFF_AMT
+                  , DEMAND_COMPO_LEVEL_AMT
+                  , DEMAND_FORM_DSP_YN
+                  , COMPO_SORT_SEQ
+                  , COMPO_LEVEL
+                  , COMP_GROUND
+                  , COMP_FORMULAR
+                  , BGT_AMT
+                  , PRE_FORMULAR
+                  , PRE_AMT
+                  , DIFF_AMT
+                  , COMPO_LEVEL_AMT
+                  , FORM_DSP_YN
+                  , UP_TE_BGT_COMPO_SEQ
+                  , UP_TE_BGT_COMPO_ID
+                  , SORT_SEQ
+                  , PRE_COMP_FORMULAR
+                  , PRE_BGT_AMT
+                  , CNG_TYPE
+                  , GRP_ID
+                  , GRP_LVL
+                  , REGI_ID
+                  , REGI_DATE
+                  , MODI_ID
+                  , MODI_DATE)
+             SELECT TD1.FIS_YEAR
+                  , TD1.BGT_DGR
+                  , TD1.TE_BGT_COMPO_ID
+                  , #cngHistoryId# AS CNG_HISTORY_ID
+                  , TD1.DEPT_CD
+                  , TD1.DBIZ_CD
+                  , TD1.TE_MNG_MOK_CD
+                  , TD1.TE_MNG_MOK_NM
+                  , TD1.TE_BGT_COMPO_SEQ
+                  , TD1.DEMAND_COMPO_SORT_SEQ
+                  , TD1.DEMAND_COMPO_LEVEL
+                  , TD1.DEMAND_COMP_GROUND
+                  , TD1.DEMAND_COMP_FORMULAR
+                  , TD1.DEMAND_BGT_AMT
+                  , TD1.DEMAND_DIFF_AMT
+                  , TD1.DEMAND_COMPO_LEVEL_AMT
+                  , TD1.DEMAND_FORM_DSP_YN
+                  , TD1.COMPO_SORT_SEQ
+                  , TD1.COMPO_LEVEL
+                  , TD1.COMP_GROUND
+                  , TD1.COMP_FORMULAR
+                  , TD1.BGT_AMT
+                  , TD1.PRE_FORMULAR
+                  , TD1.PRE_AMT
+                  , TD1.DIFF_AMT
+                  , TD1.COMPO_LEVEL_AMT
+                  , TD1.FORM_DSP_YN
+                  , TD1.UP_TE_BGT_COMPO_SEQ
+                  , TD1.UP_TE_BGT_COMPO_ID
+                  , TD1.SORT_SEQ
+                  , TD1.PRE_COMP_FORMULAR
+                  , TD1.PRE_BGT_AMT
+                  , TD1.CNG_TYPE
+                  , TD1.GRP_ID
+                  , TD1.GRP_LVL
+                  , #userId#
+                  , SYSTIMESTAMP
+                  , #userId#
+                  , SYSTIMESTAMP
+               FROM TB_DGRCOMPO TD1
+              WHERE TD1.BGT_DGR = #bgtDgr#
+                AND TD1.FIS_YEAR = #fisYear#
+                AND TD1.TE_BGT_COMPO_ID IN
+                 <iterate open="(" close=")" property="teBgtCompoIds" conjunction=",">
+                     #teBgtCompoIds[]#
+                 </iterate>
+    </insert>
+
+</sqlMap>

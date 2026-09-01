@@ -192,6 +192,15 @@
                 , CELL_SEQ
     </select>
     
+    <select id="ReportComm.selectCommCodeList" parameterClass="Map" resultClass="egovMap" >
+        /*ReportComm.selectCommCodeList — 투자사업유형(RP014)/분류항목(RP015) 등 공통코드 조회*/
+        SELECT DETL_CD AS CODE
+             , DETL_CD_NM AS CODE_NM
+          FROM TB_COMMCDDETL
+         WHERE CL_CD = #clCd#
+         ORDER BY DETL_CD
+    </select>
+
     <select id="ReportComm.selectReportMergeList" parameterClass="Map" resultClass="egovMap" >
         /*ReportComm.selectReportMergeList*/
         SELECT NVL(MERGE_VAL, '') AS MERGE_VAL

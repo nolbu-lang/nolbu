@@ -461,20 +461,19 @@ $(document).ready(function() {
         }
         
         applyParam = {};
-        applyParam["srcFisYear"] = srcRowData.fisYear || $("#condSrcFisYear option:selected", tabObj).val();
-        applyParam["srcBgtDgr"] = srcRowData.bgtDgr || $("#condSrcBgtDgr option:selected", tabObj).val();
+        applyParam["srcFisYear"] = srcRowData.fisYear;
+        applyParam["srcBgtDgr"] = srcRowData.bgtDgr;
         applyParam["srcTeBgtCompoId"] = srcRowData.teBgtCompoId;
-        applyParam["fisYear"] = rowData.fisYear || $("#condFisYear option:selected", tabObj).val();
-        applyParam["bgtDgr"] = rowData.bgtDgr || $("#condBgtDgr option:selected", tabObj).val();
+        applyParam["fisYear"] = rowData.fisYear;
+        applyParam["bgtDgr"] = rowData.bgtDgr;
         applyParam["teBgtCompoId"] = rowData.teBgtCompoId;
-        applyParam["teBgtCompoSeq"] = rowData.teBgtCompoSeq;
         
         if(checkCloseYn(applyParam) == false){
             return;
         }
         
         $.csConfirm({
-            msg : "적용하시겠습니까? (조서·집계 분류도 함께 상속됩니다)",
+            msg : "적용하시겠습니까?",
             callBack : doApply
         });
     });

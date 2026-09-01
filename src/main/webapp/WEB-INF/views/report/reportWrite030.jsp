@@ -7,7 +7,7 @@
 <script>
 _reportWrite030TabId = "<%=tabId%>";
 </script>
-<script src="${pageContext.request.contextPath}/js/report/reportWrite030.js"></script>
+<script src="${pageContext.request.contextPath}/js/report/reportWrite030.js?v=20260730c"></script>
 
 <div class="contents" style="height:100%;">
   <!--list s-->

@@ -14,6 +14,12 @@ public class BudgetCommCdDAO extends BcjisCommAbstractDAO {
     public List selectList(Map map) throws Exception{
         return list("BudgetCommCd.selectList", map);
     }
+
+    /** 사용안함(USE_YN='N') 코드도 포함 — 이미 연결된 사업의 이름표시 전용 */
+    @SuppressWarnings("rawtypes")
+    public List selectListAll(Map map) throws Exception{
+        return list("BudgetCommCd.selectListAll", map);
+    }
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void insertCommCd(Map map) throws Exception{

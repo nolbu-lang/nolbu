@@ -141,6 +141,7 @@ $(document).ready(function () {
         add("teBgtCompoId", params.teBgtCompoId);
         add("dgrcompoId", params.dgrcompoId);
         add("reportBizNm", params.reportBizNm);
+        add("dbizNm", params.dbizNm);
         add("officeCd", params.officeCd);
         add("tabId", params.tabId);
         add("gridId", params.gridId);
@@ -376,13 +377,14 @@ $(document).ready(function () {
         fitBodyHeight();
     };
 
-    var showSuggest = function (list) {
+    var showSuggest = function (list, hint) {
         $("#dialogBizDescViewSuggestPanel", dialogObj).show();
         $("#dialogBizDescViewSummaryPanel", dialogObj).hide();
         setPageTitle("사업설명서 매칭 후보");
         var $body = $("#dialogBizDescViewSuggestBody", dialogObj).empty();
         if (!list || !list.length) {
-            $body.append('<tr><td colspan="5">유사도 60% 이상 후보가 없습니다. 조서 화면에서 「사업설명서불러오기」로 해당 실국 파일을 업로드해 주세요.</td></tr>');
+            var msg = hint || "유사도 60% 이상 후보가 없습니다. 조서 화면에서 「사업설명서불러오기」로 해당 실국·예산차수 파일을 업로드해 주세요.";
+            $body.append('<tr><td colspan="5">' + msg + '</td></tr>');
             return;
         }
         for (var i = 0; i < list.length; i++) {
@@ -428,9 +430,53 @@ $(document).ready(function () {
         });
     };
 
+    var syncScopeFromOpener = function () {
+        try {
+            if (!window.opener || window.opener.closed) { return; }
+            var $op = window.opener.$(".ui-tabs-panel:visible");
+            if (!$op.length) {
+                $op = window.opener.$("#mainPane");
+            }
+            var fisYear = $op.find("#condFisYear").val();
+            var bgtDgr = $op.find("#condBgtDgr").val();
+            if (fisYear) {
+                $("#dialogBizDescViewFisYear", dialogObj).val(fisYear);
+            }
+            if (bgtDgr) {
+                $("#dialogBizDescViewBgtDgr", dialogObj).val(bgtDgr);
+            }
+            var officeSel = $op.find("#condOfficeCd").get(0);
+            if (officeSel && officeSel.options && officeSel.selectedIndex >= 0) {
+                var ocd = officeSel.options[officeSel.selectedIndex].value;
+                var onm = officeSel.options[officeSel.selectedIndex].text;
+                if (onm === "전체") {
+                    $("#dialogBizDescViewOfficeCd", dialogObj).val("ALL");
+                } else if (ocd) {
+                    $("#dialogBizDescViewOfficeCd", dialogObj).val(ocd);
+                }
+            }
+            var teId = $("#dialogBizDescViewTeBgtCompoId", dialogObj).val();
+            if (teId) {
+                var $link = window.opener.$('a.bizdesc-nm-link[data-te-id="' + teId + '"]');
+                if ($link.length) {
+                    var bizNm = $link.attr("data-biznm") || "";
+                    var dbizNm = $link.attr("data-dbiznm") || "";
+                    if (bizNm) {
+                        $("#dialogBizDescViewReportBizNm", dialogObj).val(bizNm);
+                    }
+                    if (dbizNm) {
+                        $("#dialogBizDescViewDbizNm", dialogObj).val(dbizNm);
+                    }
+                }
+            }
+        } catch (ignore) {}
+    };
+
     var loadSuggestOrSummary = function () {
+        syncScopeFromOpener();
         var p = baseParam();
         p.reportBizNm = $("#dialogBizDescViewReportBizNm", dialogObj).val();
+        p.dbizNm = $("#dialogBizDescViewDbizNm", dialogObj).val();
         $("#dialogBizDescViewMeta", dialogObj).text("조서사업명: " + (p.reportBizNm || "") + " — 조회 중...");
         $.csAjaxCall({
             url: "/bizdesc/ajaxBizDescSuggest.do",
@@ -445,7 +491,15 @@ $(document).ready(function () {
                 if (d.matched) {
                     loadSummary();
                 } else {
-                    showSuggest(d.suggestList || []);
+                    var hint = "";
+                    if (d.scopeFileCount === 0) {
+                        hint = "해당 회계년도·예산차수·실국에 업로드된 사업설명서 파일이 없습니다.\n"
+                            + "조서 조회조건(실국·예산차수)과 「사업설명서불러오기」 업로드 조건이 같은지 확인해 주세요.";
+                    } else if (d.scopeBizCount === 0) {
+                        hint = "업로드된 파일에서 사업 블록을 읽지 못했습니다.\n"
+                            + "파일을 삭제 후 다시 업로드하거나 서버 관리자에게 문의해 주세요.";
+                    }
+                    showSuggest(d.suggestList || [], hint);
                 }
             }
         });

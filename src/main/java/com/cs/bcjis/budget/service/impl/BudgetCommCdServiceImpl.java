@@ -24,6 +24,11 @@ public class BudgetCommCdServiceImpl implements BudgetCommCdService {
     public List selectList(Map map) throws Exception {
         return budgetCommCdDAO.selectList(map);
     }
+
+    @Override
+    public List selectListAll(Map map) throws Exception {
+        return budgetCommCdDAO.selectListAll(map);
+    }
     
     @SuppressWarnings("rawtypes")
     public void saveCommCd(JSONObject jsonParam) throws Exception {

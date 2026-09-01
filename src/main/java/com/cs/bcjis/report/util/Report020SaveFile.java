@@ -475,6 +475,8 @@ public class Report020SaveFile {
         Map reportInfo = reportCommDAO.selectReportInfo(param);
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm"));
         if (BcjisCommUtil.isNullString(sheetName) == true) {
@@ -509,7 +511,7 @@ public class Report020SaveFile {
                 subCnt++;
             }
 
-            rowNum = writeBizlistData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil);
+            rowNum = writeBizlistData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, indiAttrNmMap, advncProcNmMap);
         }
 
         if (sheet != null) {
@@ -543,6 +545,8 @@ public class Report020SaveFile {
         Map reportInfo = reportCommDAO.selectReportInfo(param);
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm") + "(미분류)");
         if (BcjisCommUtil.isNullString(sheetName) == true) {
@@ -576,7 +580,7 @@ public class Report020SaveFile {
             } else if (dgrLevel > 2) {
                 subCnt++;
             }
-            rowNum = writeBizlistData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil);
+            rowNum = writeBizlistData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, indiAttrNmMap, advncProcNmMap);
         }
 
         if (sheet != null) {
@@ -615,6 +619,8 @@ public class Report020SaveFile {
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(model, wb);
         this.dataStyles = styles;
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
         while (!categories.isEmpty()) {
             category = (JSONObject) categories.remove(0);
 
@@ -658,7 +664,7 @@ public class Report020SaveFile {
                 continue;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y");
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y", indiAttrNmMap, advncProcNmMap);
             sheetDataCnt++;
         }
 
@@ -697,6 +703,8 @@ public class Report020SaveFile {
         Map reportInfo = reportCommDAO.selectReportInfo(model);
 
         Map<String, CellStyle> styles = this.dataStyles;
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
         while (!categories.isEmpty()) {
             category = (JSONObject) categories.remove(0);
 
@@ -745,7 +753,7 @@ public class Report020SaveFile {
                 continue;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y");
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y", indiAttrNmMap, advncProcNmMap);
             sheetDataCnt++;
         }
 
@@ -784,7 +792,9 @@ public class Report020SaveFile {
         Map reportInfo = reportCommDAO.selectReportInfo(model);
 
         Map<String, CellStyle> styles = this.dataStyles;
-        
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
+
         rowNum = 0;
         dataCnt = 0;
         sheetDataCnt = 0;
@@ -845,7 +855,7 @@ public class Report020SaveFile {
                 continue;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y");
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 0, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y", indiAttrNmMap, advncProcNmMap);
             sheetDataCnt++;
         }
 
@@ -874,6 +884,8 @@ public class Report020SaveFile {
         model.put("reportDetlCd", "027");
         Map reportInfo = reportCommDAO.selectReportInfo(model);
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(model, wb);
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         sheet = wb.createSheet(ReportSaveUtil.getStringValue(reportInfo.get("sheetNm")));
         ReportFormulaUtil reportFormulaUtil = new ReportFormulaUtil(sheet);
@@ -911,7 +923,7 @@ public class Report020SaveFile {
                 continue;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 1, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y");
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, 1, sheetDataCnt, totDataCnt, dataCnt, subCnt, reportFormulaUtil, "Y", indiAttrNmMap, advncProcNmMap);
             sheetDataCnt++;
         }
 
@@ -2575,7 +2587,7 @@ public class Report020SaveFile {
         return rowNum;
     }
 
-    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int reportFlag, int sheetDataCnt, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil, String teMngCdYn) {
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int reportFlag, int sheetDataCnt, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil, String teMngCdYn, Map<String, String> indiAttrNmMap, Map<String, String> advncProcNmMap) {
         int startRowNum = rowNum + 1;
 
         float rowHeight = 16.5f;
@@ -2744,7 +2756,16 @@ public class Report020SaveFile {
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "0Col12"));
         cell.setCellValue(ReportSaveUtil.getStringValue(category.get("srchVal")));
-        
+
+        //투자사업유형(INDI_ATTR)/분류항목(ADVNC_PROC)
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "0Col13", preStyleNm + "0Col12");
+        cell.setCellValue(ReportSaveUtil.getCodeNmValue(indiAttrNmMap, category.get("indiAttr")));
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "0Col14", preStyleNm + "0Col12");
+        cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
+
         // 시비
         row = sheet.createRow(rowNum);
         rowNum++;
@@ -2812,6 +2833,12 @@ public class Report020SaveFile {
         
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "1Col12"));
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "1Col13", preStyleNm + "1Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "1Col14", preStyleNm + "1Col12");
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_1", rowNum);
         if (formulaFlag == true) {
@@ -2883,7 +2910,13 @@ public class Report020SaveFile {
 
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "2Col12"));
-        
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "2Col13", preStyleNm + "2Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "2Col14", preStyleNm + "2Col12");
+
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_2", rowNum);
         if (formulaFlag == true) {
             addDataFormulaCell(reportFormulaUtil, dgrcompoId + "_2", rowNum);
@@ -2955,6 +2988,12 @@ public class Report020SaveFile {
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "3Col12"));
 
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "3Col13", preStyleNm + "3Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "3Col14", preStyleNm + "3Col12");
+
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_3", rowNum);
         if (formulaFlag == true) {
             addDataFormulaCell(reportFormulaUtil, dgrcompoId + "_3", rowNum);
@@ -3025,7 +3064,13 @@ public class Report020SaveFile {
 
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "4Col12"));
-        
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "4Col13", preStyleNm + "4Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "4Col14", preStyleNm + "4Col12");
+
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_4", rowNum);
         if (formulaFlag == true) {
             addDataFormulaCell(reportFormulaUtil, dgrcompoId + "_4", rowNum);
@@ -3096,7 +3141,13 @@ public class Report020SaveFile {
 
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "5Col12"));
-        
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "5Col13", preStyleNm + "5Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "5Col14", preStyleNm + "5Col12");
+
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_5", rowNum);
         if (formulaFlag == true) {
             addDataFormulaCell(reportFormulaUtil, dgrcompoId + "_5", rowNum);
@@ -3167,6 +3218,12 @@ public class Report020SaveFile {
         
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "6Col12"));
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "6Col13", preStyleNm + "6Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "6Col14", preStyleNm + "6Col12");
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_6", rowNum);
         if (formulaFlag == true) {
@@ -3239,6 +3296,12 @@ public class Report020SaveFile {
         
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "7Col12"));
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "7Col13", preStyleNm + "7Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "7Col14", preStyleNm + "7Col12");
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_7", rowNum);
         if (formulaFlag == true) {
@@ -3313,6 +3376,12 @@ public class Report020SaveFile {
         
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + "8Col12"));
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "8Col13", preStyleNm + "8Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "8Col14", preStyleNm + "8Col12");
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_8", rowNum);
         if (formulaFlag == true) {
@@ -3389,7 +3458,13 @@ public class Report020SaveFile {
 
         cell = row.createCell(12);
         cell.setCellStyle(styles.get(preStyleNm + colLast + "Col12"));
-        
+
+        cell = row.createCell(13);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + colLast + "Col13", preStyleNm + colLast + "Col12");
+
+        cell = row.createCell(14);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + colLast + "Col14", preStyleNm + colLast + "Col12");
+
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId + "_9", rowNum);
         if (formulaFlag == true) {
             addDataFormulaCell(reportFormulaUtil, dgrcompoId + "_9", rowNum);
@@ -3426,7 +3501,7 @@ public class Report020SaveFile {
         return rowNum;
     }
 
-    public int writeBizlistData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil) {
+    public int writeBizlistData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil, Map<String, String> indiAttrNmMap, Map<String, String> advncProcNmMap) {
         float rowHeight = 34.50f;
         Row row = null;
         Cell cell = null;
@@ -3608,10 +3683,18 @@ public class Report020SaveFile {
             cell.setCellValue(ReportSaveUtil.getStringValue(category.get("reportDetlNm")));
         }
         
+        //투자사업유형(INDI_ATTR) - indiAttrNm은 어떤 쿼리에서도 채워지지 않는 필드였음(항상 공백). 실제 코드->코드명 치환으로 수정.
         cell = row.createCell(17);
-        cell.setCellStyle(styles.get(preStyleNm + "Col16")); //임의로 추가한거라 이전 양식 그대로 적용
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col17", preStyleNm + "Col16");
         if (formulaFlag == false) {
-        	cell.setCellValue(ReportSaveUtil.getStringValue(category.get("indiAttrNm")));
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(indiAttrNmMap, category.get("indiAttr")));
+        }
+
+        //분류항목(ADVNC_PROC)
+        cell = row.createCell(18);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col18", preStyleNm + "Col16");
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
         }
 
         addBizDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);

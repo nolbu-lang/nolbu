@@ -44,9 +44,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
 
     private static final Logger logger = Logger.getLogger(BizDescMatchServiceImpl.class);
 
-    /** 조회조건 '실국=전체' 업로드 시 모든 실국에서 공유하는 파일 스코프 */
-    static final String OFFICE_CD_ALL = "ALL";
-
     /** 업로드 JSON 파싱 결과 메모리 캐시 (클릭 응답 가속) */
     private static final ConcurrentHashMap<String, CachedBizList> BIZ_LIST_CACHE =
             new ConcurrentHashMap<String, CachedBizList>();
@@ -70,7 +67,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
 
     @Override
     public JSONObject selectFileList(Map<String, Object> param) throws Exception {
-        normalizeOfficeScope(param);
         @SuppressWarnings("rawtypes")
         List list = bizDescMatchDAO.selectFileList(param);
         JSONObject result = new JSONObject();
@@ -80,11 +76,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
 
     @Override
     public JSONObject uploadFile(HttpServletRequest request, Map<String, Object> param) throws Exception {
-        if (!(request instanceof MultipartHttpServletRequest)) {
-            throw new IllegalArgumentException(
-                    "파일 업로드 요청이 올바르지 않습니다.\n"
-                            + "브라우저를 새로고침(Ctrl+F5)한 뒤 다시 시도해 주세요.");
-        }
         MultipartHttpServletRequest mptRequest = (MultipartHttpServletRequest) request;
         MultipartFile mFile = null;
         Iterator<?> it = mptRequest.getFileNames();
@@ -167,12 +158,11 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
         File jsonFile = new File(dir, jsonNm);
         writeJson(jsonFile, BizDescMatcher.toJsonArray(businesses));
 
-        normalizeOfficeScope(param);
         if (BcjisCommUtil.isNullString(param.get("officeCd"))) {
             if (saved.exists()) {
                 saved.delete();
             }
-            throw new IllegalArgumentException("실국(또는 전체) 조회조건이 필요합니다.");
+            throw new IllegalArgumentException("실국을 선택해 주세요.");
         }
         if (BcjisCommUtil.isNullString(param.get("bgtDgr"))) {
             if (saved.exists()) {
@@ -210,22 +200,15 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
 
     @Override
     public JSONObject deleteFile(Map<String, Object> param) throws Exception {
-        normalizeOfficeScope(param);
         @SuppressWarnings("rawtypes")
         Map file = bizDescMatchDAO.selectFile(param);
         if (file == null) {
             throw new IllegalArgumentException("삭제할 파일이 없습니다.");
         }
-        normalizeOfficeScope(param);
-        // 실국 스코프: 전체(ALL) 공유 파일은 실국=전체 조회에서만 삭제
+        // 실국 스코프: 요청 officeCd와 파일 officeCd가 다르면 거부
         String reqOffice = param.get("officeCd") == null ? "" : String.valueOf(param.get("officeCd")).trim();
         String fileOffice = str(file, "officeCd", "office_cd");
-        if (OFFICE_CD_ALL.equals(fileOffice) && !OFFICE_CD_ALL.equals(reqOffice)) {
-            throw new IllegalArgumentException(
-                    "전체 공유 사업설명서는 조회조건 '실국=전체'에서만 삭제할 수 있습니다.");
-        }
-        if (reqOffice.length() > 0 && fileOffice.length() > 0
-                && !OFFICE_CD_ALL.equals(fileOffice) && !reqOffice.equals(fileOffice)) {
+        if (reqOffice.length() > 0 && fileOffice.length() > 0 && !reqOffice.equals(fileOffice)) {
             throw new IllegalArgumentException("선택한 실국의 파일만 삭제할 수 있습니다.");
         }
         bizDescMatchDAO.deleteMatchByFile(param);
@@ -246,9 +229,8 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
         if (BcjisCommUtil.isNullString(reportBizNm) || "null".equals(reportBizNm)) {
             throw new IllegalArgumentException("조서 사업명이 필요합니다.");
         }
-        normalizeOfficeScope(param);
         if (BcjisCommUtil.isNullString(param.get("officeCd"))) {
-            throw new IllegalArgumentException("실국(또는 전체) 조회조건이 필요합니다.");
+            throw new IllegalArgumentException("실국을 선택해 주세요.");
         }
 
         // 이미 매칭된 경우: 후보 전체 스캔 생략 → 즉시 요약 조회
@@ -420,12 +402,9 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
     @SuppressWarnings("rawtypes")
     public JSONObject buildExportJson(Map<String, Object> param) throws Exception {
         if (BcjisCommUtil.isNullString(param.get("fisYear"))
-                || BcjisCommUtil.isNullString(param.get("bgtDgr"))) {
-            throw new IllegalArgumentException("회계년도·예산차수가 필요합니다.");
-        }
-        normalizeOfficeScope(param);
-        if (BcjisCommUtil.isNullString(param.get("officeCd"))) {
-            throw new IllegalArgumentException("실국(또는 전체) 조회조건이 필요합니다.");
+                || BcjisCommUtil.isNullString(param.get("bgtDgr"))
+                || BcjisCommUtil.isNullString(param.get("officeCd"))) {
+            throw new IllegalArgumentException("회계년도·예산차수·실국이 필요합니다.");
         }
 
         List fileList = bizDescMatchDAO.selectFileList(param);
@@ -433,23 +412,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
             throw new IllegalArgumentException(
                     "내보낼 사업설명서가 없습니다.\n먼저 HWPX/HWP 파일을 업로드해 주세요.");
         }
-
-        List<String> selectedIds = parseBizdescFileIds(param.get("bizdescFileIds"));
-        if (selectedIds.isEmpty()) {
-            throw new IllegalArgumentException("보낼 파일을 목록에서 선택해 주세요.");
-        }
-        List filtered = new ArrayList();
-        for (int i = 0; i < fileList.size(); i++) {
-            Map file = (Map) fileList.get(i);
-            String id = str(file, "bizdescFileId", "bizdesc_file_id");
-            if (selectedIds.contains(id)) {
-                filtered.add(file);
-            }
-        }
-        if (filtered.isEmpty()) {
-            throw new IllegalArgumentException("선택한 사업설명서 파일이 없습니다.");
-        }
-        fileList = filtered;
 
         JSONArray filesArr = new JSONArray();
         int totalBiz = 0;
@@ -496,28 +458,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
             label = "office";
         }
         return "사업설명서_" + year + "_" + dgr + "차_" + label + ".json";
-    }
-
-    /**
-     * 조회조건 실국 '전체' → OFFICE_CD_ALL 로 통일.
-     * 특정 실국 조회 시에는 해당 코드 + ALL 공유 파일을 SQL에서 함께 조회한다.
-     */
-    private void normalizeOfficeScope(Map<String, Object> param) {
-        if (param == null) {
-            return;
-        }
-        String officeCd = param.get("officeCd") == null ? "" : String.valueOf(param.get("officeCd")).trim();
-        String officeNm = param.get("officeNm") == null ? "" : String.valueOf(param.get("officeNm")).trim();
-        if ("null".equalsIgnoreCase(officeCd) || "undefined".equalsIgnoreCase(officeCd)) {
-            officeCd = "";
-        }
-        if (BcjisCommUtil.isNullString(officeCd) || OFFICE_CD_ALL.equalsIgnoreCase(officeCd)
-                || "전체".equals(officeNm)) {
-            param.put("officeCd", OFFICE_CD_ALL);
-            if (BcjisCommUtil.isNullString(officeNm) || "전체".equals(officeNm)) {
-                param.put("officeNm", "전체");
-            }
-        }
     }
 
     private File getBizDescDir() {
@@ -580,15 +520,18 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
 
     private String buildBadFileMessage(String kind, String orgName) {
         String nameHint = (orgName != null && orgName.length() > 0) ? ("\n선택 파일: " + orgName) : "";
-        if ("DRM".equals(kind)) {
-            return "암호화(보안)된 문서입니다.\n"
-                    + "시 보안솔루션으로 암호/보안을 해제한 뒤 다시 업로드해 주세요.\n"
-                    + "(보안 해제 후 확장자가 .hwpx여도 내부가 구형 HWP이면 그대로 업로드 가능합니다.)"
+        if ("HWP".equals(kind)) {
+            return "구형 HWP(한글) 형식은 지원하지 않습니다.\n"
+                    + "한컴오피스에서 [파일 > 다른 이름으로 저장] 시 파일 형식을 ‘한글 문서 (*.hwpx)’로 저장한 뒤 업로드해 주세요."
                     + nameHint;
         }
-        return "사업설명서 파일 형식을 인식하지 못했습니다. (감지: " + kind + ")\n"
-                + "보안 해제된 .hwpx / .hwp 파일을 올려 주세요.\n"
-                + "한컴에서 ‘한글 문서(*.hwpx)’로 저장한 파일도 가능합니다."
+        if ("DRM".equals(kind)) {
+            return "암호화(보안)된 문서입니다.\n"
+                    + "암호/보안을 해제한 뒤 HWPX로 다시 저장하여 업로드해 주세요."
+                    + nameHint;
+        }
+        return "HWPX(ZIP) 형식의 사업설명서만 업로드할 수 있습니다.\n"
+                + "확장자가 .hwpx여도 실제 형식이 다르면 인식되지 않습니다."
                 + nameHint;
     }
 
@@ -768,28 +711,6 @@ public class BizDescMatchServiceImpl implements BizDescMatchService {
     }
 
     @SuppressWarnings("rawtypes")
-    private List<String> parseBizdescFileIds(Object raw) {
-        List<String> ids = new ArrayList<String>();
-        if (raw == null) {
-            return ids;
-        }
-        if (raw instanceof JSONArray) {
-            JSONArray arr = (JSONArray) raw;
-            for (int i = 0; i < arr.size(); i++) {
-                String id = String.valueOf(arr.get(i)).trim();
-                if (id.length() > 0 && !"null".equals(id)) {
-                    ids.add(id);
-                }
-            }
-        } else {
-            String id = String.valueOf(raw).trim();
-            if (id.length() > 0 && !"null".equals(id)) {
-                ids.add(id);
-            }
-        }
-        return ids;
-    }
-
     private String str(Map row, String camel, String snake) {
         Object v = row.get(camel);
         if (v == null) {

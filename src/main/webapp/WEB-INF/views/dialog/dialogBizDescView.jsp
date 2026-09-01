@@ -6,4 +6,4 @@ a.bizdesc-nm-link.bizdesc-matched { background:#fff3cd; box-shadow:0 0 0 2px #f0
 <script>
 window.BIZDESC_VIEW_MODE = "parent";
 </script>
-<script src="${pageContext.request.contextPath}/js/dialog/dialogBizDescView.js?v=2026072814"></script>
+<script src="${pageContext.request.contextPath}/js/dialog/dialogBizDescView.js?v=20260830a"></script>

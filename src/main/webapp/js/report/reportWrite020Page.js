@@ -117,21 +117,27 @@ $(document).ready(function() {
         return "실국: "+officeNm+"<br>"+"부서: "+deptNm+"<br>"+"세부: "+dbizNm+"<br>"+"통계목: "+teMngMokNm;
     };
     
+    var bizDescAttrEsc = function(v) {
+        return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;");
+    };
+
     var dgrcompoNmFormatter = function(cellValue, options, rowObject){
         if(isEmpty(cellValue) == true){
             cellValue = "";
         }
-        
+
         if(rowObject.teBgtCompoId == "00000000000"){
             return cellValue;
         }
-        
-        var demandCont = rowObject.demandCont; 
+
+        var demandCont = rowObject.demandCont;
         if(isEmpty(demandCont) == true){
             demandCont = "";
         }
-        
-        var encNm = encodeURIComponent(cellValue);
+
         var rVal = '<a href="#" class="bizdesc-nm-link" style="color:#06c;text-decoration:underline;"'
                  + ' data-te-id="'+rowObject.teBgtCompoId+'"'
                  + ' data-tebgtcompoid="'+rowObject.teBgtCompoId+'"'
@@ -139,9 +145,10 @@ $(document).ready(function() {
                  + ' data-fisyear="'+(rowObject.fisYear||'')+'"'
                  + ' data-bgtdgr="'+(rowObject.bgtDgr||'')+'"'
                  + ' data-reportcd="'+(rowObject.reportCd||'020')+'"'
-                 + ' data-biznm="'+encNm+'">' + cellValue + '</a><br>'
+                 + ' data-biznm="'+bizDescAttrEsc(cellValue)+'"'
+                 + ' data-dbiznm="'+bizDescAttrEsc(rowObject.dbizNm||'')+'">' + cellValue + '</a><br>'
                  + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" style="width:200px;ime-mode:active;"  rows="12" cols="22">'+demandCont+'</textarea>';
-        
+
         return rVal;
     };
     
@@ -749,7 +756,7 @@ $(document).ready(function() {
     	return rVal;
     };
     
-  //보고항목 그리드fomatter
+  //투자사업유형 그리드fomatter
     var indiAttrFormatter = function(cellValue, options, rowObject){
     	if(isEmpty() == true){
     		cellValue = "";
@@ -781,7 +788,7 @@ $(document).ready(function() {
     	return rVal;
     };
     
-    //사전절차 그리드fomatter
+    //분류항목 그리드fomatter
     var advncProcFgFormatter = function(cellValue, options, rowObject){
     	if(isEmpty(cellValue) == true){
     		cellValue = "";
@@ -813,7 +820,7 @@ $(document).ready(function() {
     };
     
     var colNames = ['', '[실국-부서-조서-세부]', '구분', '정렬순서', '총사업비', '기투자<br/>(전전년까지)', '기정액<br/>(당해년도)', '전년도 투자<br/>(최종예산)', '요구액', '조정액', '향후투자계획', '검토내용', '공약정보', '조건검색어',
-                    '대분류', '중분류', '소분류', '국고보조', '보고항목', '사전절차',
+                    '대분류', '중분류', '소분류', '국고보조', '투자사업유형', '분류항목',
                     'dgrcompoId', 'upDgrcompoId', 'fisYear', 'bgtDgr', 'reportCd', 'reportDetlCd', 'dgrLevel', 'teBgtCompoId', 'teBgtCompoSeq', 'compoLevel', 'demandCont', 'examCont', 'reflectFg', 'srchVal', 'reportSortSeq', 'mayorReportYn', 
                     'totFrscAmt1', 'totFrscAmt2', 'totFrscAmt3', 'totFrscAmt4', 'totFrscAmt5', 'totFrscAmt6', 'totCharAmt1', 'totCharAmt2', 'totCharAmt3',
                     'preInvFrscAmt1', 'preInvFrscAmt2', 'preInvFrscAmt3', 'preInvFrscAmt4', 'preInvFrscAmt5', 'preInvFrscAmt6', 'preInvCharAmt1', 'preInvCharAmt2', 'preInvCharAmt3',
@@ -1860,24 +1867,37 @@ $(document).ready(function() {
             reportCd: $a.data("reportcd") || "020",
             teBgtCompoId: $a.data("tebgtcompoid"),
             dgrcompoId: $a.data("dgrcompoid"),
-            reportBizNm: decodeURIComponent($a.data("biznm") || ""),
+            reportBizNm: $a.attr("data-biznm") || "",
+            dbizNm: $a.attr("data-dbiznm") || "",
             officeCd: office.officeCd,
             officeNm: office.officeNm,
             tabId: tabId
         });
     });
-    
+
     $("#saveFileBtn", tabObj).click(function() {
         var param = getSearchParam();
         param["fileNm"] = "투자사업심사조서";
         param["amtUnit"] = "1000000";
-        
+
         $.bcjisExcelAjaxCall({
             url : "/report/ajaxReportWrite020SaveFile.do"
           , data: param
         });
     });
-    
+
+    $("#saveFileTotalBtn", tabObj).click(function() {
+    	var param = getSearchParam();
+    	param["fileNm"] = "투자사업심사조서(통합)";
+    	param["amtUnit"] = "1000000";
+    	param["flag"] = "total";
+
+    	$.bcjisExcelAjaxCall({
+    		url : "/report/ajaxReportWrite020SaveFile.do"
+    			, data: param
+    	});
+    });
+
     $("#saveSheetBtn", tabObj).click(function() {
         var param = getSearchParam();
         param.reportDetlCd = "";

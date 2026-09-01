@@ -76,6 +76,37 @@ public class BudgetCommCdController {
         return ajaxModel;
     }
     
+    /** 사용안함(삭제) 코드 포함 전체 조회 — 이미 연결된 사업의 이름표시 전용(선택목록 아님) */
+    @RequestMapping("/budget/ajaxBudgetCommCdListAll.do")
+    public ModelAndView ajaxBudgetCommCdListAll(ModelMap model, HttpServletRequest request) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxBudgetCommCdListAll(ModelMap, HttpServletRequest) - start");
+        }
+
+        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
+        JSONObject jsonObject = new JSONObject();
+
+        try {
+            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
+
+            JSONArray resultList = JSONArray.fromObject(budgetCommCdService.selectListAll(jsonParam));
+            jsonObject.put("dataList", resultList);
+
+            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
+        } catch (Exception e) {
+            logger.error("ajaxBudgetCommCdListAll(ModelMap, HttpServletRequest)", e);
+
+            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.select"));
+        }
+
+        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ajaxBudgetCommCdListAll(ModelMap, HttpServletRequest) - end");
+        }
+        return ajaxModel;
+    }
+
     @RequestMapping("/budget/ajaxDialogDgrcompoSaveCommCd.do")
     public ModelAndView ajaxDialogDgrcompoModifySaveDgrcompos(ModelMap model, HttpServletRequest request) throws Exception {
         if (logger.isDebugEnabled()) {

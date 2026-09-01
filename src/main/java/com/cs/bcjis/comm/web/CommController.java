@@ -73,15 +73,8 @@ public class CommController {
         ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
         JSONObject jsonObject = new JSONObject();
 
-        String expireMsg = bcjisMessageSource.getMessage("fail.session.expire");
         jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-        jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, expireMsg);
-        // AI 챗봇 등 data.answer 를 읽는 클라이언트가 빈 응답으로 오인하지 않도록
-        JSONObject errData = new JSONObject();
-        errData.put("answer", expireMsg != null
-                ? expireMsg.replaceAll("(?i)<BR\\s*/?>", "\n")
-                : "세션이 만료되었습니다. 다시 로그인해 주세요.");
-        jsonObject.put("data", errData);
+        jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.session.expire"));
         ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
 
         if (logger.isDebugEnabled()) {

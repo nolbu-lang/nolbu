@@ -94,6 +94,13 @@ $(document).ready(function() {
         return rVal;
     };
     
+    var bizDescAttrEsc = function(v) {
+        return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;");
+    };
+
     var dgrcompoNmFormatter = function(cellValue, options, rowObject){
         if(isEmpty(cellValue) == true){
             cellValue = "";
@@ -108,7 +115,6 @@ $(document).ready(function() {
             demandCont = "";
         }
         
-        var encNm = encodeURIComponent(cellValue);
         var rVal = '<a href="#" class="bizdesc-nm-link" style="color:#06c;text-decoration:underline;"'
                  + ' data-te-id="'+rowObject.teBgtCompoId+'"'
                  + ' data-tebgtcompoid="'+rowObject.teBgtCompoId+'"'
@@ -116,7 +122,8 @@ $(document).ready(function() {
                  + ' data-fisyear="'+(rowObject.fisYear||'')+'"'
                  + ' data-bgtdgr="'+(rowObject.bgtDgr||'')+'"'
                  + ' data-reportcd="'+(rowObject.reportCd||'020')+'"'
-                 + ' data-biznm="'+encNm+'">' + cellValue + '</a><br>'
+                 + ' data-biznm="'+bizDescAttrEsc(cellValue)+'"'
+                 + ' data-dbiznm="'+bizDescAttrEsc(rowObject.dbizNm||'')+'">' + cellValue + '</a><br>'
                  + '<textarea id="demandCont_'+rowObject.dgrcompoId+'" style="width:210px;ime-mode:active;height:128px;">'+demandCont+'</textarea>';
         
         return rVal;
@@ -1489,7 +1496,8 @@ $(document).ready(function() {
             reportCd: $a.data("reportcd") || "020",
             teBgtCompoId: $a.data("tebgtcompoid"),
             dgrcompoId: $a.data("dgrcompoid"),
-            reportBizNm: decodeURIComponent($a.data("biznm") || ""),
+            reportBizNm: $a.attr("data-biznm") || "",
+            dbizNm: $a.attr("data-dbiznm") || "",
             officeCd: office.officeCd,
             officeNm: office.officeNm,
             tabId: tabId

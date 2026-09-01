@@ -215,7 +215,7 @@ public class AiChatController {
             response.setHeader("Content-Disposition",
                     "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + filename);
             // JSONObject#toString(indent) — 모바일 뷰어에서 읽기 쉽게 들여쓰기
-            response.getWriter().write(data.toString());
+            response.getWriter().write(data.toString(2));
             response.getWriter().flush();
         } catch (IllegalArgumentException iae) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

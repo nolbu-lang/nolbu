@@ -104,6 +104,40 @@ public class ReportSaveUtil {
         return returnString;
     }
 
+    /** 투자사업유형(INDI_ATTR)/분류항목(ADVNC_PROC)처럼 ','로 구분된 코드값을 codeNmMap을 이용해 코드명으로 치환 */
+    public static String getCodeNmValue(Map<String, String> codeNmMap, Object value) {
+        String rawValue = getStringValue(value);
+        if (BcjisCommUtil.isNullString(rawValue) == true || codeNmMap == null) {
+            return "";
+        }
+
+        String[] codes = rawValue.split(",");
+        StringBuilder sb = new StringBuilder();
+        String codeNm = null;
+        for (String code : codes) {
+            codeNm = codeNmMap.get(code.trim());
+            if (BcjisCommUtil.isNullString(codeNm) == false) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(codeNm);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /** styles 맵에 primaryKey 스타일이 아직 없으면(TB_REPORTSTYLE 미등록) fallbackKey 스타일로 대체 적용 */
+    public static void setCellStyleWithFallback(Cell cell, Map<String, CellStyle> styles, String primaryKey, String fallbackKey) {
+        CellStyle style = styles.get(primaryKey);
+        if (style == null) {
+            style = styles.get(fallbackKey);
+        }
+        if (style != null) {
+            cell.setCellStyle(style);
+        }
+    }
+
     public static long getAmtValue(Object value) {
         if (logger.isDebugEnabled()) {
             logger.debug("getAmtValue(Object) - start");
@@ -296,11 +330,12 @@ public class ReportSaveUtil {
     
     public static String setUnitAmt(Object amtStr, int unit){
     	//int amt = Integer.parseInt(BcjisStringUtil.nullConvert(amtStr));
-    	double rtnAmt = Double.parseDouble(BcjisStringUtil.nullConvert(amtStr));
+    	//null/empty/미조회 컬럼(예: frscAmt6 미포함 dataList) 대비 - Double.parseDouble("") NumberFormatException 방지
+    	double rtnAmt = BcjisCommUtil.getDoubleValue(amtStr);
     	if(unit != 0){
     		rtnAmt = (rtnAmt / (double)unit);
     	}
-    	DecimalFormat dc = new DecimalFormat("###,###,###,###,###");	
+    	DecimalFormat dc = new DecimalFormat("###,###,###,###,###");
 		String ch = dc.format(rtnAmt);
 		return ch;
     	//return String.format("%.0f", rtnAmt);

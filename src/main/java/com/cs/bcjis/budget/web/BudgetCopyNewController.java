@@ -17,9 +17,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.cs.bcjis.budget.service.BudgetCopyNewApplyJob;
 import com.cs.bcjis.budget.service.BudgetCopyNewService;
-import com.cs.bcjis.budget.service.impl.BudgetCopyNewApplyQueueService;
 import com.cs.bcjis.comm.AjaxJsonView;
 import com.cs.bcjis.comm.BcjisMessageSource;
 import com.cs.bcjis.comm.BcjisUserDetailsHelper;
@@ -37,9 +35,6 @@ public class BudgetCopyNewController {
     
     @Resource(name = "budgetCopyNewService")
     private BudgetCopyNewService budgetCopyNewService;
-
-    @Resource(name = "budgetCopyNewApplyQueueService")
-    private BudgetCopyNewApplyQueueService budgetCopyNewApplyQueueService;
 
     @Resource(name = "bcjisMessageSource")
     private BcjisMessageSource bcjisMessageSource;
@@ -155,7 +150,6 @@ public class BudgetCopyNewController {
     /**
      * [신규] 매핑 목록 일괄 적용. 여러 (전년도->올해) 쌍을 한 번에 적용한다.
      * 각 쌍은 기존 단건 적용과 동일한 로직(copyReport + copyPreInfo)으로 처리되어 결과가 동일하다.
-     * ※ 하위 호환용 동기 API. 다수 동시 적용 시에는 enqueue API 사용을 권장한다.
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @RequestMapping("/budget/ajaxBudgetCopyNewCopyReportBatch.do")
@@ -198,98 +192,6 @@ public class BudgetCopyNewController {
             logger.debug("ajaxBudgetCopyNewCopyReportBatch(ModelMap, HttpServletRequest) - end");
         }
         return ajaxModel;
-    }
-
-    /**
-     * 일괄적용 대기열 등록(비동기). 20명 동시 적용 시 FIFO 순차 처리.
-     */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @RequestMapping("/budget/ajaxBudgetCopyNewCopyReportBatchEnqueue.do")
-    public ModelAndView ajaxBudgetCopyNewCopyReportBatchEnqueue(ModelMap model, HttpServletRequest request) throws Exception {
-        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
-        JSONObject jsonObject = new JSONObject();
-
-        try {
-            BcjisUserVO bcjisUserVO = (BcjisUserVO) BcjisUserDetailsHelper.getAuthenticatedUser();
-            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
-            JSONArray mappingArr = jsonParam.getJSONArray("mappings");
-
-            List<Map> mappings = new ArrayList<Map>();
-            for (int i = 0; i < mappingArr.size(); i++) {
-                JSONObject item = mappingArr.getJSONObject(i);
-                item.put("userId", bcjisUserVO.getUserId());
-                mappings.add(item);
-            }
-
-            String userNm = bcjisUserVO.getUserNm();
-            BudgetCopyNewApplyJob job = budgetCopyNewApplyQueueService.enqueue(
-                    bcjisUserVO.getUserId(), userNm, mappings);
-
-            putJobToJson(jsonObject, job);
-            // 이미 진행 중인 요청을 반환한 경우에도 SUCC + alreadyActive 플래그
-            if (job.getMessage() != null && job.getMessage().indexOf("이미 대기") >= 0
-                    && (BudgetCopyNewApplyJob.STATUS_QUEUED.equals(job.getStatus())
-                        || BudgetCopyNewApplyJob.STATUS_RUNNING.equals(job.getStatus()))) {
-                jsonObject.put("alreadyActive", "Y");
-            }
-            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
-            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, job.getMessage());
-        } catch (IllegalStateException ise) {
-            logger.warn("ajaxBudgetCopyNewCopyReportBatchEnqueue: " + ise.getMessage());
-            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, ise.getMessage());
-        } catch (Exception e) {
-            logger.error("ajaxBudgetCopyNewCopyReportBatchEnqueue(ModelMap, HttpServletRequest)", e);
-            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.apply"));
-        }
-
-        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
-        return ajaxModel;
-    }
-
-    /**
-     * 일괄적용 Job 상태 조회(폴링).
-     */
-    @RequestMapping("/budget/ajaxBudgetCopyNewCopyReportBatchStatus.do")
-    public ModelAndView ajaxBudgetCopyNewCopyReportBatchStatus(ModelMap model, HttpServletRequest request) throws Exception {
-        ModelAndView ajaxModel = new ModelAndView(new AjaxJsonView());
-        JSONObject jsonObject = new JSONObject();
-
-        try {
-            JSONObject jsonParam = BcjisCommUtil.getJsonObjectFromRequest(request);
-            String jobId = jsonParam == null ? null : String.valueOf(jsonParam.get("jobId"));
-            if (jobId == null || "null".equals(jobId) || jobId.trim().length() < 1) {
-                jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-                jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, "jobId가 없습니다.");
-            } else {
-                BudgetCopyNewApplyJob job = budgetCopyNewApplyQueueService.getJob(jobId.trim());
-                if (job == null) {
-                    jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-                    jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, "적용 요청을 찾을 수 없습니다. 다시 시도하여 주십시오.");
-                } else {
-                    putJobToJson(jsonObject, job);
-                    jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_SUCC);
-                    jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, job.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            logger.error("ajaxBudgetCopyNewCopyReportBatchStatus(ModelMap, HttpServletRequest)", e);
-            jsonObject.put(BcjisCommUtil.BCJIS_RETURN_CODE, BcjisCommUtil.BCJIS_RETURN_CODE_ERR);
-            jsonObject.put(BcjisCommUtil.BCJIS_MESSAGE, bcjisMessageSource.getMessage("fail.common.select"));
-        }
-
-        ajaxModel.addObject(BcjisCommUtil.JSON_OBJCT_NM, jsonObject);
-        return ajaxModel;
-    }
-
-    private void putJobToJson(JSONObject jsonObject, BudgetCopyNewApplyJob job) {
-        jsonObject.put("jobId", job.getJobId());
-        jsonObject.put("status", job.getStatus());
-        jsonObject.put("queuePos", Integer.valueOf(job.getQueuePos()));
-        jsonObject.put("totalCnt", Integer.valueOf(job.getTotalCnt()));
-        jsonObject.put("appliedCnt", Integer.valueOf(job.getAppliedCnt()));
-        jsonObject.put("jobMessage", job.getMessage() == null ? "" : job.getMessage());
     }
 
     @RequestMapping("/budget/ajaxBudgetCopyNewCopyReport.do")

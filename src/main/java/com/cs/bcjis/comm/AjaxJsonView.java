@@ -16,7 +16,6 @@ public class AjaxJsonView extends AbstractView{
 	@Override
 	protected void renderMergedOutputModel(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-		response.setContentType("text/html;charset=utf-8");
 		response.setHeader("Content-Type", "text/html;charset=utf-8");
 	    PrintWriter out = new PrintWriter(new OutputStreamWriter(response.getOutputStream(),"UTF-8"));
 	       

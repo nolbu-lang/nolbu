@@ -6,6 +6,8 @@ $(document).ready(function() {
     var gridScrollPosition = 0;
     var searchDetl = '';
     var comboData = null;
+    // 사용안함(삭제) 코드까지 포함한 이름조회 전용 맵(선택목록에는 노출 안함) — attr 모드에서만 사용
+    var codeNmAll = { indiAttr: {}, advncProc: {} };
     // class: 조서·집계 항목선택 / attr: 보고항목·분류항목
     // data-view-mode를 우선 사용해 전역변수 덮어쓰기 충돌 방지
     var viewMode = tabObj.find("[data-view-mode]").attr("data-view-mode")
@@ -55,12 +57,17 @@ $(document).ready(function() {
     var getCodeNm = function(comboId, code){
         if(isEmpty(code) || !comboData || !comboData[comboId]){ return ""; }
         var list = comboData[comboId];
+        var codeVal = firstCode(code);
         for(var i=0;i<list.length;i++){
-            if(String(list[i].code) === String(firstCode(code))){
+            if(String(list[i].code) === String(codeVal)){
                 return list[i].codeNm;
             }
         }
-        return firstCode(code) || "";
+        // 활성목록에 없으면(사용안함 처리된 코드) 이름조회 전용 맵에서 이름만 찾아옴
+        if(codeNmAll[comboId] && codeNmAll[comboId][codeVal]){
+            return codeNmAll[comboId][codeVal];
+        }
+        return codeVal || "";
     };
     var resolveCodeNames = function(comboId, cellValue){
         if(isEmpty(cellValue)){ return ""; }
@@ -70,14 +77,46 @@ $(document).ready(function() {
             var c = $.trim(parts[i]);
             if(!c) continue;
             var nm = c;
+            var found = false;
             if(comboData && comboData[comboId]){
                 for(var j=0;j<comboData[comboId].length;j++){
-                    if(String(comboData[comboId][j].code)===c){ nm = comboData[comboId][j].codeNm; break; }
+                    if(String(comboData[comboId][j].code)===c){ nm = comboData[comboId][j].codeNm; found = true; break; }
                 }
+            }
+            if(!found && codeNmAll[comboId] && codeNmAll[comboId][c]){
+                nm = codeNmAll[comboId][c];
             }
             names.push(nm);
         }
         return names.join(',');
+    };
+
+    // 사용안함(삭제) 코드도 포함한 이름조회 맵 로드 — 조회조건/체크박스 선택목록에는 반영하지 않음
+    var loadAttrCodeNmAll = function(){
+        if(!isAttrMode){ return; }
+        var fillMap = function(comboId){
+            return function(data){
+                if(isEmpty(data) === true || data[BCJIS_RETURN_CODE] != "SUCC"){ return; }
+                var list = data.dataList || [];
+                var map = {};
+                for(var i=0;i<list.length;i++){
+                    map[String(list[i].detlCd)] = list[i].detlCdNm;
+                }
+                codeNmAll[comboId] = map;
+            };
+        };
+        $.csAjaxCall({
+            url : "/budget/ajaxBudgetCommCdListAll.do",
+            data: { codeId : "RP014" },
+            async : true,
+            callBack : fillMap('indiAttr')
+        });
+        $.csAjaxCall({
+            url : "/budget/ajaxBudgetCommCdListAll.do",
+            data: { codeId : "RP015" },
+            async : true,
+            callBack : fillMap('advncProc')
+        });
     };
 
     // 조서·집계 항목선택 글자색 — 기존 budgetSelect.js 기준 + 화면 범례
@@ -191,13 +230,21 @@ $(document).ready(function() {
         if(rowObject.teBgtCompoId == "00000000000" ){
             return cellValue;
         }
-        
+
+        // 서버가 checkYn031~035를 내려주지 않는 행(현 조회 SQL)에서는 govSub 값으로 최초 체크상태를 보정
+        // (govSub만 보고 판단 -> 실제 030 미등록 상태라도 무방: 안 건드리면 그대로, 다시 적용하면 정상 등록됨)
+        var chk031 = rowObject.checkYn031 == 'Y' || (isEmpty(rowObject.checkYn031) && rowObject.govSub == '031');
+        var chk032 = rowObject.checkYn032 == 'Y' || (isEmpty(rowObject.checkYn032) && rowObject.govSub == '032');
+        var chk033 = rowObject.checkYn033 == 'Y' || (isEmpty(rowObject.checkYn033) && rowObject.govSub == '033');
+        var chk034 = rowObject.checkYn034 == 'Y' || (isEmpty(rowObject.checkYn034) && rowObject.govSub == '034');
+        var chk035 = rowObject.checkYn035 == 'Y' || (isEmpty(rowObject.checkYn035) && rowObject.govSub == '035');
+
         var rVal = '<div>'
-                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn031_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'031\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(rowObject.checkYn031 == 'Y' ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-일반</span>'
-                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn032_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'032\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(rowObject.checkYn032 == 'Y' ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-균특</span>'
-                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn033_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'033\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(rowObject.checkYn033 == 'Y' ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-기금</span>'
-                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn034_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'034\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(rowObject.checkYn034 == 'Y' ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-기타특별</span>'
-                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn035_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'035\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(rowObject.checkYn035 == 'Y' ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국비직접지원</span>'
+                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn031_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'031\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(chk031 ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-일반</span>'
+                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn032_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'032\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(chk032 ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-균특</span>'
+                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn033_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'033\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(chk033 ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-기금</span>'
+                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn034_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'034\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(chk034 ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국고-기타특별</span>'
+                 + '&nbsp;&nbsp;<input type="checkbox" id="checkYn035_'+rowObject.dgrcompoId+'" value="Y" class="chkBudgetSelect" onclick="javascript:budgetSelectCheckYn(\'035\', \''+rowObject.dgrcompoId+'\');" style="margin-top: 5px;" '+(chk035 ? 'checked' : '')+' /><span style="line-height:22px; vertical-align:top;">국비직접지원</span>'
                  + '</div>';
 
         return rVal;
@@ -240,16 +287,11 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>';
-        var matched = false;
         for(var i=0 ; i<itemList.length ; i++){
         	var data = itemList[i];
         	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    			matched = true;
     		}
-        }
-        if(!matched && firstCode(cellValue)){
-            rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
         }
         
         rVal += '</div>';
@@ -277,16 +319,11 @@ $(document).ready(function() {
         }
     	
     	var rVal = '<div>';
-    	var matched = false;
     	for(var i=0 ; i<itemList.length ; i++){
     		var data = itemList[i];
     		if(hasSelectedCode(cellValue, data.code)){
     			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    			matched = true;
     		}
-    	}
-    	if(!matched && firstCode(cellValue)){
-    		rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
     	}
     	
     	rVal += '</div>';
@@ -314,24 +351,17 @@ $(document).ready(function() {
         }
     	
     	var rVal = '<div>';
-    	var matched = false;
     	if(hasSelectedCode(cellValue, '024') || hasSelectedCode(cellValue, '025') || hasSelectedCode(cellValue, '026')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">자체투자</span><br />';
-    		matched = true;
     	}else if(hasSelectedCode(cellValue, '021') || hasSelectedCode(cellValue, '022') || hasSelectedCode(cellValue, '023')){
     		rVal += '<span style="line-height:22px; vertical-align:top;">국고투자</span><br />';
-    		matched = true;
     	}else{
     		for(var i=0 ; i<itemList.length ; i++){
         		var data = itemList[i];
         		if(hasSelectedCode(cellValue, data.code)){
         			rVal += '<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-        			matched = true;
         		}
         	}
-    	}
-    	if(!matched && firstCode(cellValue)){
-    		rVal += '<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
     	}
     	
     	rVal += '</div>';
@@ -359,17 +389,12 @@ $(document).ready(function() {
         }
         
         var rVal = '<div>';
-        var matched = false;
         for(var i=0 ; i<govSubList.length ; i++){
         	var data = govSubList[i];
         	
         	if(hasSelectedCode(cellValue, data.code)){
     			rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + data.codeNm + '</span><br />';
-    			matched = true;
     		}
-        }
-        if(!matched && firstCode(cellValue)){
-            rVal += '&nbsp;&nbsp;<span style="line-height:22px; vertical-align:top;">' + firstCode(cellValue) + '</span><br />';
         }
         
         rVal += '</div>';
@@ -736,7 +761,7 @@ $(document).ready(function() {
                         {name : 'frsces', index : 'frsces', width : 130, sortable : false, fixed : true, align : 'left', hidden: isAttrMode },
                         {name : 'selNames', index : 'selNames', width : 200, sortable : false, hidden : true, fixed : true, align : 'left'},
                         {name : 'report030FgView', index : 'report030FgView', width : 200, sortable : false, hidden : true, fixed : true, align : 'left', cellattr: myCellattr,
-                            formatter: isAttrMode ? report030FgFormatter : function(v){ return (v==null?'':v); }
+                            formatter: report030FgFormatter
                         },
                         {name : 'advncProcCol', index : 'advncProcCol', width : isAttrMode ? 200 : 120, sortable : false, hidden : !isAttrMode, fixed : true, align : 'left',
                         	cellattr: function(){ return ' style="white-space:normal;word-break:break-all;vertical-align:top;"'; },
@@ -879,7 +904,6 @@ $(document).ready(function() {
                 root : "dataList"
             },
             onSelectRow: function(rowId){
-                fillClassSelsFromRow(budgetSelectGrid.getRowData(rowId));
             },
             loadComplete: function() {
                 var iColSelYn = getColumnIndexByName ($(this), 'selYn');
@@ -1505,6 +1529,7 @@ $(document).ready(function() {
             });
             buildToolbarAdvncCombo();
             buildToolbarIndiAttrCombo();
+            loadAttrCodeNmAll();
             doSearch();
         },
         buttons: {
@@ -1531,12 +1556,13 @@ $(document).ready(function() {
         }
         
         gridScrollPosition = 0;
-        
+
         comboData = jQuery.csComboAjaxCall(comboParam);
-        
+        loadAttrCodeNmAll();
+
         doSearch();
     }
-    
+
     //사전절차 관리 클릭 이벤트 (legacy)
     $("#advncProcBtn", tabObj).click(function() {
     	$("#dialogDgrcompoAdvncProcCallBackFunction", $("#dialogDgrcompoAdvncProcDiv")).val("budgetSelectDialogAdvncProcCallBack");
@@ -1554,9 +1580,10 @@ $(document).ready(function() {
         }
         
         gridScrollPosition = 0;
-        
+
         comboData = jQuery.csComboAjaxCall(comboParam);
-        
+        loadAttrCodeNmAll();
+
         doSearch();
     }
     
@@ -1695,7 +1722,7 @@ $(document).ready(function() {
                     selectedData["checkYn034"] = $('#checkYn034_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
                     selectedData["checkYn034Yn"] = rowData.checkYn034 != checkYn034 ? "Y" : "N";
                     selectedData["checkYn035"] = $('#checkYn035_'+rowId, tabObj).is(':checked') == true ? "Y" : "N";
-                    selectedData["checkYn035Yn"] = rowData.checkYn035 != checkYn034 ? "Y" : "N";
+                    selectedData["checkYn035Yn"] = rowData.checkYn035 != checkYn035 ? "Y" : "N";
                     
                     selectedDatas.push(selectedData);
                     cnt++;
@@ -1859,9 +1886,8 @@ $(document).ready(function() {
         
         saveReportParam["saveReportDatas"] = selectedDatas;
         saveReportParam["viewMode"] = viewMode;
-        // 국고030 체크 UI 없음 — 불필요·오인 저장 방지
-        saveReportParam["saveReportDatas030"] = [];
-        
+        saveReportParam["saveReportDatas030"] = getSelectedData030(budgetSelectGrid, $("#"+gridId, tabObj)[0].rows);
+        console.log('testestsetet123123');
        $.csAjaxCall({
             url : "/budget/ajaxBudgetSelectNewSaveReport.do",
             data : saveReportParam,
@@ -1934,7 +1960,8 @@ $(document).ready(function() {
         if(!isAttrMode){ return; }
         var $sel = $("#toolbarIndiAttr", tabObj);
         $sel.empty();
-        $sel.append('<option value=\"\">전체</option>');
+        // 값 ""(빈값) = 미선택 적용(투자사업유형 해제). 라벨을 실제 동작과 일치시킨다.
+        $sel.append('<option value=\"\">미선택</option>');
         var list = (comboData && comboData['indiAttr']) ? comboData['indiAttr'] : [];
         for(var i = 0; i < list.length; i++){
             $sel.append('<option value=\"'+list[i].code+'\">'+list[i].codeNm+'</option>');
@@ -2568,43 +2595,6 @@ $(document).ready(function() {
 
     // 콤보 로드를 다음 틱으로 미뤄 탭 화면이 먼저 그려지게 함 (오픈 체감속도)
     
-    // 조회된 사업의 조서·집계 분류를 대/중/소 선택목록에 채워 수정적용 가능하게 함
-    var fillClassSelsFromRow = function(rowData){
-        if(!rowData || rowData.teBgtCompoId == "00000000000"){
-            return;
-        }
-        var mstr = firstCode(rowData.reportMstr);
-        var cd = firstCode(rowData.reportCd);
-        var detl = firstCode(rowData.reportDetlCd);
-        if(!mstr && cd && comboData && comboData['reportCd']){
-            for(var i = 0; i < comboData['reportCd'].length; i++){
-                if(String(comboData['reportCd'][i].code) === cd){
-                    mstr = comboData['reportCd'][i].groupId || '';
-                    break;
-                }
-            }
-        }
-        if(!mstr && !cd && !detl){
-            return;
-        }
-        if(mstr){
-            $("#reportMstrSel", tabObj).val(mstr);
-            reportCdSelCreateCombo(mstr, cd || '');
-            if(cd){
-                reportDetlCdSelCreateCombo(cd, detl || '');
-            }else{
-                reportDetlCdSelCreateCombo('', '');
-            }
-        }else if(cd){
-            reportCdSelCreateCombo('ALL', cd);
-            reportDetlCdSelCreateCombo(cd, detl || '');
-        }
-        var gov = firstCode(rowData.govSub);
-        if(gov){
-            $("#govSubSel", tabObj).val(gov);
-        }
-    };
-
     //대분류 데이터에 따라 중분류 새로 세팅
     var reportCdSelCreateCombo = function(groupId, selectedValue){
     	if(!comboData){ return; }
@@ -2772,6 +2762,7 @@ $(document).ready(function() {
     setTimeout(function(){
         comboData = jQuery.csComboAjaxCall(comboParam);
         doCondInit();
+        loadAttrCodeNmAll();
     }, 0);
 });
 

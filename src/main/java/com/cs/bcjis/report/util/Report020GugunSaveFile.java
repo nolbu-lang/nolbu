@@ -82,6 +82,8 @@ public class Report020GugunSaveFile {
         Map reportInfo = reportCommDAO.selectReportInfo(param);
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = ReportSaveUtil.getStringValue(reportInfo.get("sheetNm"));
         if (BcjisCommUtil.isNullString(sheetName) == true) {
@@ -114,11 +116,11 @@ public class Report020GugunSaveFile {
                 subCnt++;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, (categories.size() == 0 ? true : false));
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, (categories.size() == 0 ? true : false), indiAttrNmMap, advncProcNmMap);
         }
 
         if (sheet != null) {
-            writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 15);
+            writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 17);
             reportFormulaUtil.writeCellFormula();
             sheet = null;
         }
@@ -152,6 +154,8 @@ public class Report020GugunSaveFile {
         boolean bgtCompoFlag = "10".equals(ReportSaveUtil.getStringValue(reportInfo.get("bgtCompoFg"))) ? true : false;
 
         Map<String, CellStyle> styles = reportCommDAO.getReportStyleMap(param, wb);
+        Map<String, String> indiAttrNmMap = reportCommDAO.selectCommCodeNmMap("RP014");
+        Map<String, String> advncProcNmMap = reportCommDAO.selectCommCodeNmMap("RP015");
 
         String sheetName = "new sheet";
 
@@ -168,7 +172,7 @@ public class Report020GugunSaveFile {
 
             if (dgrLevel == 0) {
                 if (sheet != null) {
-                    writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 15);
+                    writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 17);
                     reportFormulaUtil.writeCellFormula();
                     sheet = null;
                 }
@@ -200,11 +204,11 @@ public class Report020GugunSaveFile {
                 subCnt++;
             }
 
-            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, (categories.size() == 0 ? true : false));
+            rowNum = writeData(sheet, rowNum, category, styles, bgtCompoFlag, totDataCnt, dataCnt, subCnt, reportFormulaUtil, (categories.size() == 0 ? true : false), indiAttrNmMap, advncProcNmMap);
         }
 
         if (sheet != null) {
-            writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 15);
+            writeLastSheet(param, wb, sheet, rowNum, styles, reportInfo, 17);
             reportFormulaUtil.writeCellFormula();
             sheet = null;
         }
@@ -294,7 +298,7 @@ public class Report020GugunSaveFile {
         return rowNum;
     }
 
-    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil, boolean lastDataFlag) {
+    public int writeData(XSSFSheet sheet, int rowNum, JSONObject category, Map<String, CellStyle> styles, boolean bgtCompoFlag, int totDataCnt, int dataCnt, int subCnt, ReportFormulaUtil reportFormulaUtil, boolean lastDataFlag, Map<String, String> indiAttrNmMap, Map<String, String> advncProcNmMap) {
         float rowHeight = 40.50f;
         Row row = null;
         Cell cell = null;
@@ -421,6 +425,19 @@ public class Report020GugunSaveFile {
         cell.setCellStyle(styles.get(preStyleNm + "Col15"));
         if (formulaFlag == false) {
             cell.setCellValue(ReportSaveUtil.getStringValue(category.get("officeNm")));
+        }
+
+        //투자사업유형(INDI_ATTR)/분류항목(ADVNC_PROC)
+        cell = row.createCell(16);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col16", preStyleNm + "Col15");
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(indiAttrNmMap, category.get("indiAttr")));
+        }
+
+        cell = row.createCell(17);
+        ReportSaveUtil.setCellStyleWithFallback(cell, styles, preStyleNm + "Col17", preStyleNm + "Col15");
+        if (formulaFlag == false) {
+            cell.setCellValue(ReportSaveUtil.getCodeNmValue(advncProcNmMap, category.get("advncProc")));
         }
 
         addDataFormulaValue(reportFormulaUtil, upDgrcompoId, rowNum);

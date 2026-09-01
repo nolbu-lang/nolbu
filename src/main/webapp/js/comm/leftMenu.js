@@ -75,6 +75,7 @@ $(document).ready(function() {
                 //$("#" + id, "#mainTabs01").append(req.responseText);
                 //호출 액션 명 추가
                 $("#" + id, "#mainTabs01").append("<p>"+ctx + url+"</p>" + req.responseText);
+                //$("#" + id, "#mainTabs01").append(req.responseText);
             }
         });
         

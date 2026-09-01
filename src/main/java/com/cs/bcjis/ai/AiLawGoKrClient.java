@@ -1,10 +1,7 @@
 package com.cs.bcjis.ai;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -41,6 +38,9 @@ public class AiLawGoKrClient {
     private static final String DEFAULT_BASE = "https://www.law.go.kr/DRF/lawSearch.do";
     private static final String SERVICE_BASE = "https://www.law.go.kr/DRF/lawService.do";
     private static final String DETAIL_BASE = "https://www.law.go.kr";
+    // 운영 WAS의 구버전 JDK(JSSE)가 TLS1.2를 지원하지 않아 HttpsURLConnection 대신
+    // OS의 curl(OpenSSL)로 우회 요청한다. (2026-08-20, AiBusanHomepageClient와 동일 조치)
+    private static final String HTTP_CODE_MARK = "\n@@BCJIS_HTTP_CODE@@:";
     private static final Pattern JO_PATTERN = Pattern.compile(
             "제\\s*([0-9]+)\\s*조(?:\\s*의\\s*([0-9]+))?");
 
@@ -1028,37 +1028,60 @@ public class AiLawGoKrClient {
         return httpGet(urlStr, getIntProp("Globals.AiLawGoKrTimeoutMs", 15000));
     }
 
+    /**
+     * HttpsURLConnection(JVM 내장 JSSE) 대신 OS의 curl(OpenSSL)로 요청한다.
+     * 운영 WAS의 구버전 JDK가 TLS1.2를 지원하지 않아 www.law.go.kr(TLS1.2 필수)과의
+     * 핸드셰이크가 항상 실패하기 때문(2026-08-20 확인) — curl은 OS OpenSSL을 쓰므로 무관하다.
+     */
     private String httpGet(String urlStr, int timeoutMs) throws Exception {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(timeoutMs);
-            conn.setReadTimeout(timeoutMs);
-            conn.setRequestProperty("Accept", "application/json");
-            int code = conn.getResponseCode();
-            InputStream in = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-            if (in == null) {
-                throw new IllegalStateException("법제처 API 응답 없음 HTTP " + code);
+        int timeoutSec = Math.max(1, (timeoutMs + 999) / 1000);
+        List<String> cmd = new ArrayList<String>();
+        cmd.add("curl");
+        cmd.add("-s");
+        cmd.add("-S");
+        cmd.add("-L");
+        cmd.add("--max-time");
+        cmd.add(String.valueOf(timeoutSec));
+        cmd.add("-H");
+        cmd.add("Accept: application/json");
+        cmd.add("-w");
+        cmd.add(HTTP_CODE_MARK + "%{http_code}");
+        cmd.add(urlStr);
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        pb.redirectErrorStream(true);
+        Process proc = pb.start();
+        String out = new String(readAllBytes(proc.getInputStream()), "UTF-8");
+        int exitCode = proc.waitFor();
+
+        int mark = out.lastIndexOf(HTTP_CODE_MARK);
+        String resp = mark >= 0 ? out.substring(0, mark) : out;
+        String codeStr = mark >= 0 ? out.substring(mark + HTTP_CODE_MARK.length()).trim() : "";
+
+        if (exitCode != 0) {
+            String detail = out.trim();
+            if (detail.length() > 300) {
+                detail = detail.substring(0, 300);
             }
-            BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-            br.close();
-            if (code >= 400) {
-                logger.warn("법제처 API HTTP " + code + " body=" + sb.toString());
-                throw new IllegalStateException("법제처 API 오류 HTTP " + code);
-            }
-            return sb.toString();
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+            throw new IllegalStateException("curl 실행 실패(exit=" + exitCode + "): " + urlStr
+                    + (detail.length() > 0 ? " - " + detail : ""));
         }
+        int code = codeStr.length() > 0 ? Integer.parseInt(codeStr) : 0;
+        if (code >= 400) {
+            logger.warn("법제처 API HTTP " + code + " body=" + resp);
+            throw new IllegalStateException("법제처 API 오류 HTTP " + code);
+        }
+        return resp;
+    }
+
+    private static byte[] readAllBytes(InputStream in) throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int n;
+        while ((n = in.read(chunk)) >= 0) {
+            buf.write(chunk, 0, n);
+        }
+        return buf.toByteArray();
     }
 
     private String getOc() {

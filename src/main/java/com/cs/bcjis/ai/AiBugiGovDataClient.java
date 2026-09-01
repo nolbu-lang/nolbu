@@ -1,11 +1,7 @@
 package com.cs.bcjis.ai;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -31,6 +27,9 @@ public class AiBugiGovDataClient {
 
     private static final String DEFAULT_URL =
             "https://busanai.busan.go.kr/bugi/external-research/government-data";
+    // 운영 WAS의 구버전 JDK(JSSE)가 TLS1.2를 지원하지 않아 HttpsURLConnection 대신
+    // OS의 curl(OpenSSL)로 우회 요청한다. (2026-08-20, AiBusanHomepageClient와 동일 조치)
+    private static final String HTTP_CODE_MARK = "\n@@BCJIS_HTTP_CODE@@:";
 
     @Autowired
     @Qualifier("config")
@@ -173,55 +172,74 @@ public class AiBugiGovDataClient {
         return http("POST", urlStr, jsonBody);
     }
 
+    /**
+     * HttpsURLConnection(JVM 내장 JSSE) 대신 OS의 curl(OpenSSL)로 요청한다.
+     * 운영 WAS의 구버전 JDK가 TLS1.2를 지원하지 않아 busanai.busan.go.kr(TLS1.2 필수)과의
+     * 핸드셰이크가 항상 실패하기 때문(2026-08-20 확인) — curl은 OS OpenSSL을 쓰므로 무관하다.
+     */
     private String http(String method, String urlStr, String jsonBody) throws Exception {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(urlStr);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod(method);
-            conn.setConnectTimeout(getIntProp("Globals.AiBugiTimeoutMs", 20000));
-            conn.setReadTimeout(getIntProp("Globals.AiBugiTimeoutMs", 20000));
-            conn.setRequestProperty("Accept", "application/json");
-            String keyHeader = getProp("Globals.AiBugiKeyHeader", "X-API-KEY");
-            if (keyHeader.length() > 0 && getApiKey().length() > 0) {
-                conn.setRequestProperty(keyHeader, getApiKey());
-            }
-            if ("POST".equals(method) && jsonBody != null) {
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                OutputStream os = conn.getOutputStream();
-                os.write(jsonBody.getBytes("UTF-8"));
-                os.flush();
-                os.close();
-            }
-            int code = conn.getResponseCode();
-            InputStream in = code >= 400 ? conn.getErrorStream() : conn.getInputStream();
-            String resp = readStream(in);
-            if (code >= 400) {
-                logger.warn("부기주무관 API HTTP " + code + " " + truncate(resp, 300));
-                throw new IllegalStateException("부기주무관 API 오류 HTTP " + code
-                        + (resp.length() > 0 ? ("\n" + truncate(resp, 200)) : ""));
-            }
-            return resp;
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+        int timeoutMs = getIntProp("Globals.AiBugiTimeoutMs", 20000);
+        int timeoutSec = Math.max(1, (timeoutMs + 999) / 1000);
+
+        List<String> cmd = new ArrayList<String>();
+        cmd.add("curl");
+        cmd.add("-s");
+        cmd.add("-S");
+        cmd.add("-L");
+        cmd.add("--max-time");
+        cmd.add(String.valueOf(timeoutSec));
+        cmd.add("-H");
+        cmd.add("Accept: application/json");
+        String keyHeader = getProp("Globals.AiBugiKeyHeader", "X-API-KEY");
+        if (keyHeader.length() > 0 && getApiKey().length() > 0) {
+            cmd.add("-H");
+            cmd.add(keyHeader + ": " + getApiKey());
         }
+        if ("POST".equals(method) && jsonBody != null) {
+            cmd.add("-H");
+            cmd.add("Content-Type: application/json; charset=UTF-8");
+            cmd.add("--data");
+            cmd.add(jsonBody);
+        }
+        cmd.add("-w");
+        cmd.add(HTTP_CODE_MARK + "%{http_code}");
+        cmd.add(urlStr);
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+        pb.redirectErrorStream(true);
+        Process proc = pb.start();
+        String out = new String(readAllBytes(proc.getInputStream()), "UTF-8");
+        int exitCode = proc.waitFor();
+
+        int mark = out.lastIndexOf(HTTP_CODE_MARK);
+        String resp = mark >= 0 ? out.substring(0, mark) : out;
+        String codeStr = mark >= 0 ? out.substring(mark + HTTP_CODE_MARK.length()).trim() : "";
+
+        if (exitCode != 0) {
+            String detail = out.trim();
+            if (detail.length() > 300) {
+                detail = detail.substring(0, 300);
+            }
+            throw new IllegalStateException("curl 실행 실패(exit=" + exitCode + "): " + urlStr
+                    + (detail.length() > 0 ? " - " + detail : ""));
+        }
+        int code = codeStr.length() > 0 ? Integer.parseInt(codeStr) : 0;
+        if (code >= 400) {
+            logger.warn("부기주무관 API HTTP " + code + " " + truncate(resp, 300));
+            throw new IllegalStateException("부기주무관 API 오류 HTTP " + code
+                    + (resp.length() > 0 ? ("\n" + truncate(resp, 200)) : ""));
+        }
+        return resp;
     }
 
-    private String readStream(InputStream in) throws Exception {
-        if (in == null) {
-            return "";
+    private static byte[] readAllBytes(InputStream in) throws Exception {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int n;
+        while ((n = in.read(chunk)) >= 0) {
+            buf.write(chunk, 0, n);
         }
-        BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line).append('\n');
-        }
-        br.close();
-        return sb.toString();
+        return buf.toByteArray();
     }
 
     private String firstStr(JSONObject row, String[] names) {

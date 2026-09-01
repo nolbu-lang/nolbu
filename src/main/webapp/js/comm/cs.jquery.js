@@ -4,25 +4,37 @@
     var _bcjisLoadingBound = false;
     var _bcjisComboCache = {};
 
+    var _bcjisUntrackXhr = function(jqXHR) {
+        var idx = $.inArray(jqXHR, _bcjisActiveXhrs);
+        if (idx >= 0) {
+            _bcjisActiveXhrs.splice(idx, 1);
+        }
+    };
+
     var _bcjisTrackXhr = function(jqXHR) {
         if (!jqXHR) {
+        	console.log('에러 테스트');
             return;
         }
         if ($.inArray(jqXHR, _bcjisActiveXhrs) >= 0) {
             return;
         }
         _bcjisActiveXhrs.push(jqXHR);
-        jqXHR.always(function() {
-            var idx = $.inArray(jqXHR, _bcjisActiveXhrs);
-            if (idx >= 0) {
-                _bcjisActiveXhrs.splice(idx, 1);
-            }
-        });
+        // ajaxFileUpload(구형 iframe 업로드, ajaxfileupload.js)는 ajaxSend 이벤트에
+        // 표준 jqXHR이 아닌 plain object({})를 넘기므로 always()가 없을 수 있다.
+        if (typeof jqXHR.always === "function") {
+            jqXHR.always(function() {
+                _bcjisUntrackXhr(jqXHR);
+            });
+        }
     };
 
     // csAjaxCall / 탭 HTML / jqGrid 등 모든 jQuery AJAX 추적
+    // ajaxComplete는 ajaxFileUpload가 트리거하는 plain object도 동일하게 정리해준다.
     $(document).ajaxSend(function(event, jqXHR, settings) {
         _bcjisTrackXhr(jqXHR);
+    }).ajaxComplete(function(event, jqXHR, settings) {
+        _bcjisUntrackXhr(jqXHR);
     });
 
     var _bcjisBindLoadingOnce = function() {

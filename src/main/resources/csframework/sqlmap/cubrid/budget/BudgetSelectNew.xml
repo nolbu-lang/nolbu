@@ -120,6 +120,14 @@
                                     AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
                                )
                        ) Z
+                 <!-- 실국 선택 시 TB_REPORT 전체(시 전체) 집계 대신 해당 실국 소속 세세목으로만 집계 범위 축소 -->
+                 <isNotEmpty prepend="" property="officeCd">
+                   WHERE Z.TE_BGT_COMPO_ID IN (SELECT A2.TE_BGT_COMPO_ID
+                                               FROM TB_DGRCOMPO A2, TB_DGRDEPT B2
+                                              WHERE A2.FIS_YEAR = #fisYear# AND A2.BGT_DGR = #bgtDgr#
+                                                AND B2.FIS_YEAR = A2.FIS_YEAR AND B2.BGT_DGR = A2.BGT_DGR AND B2.DEPT_CD = A2.DEPT_CD
+                                                AND B2.OFFICE_CD = #officeCd#)
+                 </isNotEmpty>
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
              , (SELECT Y.FIS_YEAR
@@ -139,6 +147,14 @@
                            AND Z2.FRSC_FG_CD = Z1.FRSC_FG_CD
                            AND Z1.FIS_YEAR = #fisYear#
                            AND Z1.BGT_DGR = #bgtDgr#
+                         <!-- 실국 선택 시 TB_DGRCOMPOFRSC 전체(시 전체) 집계 대신 해당 실국 소속 세세목으로만 집계 범위 축소 -->
+                         <isNotEmpty prepend="" property="officeCd">
+                           AND Z1.TE_BGT_COMPO_ID IN (SELECT A3.TE_BGT_COMPO_ID
+                                                        FROM TB_DGRCOMPO A3, TB_DGRDEPT B3
+                                                       WHERE A3.FIS_YEAR = #fisYear# AND A3.BGT_DGR = #bgtDgr#
+                                                         AND B3.FIS_YEAR = A3.FIS_YEAR AND B3.BGT_DGR = A3.BGT_DGR AND B3.DEPT_CD = A3.DEPT_CD
+                                                         AND B3.OFFICE_CD = #officeCd#)
+                         </isNotEmpty>
                          GROUP BY Z1.FIS_YEAR, Z1.BGT_DGR, Z1.TE_BGT_COMPO_ID, Z2.FIS_YEAR, Z2.FRSC_FG_CD
                        ) Y
                  WHERE Y.FRSC_AMT <![CDATA[<>]]> 0
@@ -227,7 +243,18 @@
               OR LOWER(REPLACE(REPLACE(NVL(A.COMP_GROUND, ''), ' ', ''), '　', '')) LIKE '%' || #bizNmKw# || '%'
                )
          </isNotEmpty>
-         ORDER BY NVL(B.OFFICE_RANK, 0), NVL(B.DEPT_RANK, 0), NVL(C.DBIZ_RANK, 0), A.TE_MNG_MOK_CD, NVL(A.SORT_SEQ, 0), A.TE_BGT_COMPO_ID
+         /* 이호조·기존 BudgetSelect 와 동일: 실국→부서→정책→단위→세부→통계목→SORT_SEQ */
+         ORDER BY NVL(B.OFFICE_RANK, 0)
+                , NVL(B.DEPT_RANK, 0)
+                , NVL(C.PBIZ_RANK, 0)
+                , NVL(C.PBIZ_CD, '0000000000000000')
+                , NVL(C.UBIZ_RANK, 0)
+                , NVL(C.UBIZ_CD, '0000000000000000')
+                , NVL(C.DBIZ_RANK, 0)
+                , NVL(C.DBIZ_CD, '0000000000000000')
+                , NVL(A.TE_MNG_MOK_CD, '00000')
+                , NVL(A.SORT_SEQ, 0)
+                , A.TE_BGT_COMPO_ID
     </select>
 
     <!--
@@ -341,6 +368,14 @@
                                     AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
                                )
                        ) Z
+                 <!-- 실국 선택 시 TB_REPORT 전체(시 전체) 집계 대신 해당 실국 소속 세세목으로만 집계 범위 축소 -->
+                 <isNotEmpty prepend="" property="officeCd">
+                   WHERE Z.TE_BGT_COMPO_ID IN (SELECT A2.TE_BGT_COMPO_ID
+                                               FROM TB_DGRCOMPO A2, TB_DGRDEPT B2
+                                              WHERE A2.FIS_YEAR = #fisYear# AND A2.BGT_DGR = #bgtDgr#
+                                                AND B2.FIS_YEAR = A2.FIS_YEAR AND B2.BGT_DGR = A2.BGT_DGR AND B2.DEPT_CD = A2.DEPT_CD
+                                                AND B2.OFFICE_CD = #officeCd#)
+                 </isNotEmpty>
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
          WHERE A.FIS_YEAR = #fisYear#
@@ -411,7 +446,18 @@
               OR LOWER(REPLACE(REPLACE(NVL(A.COMP_GROUND, ''), ' ', ''), '　', '')) LIKE '%' || #bizNmKw# || '%'
                )
          </isNotEmpty>
-         ORDER BY NVL(B.OFFICE_RANK, 0), NVL(B.DEPT_RANK, 0), NVL(C.DBIZ_RANK, 0), A.TE_MNG_MOK_CD, NVL(A.SORT_SEQ, 0), A.TE_BGT_COMPO_ID
+         /* 이호조·기존 BudgetSelect 와 동일: 실국→부서→정책→단위→세부→통계목→SORT_SEQ */
+         ORDER BY NVL(B.OFFICE_RANK, 0)
+                , NVL(B.DEPT_RANK, 0)
+                , NVL(C.PBIZ_RANK, 0)
+                , NVL(C.PBIZ_CD, '0000000000000000')
+                , NVL(C.UBIZ_RANK, 0)
+                , NVL(C.UBIZ_CD, '0000000000000000')
+                , NVL(C.DBIZ_RANK, 0)
+                , NVL(C.DBIZ_CD, '0000000000000000')
+                , NVL(A.TE_MNG_MOK_CD, '00000')
+                , NVL(A.SORT_SEQ, 0)
+                , A.TE_BGT_COMPO_ID
     </select>
 
     <!-- 하위 호환: 기존 Fast → class -->
@@ -530,6 +576,14 @@
                                     AND R.REPORT_CD NOT IN ('030','070','0A0','0B0','0C0','0D0')
                                )
                        ) Z
+                 <!-- 실국 선택 시 TB_REPORT 전체(시 전체) 집계 대신 해당 실국 소속 세세목으로만 집계 범위 축소 -->
+                 <isNotEmpty prepend="" property="officeCd">
+                   WHERE Z.TE_BGT_COMPO_ID IN (SELECT A2.TE_BGT_COMPO_ID
+                                               FROM TB_DGRCOMPO A2, TB_DGRDEPT B2
+                                              WHERE A2.FIS_YEAR = #fisYear# AND A2.BGT_DGR = #bgtDgr#
+                                                AND B2.FIS_YEAR = A2.FIS_YEAR AND B2.BGT_DGR = A2.BGT_DGR AND B2.DEPT_CD = A2.DEPT_CD
+                                                AND B2.OFFICE_CD = #officeCd#)
+                 </isNotEmpty>
                  GROUP BY Z.FIS_YEAR, Z.BGT_DGR, Z.TE_BGT_COMPO_ID
                ) R
          WHERE A.FIS_YEAR = #fisYear#
@@ -558,7 +612,18 @@
               OR LOWER(REPLACE(REPLACE(NVL(A.COMP_GROUND, ''), ' ', ''), '　', '')) LIKE '%' || #bizNmKw# || '%'
                )
          </isNotEmpty>
-         ORDER BY NVL(B.OFFICE_RANK, 0), NVL(B.DEPT_RANK, 0), NVL(C.DBIZ_RANK, 0), A.TE_MNG_MOK_CD, NVL(A.SORT_SEQ, 0), A.TE_BGT_COMPO_ID
+         /* 이호조·기존 BudgetSelect 와 동일: 실국→부서→정책→단위→세부→통계목→SORT_SEQ */
+         ORDER BY NVL(B.OFFICE_RANK, 0)
+                , NVL(B.DEPT_RANK, 0)
+                , NVL(C.PBIZ_RANK, 0)
+                , NVL(C.PBIZ_CD, '0000000000000000')
+                , NVL(C.UBIZ_RANK, 0)
+                , NVL(C.UBIZ_CD, '0000000000000000')
+                , NVL(C.DBIZ_RANK, 0)
+                , NVL(C.DBIZ_CD, '0000000000000000')
+                , NVL(A.TE_MNG_MOK_CD, '00000')
+                , NVL(A.SORT_SEQ, 0)
+                , A.TE_BGT_COMPO_ID
     </select>
 
     <!-- 저장용: 해당 세세목 TB_REPORT 키만 조회 (다테이블 조인 제거) -->

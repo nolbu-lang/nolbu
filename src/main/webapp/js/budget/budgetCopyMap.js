@@ -519,113 +519,21 @@ $(document).ready(function() {
             return;
         }
 
-        var total = mappings.length;
-        // 서버 대기열 등록(동시 적용 경합 완화) + 상태 폴링
-        $.csAjaxCall({
-            url : "/budget/ajaxBudgetCopyNewCopyReportBatchEnqueue.do",
-            data : { mappings : mappings },
-            async : true,
-            callBack : function(data){
-                if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC" || isEmpty(data.jobId) == true){
-                    $.csAlert({ msg : (isEmpty(data) == true ? "적용 요청 등록 중 오류가 발생했습니다." : data.bcjisMessage) });
-                    return;
-                }
+        var data = $.csAjaxCall({
+            url : "/budget/ajaxBudgetCopyNewCopyReportBatch.do",
+            data : { mappings : mappings }
+        });
 
-                var jobId = data.jobId;
-                var pollTimer = null;
-                var finished = false;
-                var $wait = null;
+        if(isEmpty(data) == true || data[BCJIS_RETURN_CODE] != "SUCC"){
+            $.csAlert({ msg : (isEmpty(data) == true ? "적용 중 오류가 발생했습니다." : data.bcjisMessage) });
+            return;
+        }
 
-                var ensureWait = function(){
-                    if($wait && $wait.length){ return $wait; }
-                    if($("#budgetCopyMapApplyWait").length < 1){
-                        $("body").append('<div id="budgetCopyMapApplyWait" title="일괄적용" style="display:none;"><p id="budgetCopyMapApplyWaitMsg">대기열 등록 중...</p></div>');
-                        $("#budgetCopyMapApplyWait").dialog({
-                            autoOpen : false, modal : true, width : 360, resizable : false,
-                            closeOnEscape : false, dialogClass : "no-close"
-                        });
-                    }
-                    $wait = $("#budgetCopyMapApplyWait");
-                    return $wait;
-                };
-
-                var showWait = function(msg){
-                    ensureWait();
-                    $("#budgetCopyMapApplyWaitMsg").text(msg);
-                    if(!$wait.dialog("isOpen")){ $wait.dialog("open"); }
-                };
-
-                var hideWait = function(){
-                    if($wait && $wait.dialog("isOpen")){ $wait.dialog("close"); }
-                };
-
-                var stopPoll = function(){
-                    finished = true;
-                    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
-                };
-
-                var onDone = function(msg){
-                    stopPoll();
-                    hideWait();
-                    $.csAlert({
-                        msg : msg || (total + "건 적용되었습니다."),
-                        callBack : function() {
-                            $("#BUDGET_MAP_GRD", tabObj).clearGridData();
-                            mapGridResize();
-                        }
-                    });
-                };
-
-                var pollOnce = function(){
-                    if(finished){ return; }
-                    $.csAjaxCall({
-                        url : "/budget/ajaxBudgetCopyNewCopyReportBatchStatus.do",
-                        data : { jobId : jobId },
-                        async : true,
-                        callBack : function(st){
-                            if(finished){ return; }
-                            if(isEmpty(st) == true || st[BCJIS_RETURN_CODE] != "SUCC"){
-                                stopPoll();
-                                hideWait();
-                                $.csAlert({ msg : (isEmpty(st) == true ? "적용 상태 조회 중 오류가 발생했습니다." : st.bcjisMessage) });
-                                return;
-                            }
-                            var status = st.status || "";
-                            var applied = parseInt(st.appliedCnt, 10) || 0;
-                            var tot = parseInt(st.totalCnt, 10) || total;
-                            var qpos = parseInt(st.queuePos, 10) || 0;
-                            if(status === "QUEUED"){
-                                showWait("대기 중... (대기열 " + qpos + "번째, 총 " + tot + "건)");
-                            }else if(status === "RUNNING"){
-                                showWait("적용 중... (" + applied + " / " + tot + ")");
-                            }else if(status === "DONE"){
-                                onDone(st.jobMessage || st.bcjisMessage);
-                            }else if(status === "ERROR"){
-                                stopPoll();
-                                hideWait();
-                                $.csAlert({ msg : st.jobMessage || st.bcjisMessage || "적용 중 오류가 발생했습니다." });
-                            }
-                        }
-                    });
-                };
-
-                if(data.status === "DONE"){
-                    onDone(data.jobMessage || data.bcjisMessage);
-                    return;
-                }
-                if(data.status === "ERROR"){
-                    $.csAlert({ msg : data.jobMessage || data.bcjisMessage || "적용 중 오류가 발생했습니다." });
-                    return;
-                }
-
-                var qpos0 = parseInt(data.queuePos, 10) || 0;
-                if((data.status || "") === "QUEUED"){
-                    showWait("대기 중... (대기열 " + qpos0 + "번째, 총 " + total + "건)");
-                }else{
-                    showWait("적용 중... (총 " + total + "건)");
-                }
-                pollTimer = setInterval(pollOnce, 1500);
-                setTimeout(pollOnce, 400);
+        $.csAlert({
+            msg : data.bcjisMessage,
+            callBack : function() {
+                $("#BUDGET_MAP_GRD", tabObj).clearGridData();
+                mapGridResize();
             }
         });
     };

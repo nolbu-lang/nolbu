@@ -575,11 +575,14 @@ $(document).ready(function() {
             return;
         }
         
-        // 기정예산 분류를 적용대상에 상속 (미분류·다른 분류여도 가능)
-        doBuildAndApply(srcRowData, rowData);
-    });
-
-    var doBuildAndApply = function(srcRowData, rowData){
+        if(srcRowData.reportCd != rowData.reportCd){
+            $.csAlert({
+                msg : "동일한 조서만 적용 할 수 있습니다."
+            });
+            
+            return;
+        }
+        
         applyParam = {};
         applyParam["srcReportCd"] = srcRowData.reportCd;
         applyParam["srcReportDetlCd"] = srcRowData.reportDetlCd;
@@ -587,32 +590,22 @@ $(document).ready(function() {
         applyParam["srcBgtDgr"] = srcRowData.bgtDgr;
         applyParam["srcTeBgtCompoId"] = srcRowData.teBgtCompoId;
         applyParam["srcOrderYmdSeq"] = srcRowData.orderYmdSeq;
-        // 상속 기준은 기정예산(소스) 분류
-        applyParam["reportCd"] = srcRowData.reportCd || rowData.reportCd;
-        applyParam["reportDetlCd"] = srcRowData.reportDetlCd || rowData.reportDetlCd;
+        applyParam["reportCd"] = rowData.reportCd;
+        applyParam["reportDetlCd"] = rowData.reportDetlCd;
         applyParam["fisYear"] = rowData.fisYear;
         applyParam["bgtDgr"] = rowData.bgtDgr;
         applyParam["teBgtCompoId"] = rowData.teBgtCompoId;
-        applyParam["teBgtCompoSeq"] = rowData.teBgtCompoSeq;
         applyParam["orderYmdSeq"] = rowData.orderYmdSeq;
 
         if(checkCloseYn(applyParam) == false){
             return;
         }
-
-        var confirmMsg = "적용하시겠습니까? (조서·집계 분류도 함께 상속됩니다)";
-        if (isEmpty(rowData.reportCd) == false
-                && isEmpty(srcRowData.reportCd) == false
-                && srcRowData.reportCd != rowData.reportCd) {
-            confirmMsg = "적용대상에 다른 조서분류가 있습니다.\n기정예산 분류로 덮어쓰고 적용하시겠습니까?";
-        }
         
         $.csConfirm({
-            msg : confirmMsg,
+            msg : "적용하시겠습니까?",
             callBack : doApply
         });
-    };
-
+    });
     
     var doChangeCondReportCd = function(){
         var reportCd = $("#condReportCd option:selected", tabObj).val();

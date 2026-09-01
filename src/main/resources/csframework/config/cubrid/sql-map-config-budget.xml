@@ -6,6 +6,7 @@
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetComm.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCommCd.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetApply.xml"/>
+    <sqlMap resource="csframework/sqlmap/cubrid/budget/RlkCheck.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCopy.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetCopyNew.xml"/>
     <sqlMap resource="csframework/sqlmap/cubrid/budget/BudgetModify.xml"/>
